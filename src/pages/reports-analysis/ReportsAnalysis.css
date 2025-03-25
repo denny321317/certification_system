@@ -1,0 +1,338 @@
+/* 報表分析頁面樣式 */
+.reports-analysis-container {
+  padding: 20px;
+  height: 100%;
+}
+
+/* 頁面標題與頂部操作 */
+.page-header {
+  margin-bottom: 20px;
+}
+
+/* 新的統計卡片樣式 */
+.stats-card-new {
+  background-color: white;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  height: 100%;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-card-new:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+.stats-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stats-icon-new {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.stats-icon-new svg {
+  width: 18px;
+  height: 18px;
+}
+
+.stats-icon-new.blue {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+}
+
+.stats-icon-new.green {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--secondary-color);
+}
+
+.stats-icon-new.amber {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.stats-icon-new.red {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.stats-bottom-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.stats-title {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+
+.stats-desc {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.stats-desc.positive {
+  color: var(--success);
+}
+
+.stats-desc.negative {
+  color: var(--danger);
+}
+
+/* 舊的統計卡片樣式 (保留作為參考，可以刪除) */
+.stats-card {
+  background-color: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  display: flex;
+  align-items: center;
+  height: 100%;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+.stats-icon {
+  width: 50px;
+  height: 50px;
+  min-width: 50px;
+  min-height: 50px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  font-size: 20px;
+  position: relative;
+}
+
+.stats-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.stats-icon.blue {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+}
+
+.stats-icon.green {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--secondary-color);
+}
+
+.stats-icon.amber {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.stats-icon.red {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.stats-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 頁籤樣式 */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--primary-color);
+}
+
+.tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* 卡片樣式 */
+.card {
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  margin-bottom: 20px;
+  transition: all 0.3s;
+  border: none;
+}
+
+.card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.card-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: transparent;
+}
+
+.card-header h5 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+/* 圖表容器 */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin-bottom: 20px;
+}
+
+/* 圖表圖例 */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+
+/* 表格樣式 */
+.table thead {
+  background-color: rgba(0,0,0,0.01);
+}
+
+.table th {
+  font-weight: 500;
+  color: #64748b;
+  border-bottom-width: 1px;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 12px 20px;
+}
+
+/* 狀態標籤 */
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-badge.in-progress {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+}
+
+.status-badge.completed {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--secondary-color);
+}
+
+.status-badge.planned {
+  background-color: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+}
+
+.status-badge.critical {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.status-badge.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+/* 進度條 */
+.percentage-bar {
+  width: 100px;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.percentage-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* 響應式調整 */
+@media (max-width: 992px) {
+  .stats-card {
+    margin-bottom: 15px;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+  
+  .tab {
+    white-space: nowrap;
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+} 
