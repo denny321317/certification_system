@@ -19,6 +19,36 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './TemplateEditor.css';
 
+/**
+ * 模板編輯器組件
+ * 
+ * 此組件提供認證文件模板的可視化編輯功能，包含：
+ * 1. 拖放式組件管理
+ * 2. 組件屬性編輯
+ * 3. 模板基本信息設置
+ * 4. 即時預覽
+ * 
+ * 特點：
+ * - 支持多種認證組件（文件上傳、表單、清單等）
+ * - 提供組件的拖放排序
+ * - 支持組件屬性的動態配置
+ * - 即時預覽模板效果
+ * 
+ * 使用方式：
+ * ```jsx
+ * <TemplateEditor onClose={handleClose} />
+ * ```
+ */
+
+/**
+ * 可用的組件類型定義
+ * @type {Object.<string, {
+ *   type: string,       // 組件類型標識
+ *   icon: IconDefinition, // 組件圖標
+ *   label: string,      // 組件顯示名稱
+ *   defaultProps: Object // 組件默認屬性
+ * }>}
+ */
 const componentTypes = {
   documentUpload: {
     type: 'documentUpload',
@@ -94,9 +124,29 @@ const componentTypes = {
   }
 };
 
+/**
+ * 模板編輯器組件
+ * @param {Object} props - 組件屬性
+ * @param {Function} props.onClose - 關閉編輯器的回調函數
+ * @returns {JSX.Element} 模板編輯器介面
+ */
 const TemplateEditor = ({ onClose }) => {
+  /**
+   * 模板組件列表狀態
+   * @type {[Array<Object>, Function]} [組件列表, 設置組件列表的函數]
+   */
   const [components, setComponents] = useState([]);
+
+  /**
+   * 當前選中的組件狀態
+   * @type {[Object|null, Function]} [當前選中的組件, 設置選中組件的函數]
+   */
   const [selectedComponent, setSelectedComponent] = useState(null);
+
+  /**
+   * 模板基本信息狀態
+   * @type {[Object, Function]} [模板信息, 設置模板信息的函數]
+   */
   const [templateInfo, setTemplateInfo] = useState({
     name: '',
     category: '',
@@ -106,6 +156,12 @@ const TemplateEditor = ({ onClose }) => {
     lastUpdated: new Date().toISOString().split('T')[0]
   });
 
+  /**
+   * 處理組件拖放結束事件
+   * @param {Object} result - 拖放結果對象
+   * @param {Object} result.source - 拖放源位置信息
+   * @param {Object} result.destination - 拖放目標位置信息
+   */
   const handleDragEnd = (result) => {
     if (!result.destination) return;
 
@@ -116,6 +172,10 @@ const TemplateEditor = ({ onClose }) => {
     setComponents(items);
   };
 
+  /**
+   * 添加新組件到模板
+   * @param {string} componentType - 要添加的組件類型
+   */
   const handleAddComponent = (componentType) => {
     const newComponent = {
       id: `component-${Date.now()}`,
@@ -125,6 +185,10 @@ const TemplateEditor = ({ onClose }) => {
     setComponents([...components, newComponent]);
   };
 
+  /**
+   * 從模板中刪除組件
+   * @param {number} index - 要刪除的組件索引
+   */
   const handleDeleteComponent = (index) => {
     const newComponents = [...components];
     newComponents.splice(index, 1);
@@ -132,10 +196,19 @@ const TemplateEditor = ({ onClose }) => {
     setSelectedComponent(null);
   };
 
+  /**
+   * 選中組件進行編輯
+   * @param {Object} component - 要編輯的組件對象
+   */
   const handleComponentSelect = (component) => {
     setSelectedComponent(component);
   };
 
+  /**
+   * 更新組件屬性
+   * @param {string} property - 要更新的屬性名
+   * @param {any} value - 新的屬性值
+   */
   const handlePropertyChange = (property, value) => {
     if (!selectedComponent) return;
 
@@ -162,6 +235,11 @@ const TemplateEditor = ({ onClose }) => {
     });
   };
 
+  /**
+   * 渲染組件預覽
+   * @param {Object} component - 要渲染的組件對象
+   * @returns {JSX.Element|null} 組件預覽元素
+   */
   const renderComponent = (component) => {
     switch (component.type) {
       case 'documentUpload':

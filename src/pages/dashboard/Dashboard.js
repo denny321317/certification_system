@@ -1,3 +1,20 @@
+/**
+ * 儀表板組件
+ * 
+ * 此組件提供企業認證系統的主要概覽，包含：
+ * 1. 統計數據展示（文件總數、認證完成度、待處理任務等）
+ * 2. 待辦事項清單
+ * 3. 認證項目進度追蹤
+ * 4. 最近活動記錄
+ * 5. 文件到期提醒
+ * 6. 各類統計圖表
+ * 
+ * 使用方式：
+ * ```jsx
+ * <Dashboard />
+ * ```
+ */
+
 import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -13,10 +30,25 @@ import './Dashboard.css';
 // 註冊Chart.js組件
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+/**
+ * 儀表板組件
+ * @returns {JSX.Element} 儀表板介面
+ */
 const Dashboard = () => {
   const { currentUser } = useContext(AuthContext);
 
-  // 統計卡數據
+  /**
+   * 統計卡片數據結構
+   * @type {Array<{
+   *   title: string,      // 卡片標題
+   *   value: number|string, // 統計值
+   *   icon: IconDefinition, // FontAwesome圖標
+   *   color: string,      // 主題顏色
+   *   link: string,       // 跳轉連結
+   *   urgentCount?: number, // 緊急項目數量（可選）
+   *   description?: string  // 補充說明（可選）
+   * }>}
+   */
   const statsCards = [
     { 
       title: '文件總數', 
@@ -50,7 +82,13 @@ const Dashboard = () => {
     }
   ];
 
-  // 認證項目進度數據
+  /**
+   * 認證項目進度數據結構
+   * @type {Array<{
+   *   name: string,     // 認證名稱
+   *   progress: number  // 完成百分比
+   * }>}
+   */
   const certificationProgress = [
     { name: 'SMETA 4支柱認證', progress: 75 },
     { name: 'ISO 14001', progress: 90 },
@@ -58,7 +96,15 @@ const Dashboard = () => {
     { name: 'SA8000', progress: 40 }
   ];
 
-  // 待辦事項數據
+  /**
+   * 待辦事項數據結構
+   * @type {Array<{
+   *   id: number,       // 項目ID
+   *   title: string,    // 項目標題
+   *   urgency: string,  // 緊急程度（high|medium|low）
+   *   dueDate: string   // 截止日期
+   * }>}
+   */
   const todoItems = [
     { 
       id: 1, 
@@ -86,7 +132,16 @@ const Dashboard = () => {
     }
   ];
 
-  // 最近活動數據
+  /**
+   * 最近活動數據結構
+   * @type {Array<{
+   *   id: number,      // 活動ID
+   *   user: string,    // 用戶名稱
+   *   action: string,  // 執行的動作
+   *   target: string,  // 操作對象
+   *   timestamp: string // 時間戳
+   * }>}
+   */
   const recentActivities = [
     { 
       id: 1, 
@@ -118,7 +173,15 @@ const Dashboard = () => {
     }
   ];
 
-  // 文件到期提醒數據
+  /**
+   * 文件到期提醒數據結構
+   * @type {Array<{
+   *   id: number,      // 文件ID
+   *   name: string,    // 文件名稱
+   *   expiryDate: string, // 到期日期
+   *   status: string   // 狀態（urgent|warning|normal）
+   * }>}
+   */
   const expiringDocuments = [
     { 
       id: 1, 
@@ -140,7 +203,10 @@ const Dashboard = () => {
     }
   ];
 
-  // 認證類型分布圖表數據
+  /**
+   * 認證類型分布圖表配置
+   * @type {Object} Chart.js圖表數據配置
+   */
   const certificationDistributionData = {
     labels: ['ISO標準', 'ESG認證', '產品認證', '其他標準'],
     datasets: [
@@ -152,7 +218,10 @@ const Dashboard = () => {
     ],
   };
 
-  // 文件狀態分布圖表數據
+  /**
+   * 文件狀態分布圖表配置
+   * @type {Object} Chart.js圖表數據配置
+   */
   const documentStatusData = {
     labels: ['有效', '即將到期', '已過期', '草稿'],
     datasets: [
@@ -164,7 +233,10 @@ const Dashboard = () => {
     ],
   };
 
-  // 圖表選項
+  /**
+   * 圓餅圖配置選項
+   * @type {Object} Chart.js圖表選項
+   */
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -179,6 +251,10 @@ const Dashboard = () => {
     },
   };
 
+  /**
+   * 柱狀圖配置選項
+   * @type {Object} Chart.js圖表選項
+   */
   const barOptions = {
     responsive: true,
     maintainAspectRatio: false,

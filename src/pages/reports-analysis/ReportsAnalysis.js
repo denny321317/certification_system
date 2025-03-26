@@ -1,3 +1,25 @@
+/**
+ * 報告分析組件
+ * 
+ * 此組件提供企業認證系統的報告分析功能，包含：
+ * 1. 認證項目統計概覽
+ * 2. 認證進度追蹤
+ * 3. 缺失項目分析
+ * 4. 趨勢分析圖表
+ * 5. 完成項目追蹤
+ * 
+ * 特點：
+ * - 提供多種統計圖表（柱狀圖、圓餅圖、環形圖）
+ * - 支持數據導出和列印
+ * - 包含詳細的缺失項目追蹤
+ * - 提供完整的進度分析
+ * 
+ * 使用方式：
+ * ```jsx
+ * <ReportsAnalysis />
+ * ```
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -16,12 +38,29 @@ import {
 import Chart from 'chart.js/auto';
 import './ReportsAnalysis.css';
 
+/**
+ * 報告分析組件
+ * @returns {JSX.Element} 報告分析介面
+ */
 const ReportsAnalysis = () => {
+  /**
+   * 當前選中的標籤狀態
+   * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
+   */
   const [activeTab, setActiveTab] = useState('綜合報表');
+
+  /**
+   * 圖表引用
+   * @type {React.MutableRefObject<HTMLCanvasElement>} 圖表Canvas元素引用
+   */
   const projectProgressChartRef = useRef(null);
   const certTypeChartRef = useRef(null);
   const issueTypeChartRef = useRef(null);
-  
+
+  /**
+   * 初始化圖表
+   * 在組件掛載後創建各種統計圖表
+   */
   useEffect(() => {
     // 初始化圖表
     const initCharts = () => {
@@ -139,6 +178,17 @@ const ReportsAnalysis = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  /**
+   * 缺失項目數據結構
+   * @type {Array<{
+   *   name: string,         // 問題名稱
+   *   certType: string,     // 認證類型
+   *   severity: string,     // 嚴重程度（high/medium/low）
+   *   discoveryDate: string, // 發現日期
+   *   status: string,       // 狀態（in-progress/completed）
+   *   progress: number      // 完成進度
+   * }>}
+   */
   const issues = [
     {
       name: '工時記錄不完整',
@@ -182,6 +232,15 @@ const ReportsAnalysis = () => {
     }
   ];
 
+  /**
+   * 已完成項目數據結構
+   * @type {Array<{
+   *   name: string,         // 項目名稱
+   *   responsible?: string, // 負責人（可選）
+   *   certType?: string,   // 認證類型（可選）
+   *   date: string         // 完成日期
+   * }>}
+   */
   const completedItems = [
     {
       name: 'ISO 9001 品質管理系統認證',
@@ -205,7 +264,11 @@ const ReportsAnalysis = () => {
     }
   ];
 
-  // 渲染嚴重程度標籤
+  /**
+   * 渲染嚴重程度標籤
+   * @param {string} severity - 嚴重程度（high/medium/low）
+   * @returns {JSX.Element} 嚴重程度標籤元素
+   */
   const renderSeverityBadge = (severity) => {
     let badgeClass, icon, text;
     
@@ -234,7 +297,11 @@ const ReportsAnalysis = () => {
     );
   };
 
-  // 渲染狀態標籤
+  /**
+   * 渲染狀態標籤
+   * @param {string} status - 狀態（in-progress/completed/planned）
+   * @returns {JSX.Element} 狀態標籤元素
+   */
   const renderStatusBadge = (status) => {
     let badgeClass, icon, text;
     
@@ -263,7 +330,11 @@ const ReportsAnalysis = () => {
     );
   };
 
-  // 渲染進度條
+  /**
+   * 渲染進度條
+   * @param {number} progress - 完成進度（0-100）
+   * @returns {JSX.Element} 進度條元素
+   */
   const renderProgressBar = (progress) => {
     let barColor;
     

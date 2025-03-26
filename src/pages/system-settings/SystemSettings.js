@@ -1,3 +1,28 @@
+/**
+ * 系統設置組件
+ * 
+ * 此組件提供企業認證系統的系統設置功能，包含：
+ * 1. 基本設定（系統名稱、語言、時區等）
+ * 2. 安全設定（密碼政策、登入安全等）
+ * 3. 通知設定（郵件通知、系統通知等）
+ * 4. 備份與還原（自動備份、系統還原等）
+ * 5. API設定（API金鑰、請求限制等）
+ * 6. 稽核日誌（系統操作記錄）
+ * 
+ * 特點：
+ * - 分頁式設置界面
+ * - 即時設置保存
+ * - 完整的安全配置
+ * - 自動備份機制
+ * - API訪問控制
+ * - 操作日誌追蹤
+ * 
+ * 使用方式：
+ * ```jsx
+ * <SystemSettings />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -6,10 +31,27 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './SystemSettings.css';
 
+/**
+ * 系統設置組件
+ * @returns {JSX.Element} 系統設置界面
+ */
 const SystemSettings = () => {
+  /**
+   * 當前選中的設置標籤
+   * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
+   */
   const [activeTab, setActiveTab] = useState('general');
+
+  /**
+   * 當前頁碼（用於稽核日誌分頁）
+   * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
+   */
   const [currentPage, setCurrentPage] = useState(1);
 
+  /**
+   * 處理分頁變更
+   * @param {number} newPage - 新的頁碼
+   */
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };

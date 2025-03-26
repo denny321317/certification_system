@@ -1,3 +1,25 @@
+/**
+ * 文件管理組件
+ * 
+ * 此組件提供企業認證系統的文件管理功能，包含：
+ * 1. 文件夾樹狀結構導航
+ * 2. 文件列表顯示（列表/網格視圖）
+ * 3. 文件搜索和篩選
+ * 4. 文件上傳和管理
+ * 5. 文件狀態追蹤
+ * 
+ * 特點：
+ * - 支持多種文件類型（PDF、Excel、Word、圖片等）
+ * - 提供文件狀態標記（已審核、待審核、已過期）
+ * - 支持文件的下載、編輯、分享和刪除操作
+ * - 響應式設計，適配不同屏幕尺寸
+ * 
+ * 使用方式：
+ * ```jsx
+ * <DocumentManagement />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,12 +32,40 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './DocumentManagement.css';
 
+/**
+ * 文件管理組件
+ * @returns {JSX.Element} 文件管理介面
+ */
 const DocumentManagement = () => {
+  /**
+   * 文件搜索關鍵字狀態
+   * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
+   */
   const [searchQuery, setSearchQuery] = useState('');
+
+  /**
+   * 文件夾搜索關鍵字狀態
+   * @type {[string, Function]} [文件夾搜索關鍵字, 設置文件夾搜索關鍵字的函數]
+   */
   const [folderSearchQuery, setFolderSearchQuery] = useState('');
+
+  /**
+   * 視圖模式狀態（list/grid）
+   * @type {[string, Function]} [當前視圖模式, 設置視圖模式的函數]
+   */
   const [viewMode, setViewMode] = useState('list');
+
+  /**
+   * 排序選項狀態
+   * @type {[string, Function]} [當前排序選項, 設置排序選項的函數]
+   */
   const [sortOption, setSortOption] = useState('recent');
 
+  /**
+   * 根據文件類型返回對應的圖標
+   * @param {string} fileType - 文件類型（pdf/excel/word/image）
+   * @returns {JSX.Element} FontAwesome圖標元素
+   */
   const getFileIcon = (fileType) => {
     switch (fileType) {
       case 'pdf':
@@ -31,6 +81,11 @@ const DocumentManagement = () => {
     }
   };
 
+  /**
+   * 根據文件狀態返回對應的徽章樣式類名
+   * @param {string} status - 文件狀態（approved/pending/expired）
+   * @returns {string} CSS類名
+   */
   const getBadgeClass = (status) => {
     switch (status) {
       case 'approved':
@@ -44,6 +99,11 @@ const DocumentManagement = () => {
     }
   };
 
+  /**
+   * 根據文件狀態返回對應的狀態文字
+   * @param {string} status - 文件狀態（approved/pending/expired）
+   * @returns {string} 狀態文字
+   */
   const getBadgeText = (status) => {
     switch (status) {
       case 'approved':
@@ -57,6 +117,18 @@ const DocumentManagement = () => {
     }
   };
 
+  /**
+   * 文件數據列表
+   * @type {Array<{
+   *   id: number,        // 文件ID
+   *   name: string,      // 文件名稱
+   *   type: string,      // 文件類型
+   *   updatedAt: string, // 更新時間
+   *   updatedBy: string, // 更新人
+   *   size: string,      // 文件大小
+   *   status: string     // 文件狀態
+   * }>}
+   */
   const files = [
     {
       id: 1,
@@ -105,25 +177,37 @@ const DocumentManagement = () => {
     }
   ];
 
-  // 處理下載文件
+  /**
+   * 處理文件下載
+   * @param {Object} file - 要下載的文件對象
+   */
   const handleDownload = (file) => {
     // TODO: 實現文件下載邏輯
     console.log('下載文件:', file);
   };
 
-  // 處理編輯文件
+  /**
+   * 處理文件編輯
+   * @param {Object} file - 要編輯的文件對象
+   */
   const handleEdit = (file) => {
     // TODO: 實現文件編輯邏輯
     console.log('編輯文件:', file);
   };
 
-  // 處理分享文件
+  /**
+   * 處理文件分享
+   * @param {Object} file - 要分享的文件對象
+   */
   const handleShare = (file) => {
     // TODO: 實現文件分享邏輯
     console.log('分享文件:', file);
   };
 
-  // 處理刪除文件
+  /**
+   * 處理文件刪除
+   * @param {Object} file - 要刪除的文件對象
+   */
   const handleDelete = (file) => {
     // TODO: 實現文件刪除邏輯
     console.log('刪除文件:', file);
