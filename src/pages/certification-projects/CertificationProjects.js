@@ -1,3 +1,25 @@
+/**
+ * 認證項目管理組件
+ * 
+ * 此組件提供企業認證系統的認證項目管理功能，包含：
+ * 1. 認證項目狀態追蹤（進行中、已完成、計畫中）
+ * 2. 項目搜索和篩選
+ * 3. 項目時程管理
+ * 4. 任務清單管理
+ * 5. 進度追蹤
+ * 
+ * 特點：
+ * - 支持多種認證類型（SMETA、ISO等）
+ * - 提供項目進度的視覺化展示
+ * - 支持項目時間線追蹤
+ * - 包含詳細的任務分解和檢查清單
+ * 
+ * 使用方式：
+ * ```jsx
+ * <CertificationProjects />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -7,10 +29,30 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjects.css';
 
+/**
+ * 認證項目管理組件
+ * @returns {JSX.Element} 認證項目管理介面
+ */
 const CertificationProjects = () => {
+  /**
+   * 搜索關鍵字狀態
+   * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
+   */
   const [searchQuery, setSearchQuery] = useState('');
+
+  /**
+   * 當前選中的標籤狀態
+   * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
+   */
   const [activeTab, setActiveTab] = useState('all');
 
+  /**
+   * 標籤列表定義
+   * @type {Array<{
+   *   id: string,    // 標籤ID
+   *   label: string  // 標籤顯示文字
+   * }>}
+   */
   const tabs = [
     { id: 'all', label: '全部' },
     { id: 'in-progress', label: '進行中' },
@@ -18,6 +60,31 @@ const CertificationProjects = () => {
     { id: 'planned', label: '計畫中' }
   ];
 
+  /**
+   * 認證項目數據結構
+   * @type {Array<{
+   *   id: number,           // 項目ID
+   *   name: string,         // 項目名稱
+   *   status: string,       // 項目狀態（in-progress/completed/planned）
+   *   startDate: string,    // 開始日期
+   *   endDate: string,      // 結束日期
+   *   manager: string,      // 負責人
+   *   agency: string,       // 認證機構
+   *   progress: number,     // 完成進度
+   *   progressColor: string, // 進度條顏色
+   *   timeline?: Array<{    // 時間線（可選）
+   *     stage: string,      // 階段名稱
+   *     status: string,     // 階段狀態
+   *     date: string,       // 日期
+   *     description: string, // 描述
+   *     tasks?: Array<{     // 任務列表（可選）
+   *       id: number,       // 任務ID
+   *       name: string,     // 任務名稱
+   *       completed: boolean // 是否完成
+   *     }>
+   *   }>
+   * }>}
+   */
   const certificationProjects = [
     {
       id: 1,
@@ -103,13 +170,15 @@ const CertificationProjects = () => {
     }
   ];
 
-  // 根據當前選中的標籤過濾項目
+  /**
+   * 根據當前標籤和搜索關鍵字過濾項目
+   * @returns {Array} 過濾後的項目列表
+   */
   const filteredProjects = certificationProjects.filter(project => {
     if (activeTab !== 'all' && project.status !== activeTab) {
       return false;
     }
     
-    // 根據搜尋關鍵詞過濾
     if (searchQuery && !project.name.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -117,6 +186,11 @@ const CertificationProjects = () => {
     return true;
   });
 
+  /**
+   * 根據項目狀態返回對應的狀態標籤元素
+   * @param {string} status - 項目狀態
+   * @returns {JSX.Element|null} 狀態標籤元素
+   */
   const getStatusBadge = (status) => {
     switch (status) {
       case 'in-progress':
@@ -145,6 +219,11 @@ const CertificationProjects = () => {
     }
   };
 
+  /**
+   * 根據時間線階段狀態返回對應的圖標
+   * @param {string} status - 階段狀態（completed/current/pending）
+   * @returns {JSX.Element} FontAwesome圖標元素
+   */
   const getTimelineIcon = (status) => {
     switch (status) {
       case 'completed':

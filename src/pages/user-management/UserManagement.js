@@ -1,3 +1,26 @@
+/**
+ * 用戶管理組件
+ * 
+ * 此組件提供企業認證系統的用戶管理功能，包含：
+ * 1. 用戶列表展示和搜索
+ * 2. 用戶角色管理
+ * 3. 用戶權限設置
+ * 4. 用戶狀態監控
+ * 5. 用戶統計分析
+ * 
+ * 特點：
+ * - 支持多種用戶角色（管理員、審核員等）
+ * - 提供用戶搜索和篩選
+ * - 詳細的權限管理系統
+ * - 即時的用戶狀態顯示
+ * - 完整的用戶統計信息
+ * 
+ * 使用方式：
+ * ```jsx
+ * <UserManagement />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -14,13 +37,47 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './UserManagement.css';
 
+/**
+ * 用戶管理組件
+ * @returns {JSX.Element} 用戶管理界面
+ */
 const UserManagement = () => {
+  /**
+   * 當前選中的標籤狀態
+   * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
+   */
   const [activeTab, setActiveTab] = useState('所有使用者');
+
+  /**
+   * 搜索關鍵字狀態
+   * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
+   */
   const [searchTerm, setSearchTerm] = useState('');
+
+  /**
+   * 當前選中的角色狀態
+   * @type {[string, Function]} [當前角色, 設置當前角色的函數]
+   */
   const [selectedRole, setSelectedRole] = useState('系統管理員');
+
+  /**
+   * 當前頁碼狀態
+   * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
+   */
   const [currentPage, setCurrentPage] = useState(1);
   
-  // 使用者數據
+  /**
+   * 用戶數據列表
+   * @type {Array<{
+   *   id: number,           // 用戶ID
+   *   name: string,         // 用戶名稱
+   *   email: string,        // 電子郵件
+   *   role: string,         // 用戶角色
+   *   department: string,   // 所屬部門
+   *   status: string,       // 用戶狀態
+   *   lastLogin: string     // 最後登入時間
+   * }>}
+   */
   const users = [
     {
       id: 1,
@@ -105,7 +162,10 @@ const UserManagement = () => {
     }
   ];
   
-  // 篩選使用者基於當前標籤和搜索詞
+  /**
+   * 根據當前標籤和搜索關鍵字過濾用戶
+   * @returns {Array} 過濾後的用戶列表
+   */
   const filteredUsers = users.filter(user => {
     // 標籤篩選
     if (activeTab === '管理員' && user.role !== 'admin') return false;
@@ -123,7 +183,11 @@ const UserManagement = () => {
     return true;
   });
   
-  // 渲染角色標籤
+  /**
+   * 渲染角色標籤
+   * @param {string} role - 用戶角色
+   * @returns {JSX.Element} 角色標籤元素
+   */
   const renderRoleBadge = (role) => {
     let badgeClass = '';
     let icon = null;
@@ -164,7 +228,11 @@ const UserManagement = () => {
     );
   };
   
-  // 渲染狀態標籤
+  /**
+   * 渲染狀態標籤
+   * @param {string} status - 用戶狀態
+   * @returns {JSX.Element} 狀態標籤元素
+   */
   const renderStatusBadge = (status) => {
     const badgeClass = status === 'active' ? 'status-badge active' : 'status-badge inactive';
     const text = status === 'active' ? '在線' : '離線';
@@ -177,6 +245,10 @@ const UserManagement = () => {
     );
   };
 
+  /**
+   * 處理分頁變更
+   * @param {number} newPage - 新的頁碼
+   */
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };

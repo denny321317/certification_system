@@ -1,3 +1,24 @@
+/**
+ * 模板中心組件
+ * 
+ * 此組件提供企業認證系統的模板管理功能，包含：
+ * 1. 模板分類管理
+ * 2. 模板搜索和篩選
+ * 3. 模板列表展示
+ * 4. 模板編輯器整合
+ * 
+ * 特點：
+ * - 支持多種認證模板（SMETA、ISO等）
+ * - 提供模板分類和標籤管理
+ * - 支持模板的創建、編輯和使用
+ * - 響應式設計，適配不同屏幕尺寸
+ * 
+ * 使用方式：
+ * ```jsx
+ * <TemplateCenter />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -9,13 +30,50 @@ import {
 import TemplateEditor from './components/TemplateEditor';
 import './TemplateCenter.css';
 
+/**
+ * 模板中心組件
+ * @returns {JSX.Element} 模板中心介面
+ */
 const TemplateCenter = () => {
+  /**
+   * 搜索關鍵字狀態
+   * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
+   */
   const [searchQuery, setSearchQuery] = useState('');
+
+  /**
+   * 排序選項狀態
+   * @type {[string, Function]} [當前排序選項, 設置排序選項的函數]
+   */
   const [sortOption, setSortOption] = useState('recent');
+
+  /**
+   * 當前選中的分類狀態
+   * @type {[string, Function]} [當前分類ID, 設置當前分類的函數]
+   */
   const [activeCategory, setActiveCategory] = useState('all');
+
+  /**
+   * 模板編輯器顯示狀態
+   * @type {[boolean, Function]} [是否顯示編輯器, 設置編輯器顯示狀態的函數]
+   */
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+
+  /**
+   * 當前頁碼狀態
+   * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
+   */
   const [currentPage, setCurrentPage] = useState(1);
 
+  /**
+   * 模板分類數據
+   * @type {Array<{
+   *   id: string,       // 分類ID
+   *   name: string,     // 分類名稱
+   *   icon: IconDefinition, // 分類圖標
+   *   count: number     // 模板數量
+   * }>}
+   */
   const categories = [
     { id: 'all', name: '所有模板', icon: faThLarge, count: 25 },
     { id: 'smeta', name: 'SMETA 認證模板', icon: faCheckCircle, count: 8 },
@@ -25,6 +83,11 @@ const TemplateCenter = () => {
     { id: 'custom', name: '自訂模板', icon: faBolt, count: 3 }
   ];
 
+  /**
+   * 根據文件類型返回對應的圖標
+   * @param {string} fileType - 文件類型（excel/word/pdf）
+   * @returns {JSX.Element} FontAwesome圖標元素
+   */
   const getTemplateIcon = (fileType) => {
     switch (fileType) {
       case 'excel':
@@ -38,6 +101,17 @@ const TemplateCenter = () => {
     }
   };
 
+  /**
+   * 模板數據列表
+   * @type {Array<{
+   *   id: number,       // 模板ID
+   *   name: string,     // 模板名稱
+   *   type: string,     // 模板類型
+   *   tags: string[],   // 標籤列表
+   *   updatedAt: string, // 更新時間
+   *   category: string   // 所屬分類
+   * }>}
+   */
   const templates = [
     {
       id: 1,
@@ -113,7 +187,11 @@ const TemplateCenter = () => {
     }
   ];
 
-  // 過濾模板
+  /**
+   * 過濾模板列表
+   * 根據當前選中的分類和搜索關鍵字過濾模板
+   * @returns {Array} 過濾後的模板列表
+   */
   const filteredTemplates = templates.filter(template => {
     // 按分類過濾
     if (activeCategory !== 'all' && template.category !== activeCategory) {
@@ -128,7 +206,11 @@ const TemplateCenter = () => {
     return true;
   });
 
-  // 排序模板
+  /**
+   * 排序模板列表
+   * 根據當前排序選項對模板進行排序
+   * @returns {Array} 排序後的模板列表
+   */
   const sortedTemplates = [...filteredTemplates].sort((a, b) => {
     switch (sortOption) {
       case 'nameAsc':
@@ -144,6 +226,10 @@ const TemplateCenter = () => {
     }
   });
 
+  /**
+   * 處理頁碼變更
+   * @param {number} newPage - 新的頁碼
+   */
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };

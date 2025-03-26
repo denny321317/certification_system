@@ -1,10 +1,23 @@
+/**
+ * 企業認證系統前端應用程式
+ * 
+ * 此檔案是應用程式的根組件，負責：
+ * 1. 路由配置和導航管理
+ * 2. 身份驗證狀態管理
+ * 3. 頁面佈局結構
+ */
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+
+// 身份驗證相關頁面
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+
+// 功能模組頁面
 import Dashboard from './pages/dashboard/Dashboard';
 import DocumentManagement from './pages/document-management/DocumentManagement';
 import TemplateCenter from './pages/template-center/TemplateCenter';
@@ -13,9 +26,17 @@ import ReportsAnalysis from './pages/reports-analysis/ReportsAnalysis';
 import SupplierManagement from './pages/supplier-management/SupplierManagement';
 import UserManagement from './pages/user-management/UserManagement';
 import SystemSettings from './pages/system-settings/SystemSettings';
+
+// 共用組件
 import MainLayout from './components/layout/MainLayout';
 import './App.css';
 
+/**
+ * 受保護的路由組件
+ * 用於檢查用戶是否已登入，未登入則重定向到登入頁面
+ * @param {Object} props - 組件屬性
+ * @param {ReactNode} props.children - 子組件
+ */
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
   
@@ -26,6 +47,10 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+/**
+ * 應用程式主組件
+ * 包含所有路由配置和全局狀態管理
+ */
 function App() {
   return (
     <AuthProvider>
@@ -34,13 +59,13 @@ function App() {
           {/* 根路徑重定向到登入頁面 */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           
-          {/* 認證頁面 */}
+          {/* 公開的認證頁面 */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           
-          {/* 受保護的路由 */}
+          {/* 需要登入才能訪問的頁面 */}
           <Route 
             path="/dashboard" 
             element={
@@ -51,6 +76,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 文件管理模組 */}
           <Route 
             path="/document-management" 
             element={
@@ -61,6 +87,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 模板中心模組 */}
           <Route 
             path="/template-center" 
             element={
@@ -71,6 +98,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 認證專案模組 */}
           <Route 
             path="/certification-projects" 
             element={
@@ -81,6 +109,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 報表分析模組 */}
           <Route 
             path="/reports-analysis" 
             element={
@@ -91,6 +120,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 供應商管理模組 */}
           <Route 
             path="/supplier-management" 
             element={
@@ -101,6 +131,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 用戶管理模組 */}
           <Route 
             path="/user-management" 
             element={
@@ -111,6 +142,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* 系統設定模組 */}
           <Route 
             path="/system-settings" 
             element={

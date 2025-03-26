@@ -1,3 +1,25 @@
+/**
+ * 供應商管理組件
+ * 
+ * 此組件提供企業認證系統的供應商管理功能，包含：
+ * 1. 供應商資訊管理
+ * 2. 供應商認證狀態追蹤
+ * 3. 供應商風險評估
+ * 4. 認證到期提醒
+ * 5. 供應商篩選和搜索
+ * 
+ * 特點：
+ * - 支持多種供應商分類
+ * - 提供風險等級評估
+ * - 包含認證狀態追蹤
+ * - 支持供應商篩選和搜索
+ * 
+ * 使用方式：
+ * ```jsx
+ * <SupplierManagement />
+ * ```
+ */
+
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -16,12 +38,60 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './SupplierManagement.css';
 
+/**
+ * 供應商管理組件
+ * @returns {JSX.Element} 供應商管理介面
+ */
 const SupplierManagement = () => {
+  /**
+   * 當前選中的標籤狀態
+   * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
+   */
   const [activeTab, setActiveTab] = useState('全部');
+
+  /**
+   * 搜索關鍵字狀態
+   * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
+   */
   const [searchTerm, setSearchTerm] = useState('');
+
+  /**
+   * 當前頁碼狀態
+   * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
+   */
   const [currentPage, setCurrentPage] = useState(1);
   
-  // 供應商數據
+  /**
+   * 供應商數據結構
+   * @type {Array<{
+   *   id: number,           // 供應商ID
+   *   name: string,         // 供應商名稱
+   *   status: string,       // 認證狀態（approved/pending/high-risk）
+   *   categories: string[], // 供應商類別
+   *   location: string,     // 所在地
+   *   since: string,        // 合作開始年份
+   *   certifications: number, // 已完成認證數量
+   *   riskLevel: string,    // 風險等級（low/medium/high）
+   *   latestCertification?: { // 最近認證（可選）
+   *     name: string,       // 認證名稱
+   *     date: string        // 認證日期
+   *   },
+   *   expirationReminder?: { // 到期提醒（可選）
+   *     name: string|null,  // 認證名稱
+   *     daysLeft?: number,  // 剩餘天數
+   *     text?: string       // 提醒文字
+   *   },
+   *   ongoingCertification?: { // 進行中認證（可選）
+   *     name: string,       // 認證名稱
+   *     progress: number    // 完成進度
+   *   },
+   *   riskReason?: string,  // 風險原因（可選）
+   *   actionNeeded?: {      // 需要採取的行動（可選）
+   *     name: string,       // 行動名稱
+   *     overdueDays: number // 逾期天數
+   *   }
+   * }>}
+   */
   const suppliers = [
     {
       id: 1,
@@ -112,7 +182,10 @@ const SupplierManagement = () => {
     }
   ];
   
-  // 篩選供應商基於當前標籤和搜索詞
+  /**
+   * 根據當前標籤和搜索關鍵字過濾供應商
+   * @returns {Array} 過濾後的供應商列表
+   */
   const filteredSuppliers = suppliers.filter(supplier => {
     // 標籤篩選
     if (activeTab === '已認證' && supplier.status !== 'approved') return false;
@@ -127,7 +200,11 @@ const SupplierManagement = () => {
     return true;
   });
   
-  // 根據風險等級渲染風險指示器
+  /**
+   * 根據風險等級渲染風險指示器
+   * @param {string} riskLevel - 風險等級（low/medium/high）
+   * @returns {JSX.Element} 風險指示器元素
+   */
   const renderRiskIndicator = (riskLevel) => {
     let levelClass = '';
     let levelText = '';
@@ -165,7 +242,11 @@ const SupplierManagement = () => {
     );
   };
   
-  // 渲染狀態標籤
+  /**
+   * 渲染狀態標籤
+   * @param {string} status - 供應商狀態（approved/pending/high-risk）
+   * @returns {JSX.Element} 狀態標籤元素
+   */
   const renderStatusBadge = (status) => {
     switch (status) {
       case 'approved':
@@ -191,6 +272,10 @@ const SupplierManagement = () => {
     }
   };
   
+  /**
+   * 處理頁碼變更
+   * @param {number} newPage - 新的頁碼
+   */
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
