@@ -155,6 +155,12 @@ const TemplateEditor = ({ onClose }) => {
     version: '1.0',
     lastUpdated: new Date().toISOString().split('T')[0]
   });
+  
+  /**
+   * 拖放ID狀態 - 解決「Cannot find droppable entry with id [template-components]」錯誤
+   * @type {[string, Function]} [拖放ID, 設置拖放ID的函數]
+   */
+  const [droppableId] = useState(`template-components-${Date.now()}`);
 
   /**
    * 處理組件拖放結束事件
@@ -322,6 +328,15 @@ const TemplateEditor = ({ onClose }) => {
     }
   };
 
+  /**
+   * 處理拖放錯誤
+   * @param {Error} error - 錯誤對象
+   */
+  const handleDragError = (error) => {
+    console.error('拖放操作出現錯誤:', error);
+    // 可以在這裡實現錯誤處理邏輯，如顯示錯誤提示等
+  };
+
   return (
     <div className="template-editor">
       {/* 頂部標題欄 */}
@@ -399,15 +414,13 @@ const TemplateEditor = ({ onClose }) => {
 
         {/* 中間：編輯區域 */}
         <div className="editor-content">
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="template-components" type="TEMPLATE_COMPONENT">
+          <DragDropContext onDragEnd={handleDragEnd} onBeforeDragStart={() => {}} onDragError={handleDragError}>
+            <Droppable droppableId={droppableId} type="TEMPLATE_COMPONENT">
               {(provided) => (
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
                   className="template-components"
-                  data-rbd-droppable-id="template-components"
-                  data-rbd-droppable-context-id={provided.droppableProps['data-rbd-droppable-context-id']}
                 >
                   {components.length === 0 && (
                     <div className="empty-editor-message">
@@ -419,14 +432,11 @@ const TemplateEditor = ({ onClose }) => {
                       key={component.id}
                       draggableId={component.id}
                       index={index}
-                      type="TEMPLATE_COMPONENT"
                     >
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          data-rbd-draggable-id={component.id}
-                          data-rbd-draggable-context-id={provided.draggableProps['data-rbd-draggable-context-id']}
                           className={`component-wrapper ${
                             selectedComponent?.id === component.id ? 'selected' : ''
                           } ${snapshot.isDragging ? 'dragging' : ''}`}
