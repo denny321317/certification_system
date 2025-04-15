@@ -157,25 +157,30 @@ const TemplateEditor = ({ onClose }) => {
   });
   
   /**
-   * 拖放ID狀態 - 解決「Cannot find droppable entry with id [template-components]」錯誤
-   * @type {[string, Function]} [拖放ID, 設置拖放ID的函數]
-   */
-  const [droppableId] = useState(`template-components-${Date.now()}`);
-
-  /**
    * 處理組件拖放結束事件
    * @param {Object} result - 拖放結果對象
-   * @param {Object} result.source - 拖放源位置信息
-   * @param {Object} result.destination - 拖放目標位置信息
    */
   const handleDragEnd = (result) => {
+    // 拖曳取消或無目標位置時，不進行操作
     if (!result.destination) return;
 
-    const items = Array.from(components);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    // 同一位置拖曳時，不進行操作
+    if (
+      result.destination.droppableId === result.source.droppableId &&
+      result.destination.index === result.source.index
+    ) {
+      return;
+    }
 
-    setComponents(items);
+    // 複製組件列表，避免直接修改狀態
+    const newComponents = Array.from(components);
+    // 移除源位置的組件
+    const [movedItem] = newComponents.splice(result.source.index, 1);
+    // 插入到目標位置
+    newComponents.splice(result.destination.index, 0, movedItem);
+    
+    // 更新組件列表狀態
+    setComponents(newComponents);
   };
 
   /**
@@ -414,19 +419,23 @@ const TemplateEditor = ({ onClose }) => {
 
         {/* 中間：編輯區域 */}
         <div className="editor-content">
-          <DragDropContext onDragEnd={handleDragEnd} onBeforeDragStart={() => {}} onDragError={handleDragError}>
-            <Droppable droppableId={droppableId} type="TEMPLATE_COMPONENT">
-              {(provided) => (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable 
+              droppableId="template-components-list"
+              isDropDisabled={false}
+            >
+              {(provided, snapshot) => (
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="template-components"
+                  className={`template-components ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
                 >
                   {components.length === 0 && (
                     <div className="empty-editor-message">
                       <p>請從左側選擇組件來開始建立模板</p>
                     </div>
                   )}
+                  
                   {components.map((component, index) => (
                     <Draggable
                       key={component.id}
@@ -437,12 +446,13 @@ const TemplateEditor = ({ onClose }) => {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
+                          {...provided.dragHandleProps}
                           className={`component-wrapper ${
                             selectedComponent?.id === component.id ? 'selected' : ''
                           } ${snapshot.isDragging ? 'dragging' : ''}`}
                           onClick={() => handleComponentSelect(component)}
                         >
-                          <div className="component-header" {...provided.dragHandleProps}>
+                          <div className="component-header">
                             <FontAwesomeIcon icon={faGripVertical} className="drag-handle" />
                             <span>{component.label}</span>
                             <div className="component-actions">
