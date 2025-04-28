@@ -14,7 +14,7 @@ public class EmailService {
 
     public void sendPasswordResetEmail(String toEmail, String resetLink) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("Ryan Chen<gtchen0823@gmail.com>");
+        message.setFrom("驗證系統測試<authtest010@gmail.com>");
         message.setTo(toEmail);
         message.setSubject("密碼重設請求");
         message.setText("要重設您的密碼，請點擊以下連結：" + resetLink);
