@@ -44,8 +44,10 @@ public class AuthService {
         return Optional.empty();
     }
 
-    public boolean resetPassword(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.isPresent();
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
+
+
+    
 }

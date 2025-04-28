@@ -90,18 +90,18 @@ export const AuthProvider = ({ children }) => {
   /**
    * 重設密碼
    */
-  const resetPassword = async (email) => {
+  const forgotPassword = async (email) => {
     try {
-      const response = await fetch('/api/reset-password', {
+      const response = await fetch(`http://localhost:8000/api/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email })
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok && data.success) {
         return { success: true, message: data.message };
       } else {
@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message || '伺服器錯誤' };
     }
   };
+  
 
   const value = {
     currentUser,
@@ -118,7 +119,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
-    resetPassword,
+    forgotPassword,
   };
 
   return (
