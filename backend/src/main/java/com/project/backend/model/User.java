@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 
 
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -17,18 +18,11 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-
-    public enum Role {
-        ADMIN,
-        DEPARTMENT_MANAGER,
-        AUDITOR,
-        ORDINARY_USER,
-        GUEST
-    }
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    
 
     @Column(nullable = false)
     private String email;
@@ -42,17 +36,31 @@ public class User {
     @Column(nullable = false)
     private String password = "password";
 
+    @Column(nullable = false)
+    private String department = "default department";
 
-    public User(String name, Role role, String email){
+
+    public User(String name, Role role, String email, String department){
         this.name = name;
         this.role = role;
         this.email = email;
+        this.lastTimeLogin = LocalDateTime.now();
+        this.department = department;
+        this.password = "password"; // default Password
     }
 
 
     /*
      * Getters and Setters below
      */
+
+    public String getDepartment(){
+        return department;
+    }
+
+    public void setDepartment(String department){
+        this.department = department;
+    }
 
     public String getPassword(){
         return password;
