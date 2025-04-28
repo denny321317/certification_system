@@ -59,7 +59,7 @@ public class AuthController {
         if (user.isPresent()) {
             // 生成一個密碼重設的 token（你可以實現更安全的 token 生成邏輯）
             String resetToken = UUID.randomUUID().toString(); // 這是一個範例，應使用更安全的 token 生成方法
-            
+
             // 創建密碼重設連結（該連結應該指向前端頁面，處理密碼重設）
             String resetLink = "http://localhost:3000/reset-password?token=" + resetToken;
             
@@ -67,7 +67,7 @@ public class AuthController {
             emailService.sendPasswordResetEmail(request.getEmail(), resetLink);
             
             // 可選：將重設 token 儲存在資料庫中與用戶關聯
-            //authService.storePasswordResetToken(user.get(), resetToken);
+            authService.storePasswordResetToken(user.get(), resetToken);
             
             response.put("success", true);
             response.put("message", "密碼重設連結已寄送至您的電子郵件");
@@ -78,21 +78,39 @@ public class AuthController {
         
         return response;
     }
-    /* 
-    @PostMapping("/test/send-email")
-    public ResponseEntity<Map<String, Object>> sendTestEmail(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        emailService.sendPasswordResetEmail(email, "https://example.com/reset-password?token=testtoken");
-
+    @PostMapping("/update-password")
+    public Map<String, Object> updatePassword(@RequestBody UpdatePasswordRequest request) {
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "測試郵件已寄出");
-
-        return ResponseEntity.ok(response);
+        
+        // 檢查 token 是否有效並獲取用戶
+        Optional<User> user = authService.findByPasswordResetToken(request.getToken());
+        
+        if (user.isPresent()) {
+            // 在此處您可以選擇根據需求進行其他的 token 驗證（例如 token 的有效期等）
+            
+            // 更新用戶的密碼
+            boolean isUpdated = authService.updatePassword(user.get(), request.getNewPassword());
+            
+            if (isUpdated) {
+                response.put("success", true);
+                response.put("message", "密碼已成功更新");
+            } else {
+                response.put("success", false);
+                response.put("error", "密碼更新失敗，請稍後再試");
+            }
+        } else {
+            response.put("success", false);
+            response.put("error", "無效的重設 token");
+        }
+        
+        return response;
     }
-    */
-
     
+    @Data
+    static class UpdatePasswordRequest {
+        private String token;       // 重設 token
+        private String newPassword; // 新的密碼
+    }
 
 
     @Data

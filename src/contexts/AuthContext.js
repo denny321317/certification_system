@@ -111,6 +111,32 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message || '伺服器錯誤' };
     }
   };
+
+  /**
+   * 更新密碼
+   */
+  const resetPassword = async (token, newPassword) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/update-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, newPassword }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, error: data.error || '更新密碼失敗' };
+      }
+    } catch (error) {
+      return { success: false, error: error.message || '伺服器錯誤' };
+    }
+  };
+
   
 
   const value = {
@@ -120,6 +146,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     register,
     forgotPassword,
+    resetPassword,
+
   };
 
   return (

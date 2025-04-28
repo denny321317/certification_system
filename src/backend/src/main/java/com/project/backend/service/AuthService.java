@@ -48,6 +48,25 @@ public class AuthService {
         return userRepository.findByEmail(email);
     }
 
+    public void storePasswordResetToken(User user, String resetToken) {
+        // 將 token 儲存在 User 實體中
+        user.setPasswordResetToken(resetToken);
+        
+        // 儲存更新後的 User 資料到資料庫
+        userRepository.save(user);
+    }
 
+    public Optional<User> findByPasswordResetToken(String token) {
+        // 根據 token 查找用戶，這裡的實現需要您根據實際的資料庫設計來實現
+        return userRepository.findByPasswordResetToken(token);
+    }
+    
+    public boolean updatePassword(User user, String newPassword) {
+        // 更新用戶的密碼，並保存
+        user.setPassword(newPassword); // 可以在這裡進行密碼加密
+        userRepository.save(user);
+        return true;
+    }
+    
     
 }

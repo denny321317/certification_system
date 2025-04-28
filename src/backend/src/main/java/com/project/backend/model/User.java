@@ -26,4 +26,7 @@ public class User {
 
     private String position;
 
+    @Column(name = "password_reset_token")
+    private String passwordResetToken; // 密碼重設 token
+
 }
