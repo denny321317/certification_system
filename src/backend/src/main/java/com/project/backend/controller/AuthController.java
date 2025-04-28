@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import com.project.backend.model.User;
 import com.project.backend.service.AuthService;
+import com.project.backend.service.EmailService;
+
 import lombok.Data;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+    private EmailService emailService;
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest request) {
@@ -42,6 +45,14 @@ public class AuthController {
         response.put("success", true);
         response.put("token", "mock_token");
         response.put("user", newUser);
+
+         // 🔥 寄送驗證信
+        String verificationLink = "http://localhost:3000/verify?email=" + newUser.getEmail();
+        emailService.sendSimpleMail(
+            newUser.getEmail(),
+            "帳號驗證",
+            "感謝您註冊本系統，請點擊以下連結完成帳號驗證：\n" + verificationLink
+        );
         return response;
     }
 
