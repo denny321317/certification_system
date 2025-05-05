@@ -1,0 +1,473 @@
+/* 審核與回饋組件樣式 */
+
+.review-feedback-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+/* 標籤切換樣式 */
+.review-tabs {
+  display: flex;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 24px;
+}
+
+.review-tab {
+  padding: 12px 16px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.review-tab:hover {
+  color: #495057;
+  background-color: #f8f9fa;
+}
+
+.review-tab.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.review-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary-color);
+}
+
+/* 進度條樣式 */
+.review-progress {
+  margin-bottom: 24px;
+}
+
+.status-badge {
+  font-size: 0.85rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.status-badge.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.in-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.pending {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* 審核歷史記錄樣式 */
+.review-history {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.empty-review-message {
+  padding: 32px;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* 時間軸樣式 */
+.timeline {
+  position: relative;
+  padding-left: 28px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 9px;
+  width: 2px;
+  background-color: #e9ecef;
+  z-index: 1;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.timeline-point {
+  position: absolute;
+  top: 4px;
+  left: -28px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 2px solid var(--primary-color);
+  z-index: 2;
+}
+
+.timeline-content {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+/* 審核記錄樣式 */
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewer-name {
+  font-weight: 600;
+  color: #343a40;
+}
+
+.reviewer-dept {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.review-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.review-date {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.review-status {
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.review-status.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.review-status.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.review-status.in-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.review-status.pending {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.review-comment {
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 12px;
+  border-left: 3px solid #6c757d;
+  margin-bottom: 12px;
+}
+
+/* 問題標籤樣式 */
+.review-issues {
+  margin-top: 12px;
+}
+
+/* 截止日期輸入區域樣式 */
+.deadline-inputs {
+  margin-bottom: 15px;
+}
+
+.deadline-help-text {
+  margin-top: 4px;
+  padding-left: 8px;
+}
+
+.deadline-help-text small {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.issues-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.issues-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.issue-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.issue-high {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.issue-medium {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.issue-low {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.issue-deadline {
+  font-size: 0.8rem;
+  margin-left: 8px;
+  color: #10b981;
+}
+
+.adjustment-details {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adjustment-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewer-info {
+  margin-bottom: 3px;
+}
+
+/* 截止日期信息樣式 */
+.deadline-info {
+  margin-top: 3px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  color: #495057;
+  margin-left: 8px;
+}
+
+/* 調整員工視圖中的改善期限樣式 */
+.employee-view .deadline-info {
+  margin-left: 0;
+  margin-right: 10px;
+  font-size: 13.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
+}
+
+.deadline-normal {
+  color: #0891b2;
+}
+
+.deadline-approaching {
+  color: #0369a1;
+  font-weight: 500;
+  background-color: rgba(3, 105, 161, 0.1) !important;
+}
+
+.deadline-urgent {
+  color: #f59e0b;
+  font-weight: 600;
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+.deadline-overdue {
+  color: #dc2626;
+  font-weight: 700;
+  background-color: rgba(220, 38, 38, 0.1) !important;
+}
+
+.new-issue-item .deadline-info {
+  font-size: 12px;
+  color: #0284c7;
+}
+
+.completion-status {
+  color: #10b981;
+  font-weight: 500;
+}
+
+/* 添加回饋表單樣式 */
+.new-feedback {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.issue-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-decisions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  .review-header {
+    flex-direction: column;
+  }
+  
+  .review-meta {
+    align-items: flex-start;
+    margin-top: 8px;
+  }
+  
+  .review-decisions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* 新增員工待調整事項相關樣式 */
+
+.employee-view {
+  margin-top: 20px;
+}
+
+.adjustment-checklist {
+  margin-top: 15px;
+}
+
+.adjustment-item {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.adjustment-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.adjustment-header {
+  display: flex;
+  align-items: flex-start;
+}
+
+.form-check {
+  width: 100%;
+}
+
+.form-check-input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+}
+
+.form-check-label {
+  margin-left: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.issue-title.completed {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.issue-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  font-weight: normal;
+}
+
+.issue-badge.issue-high {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.issue-badge.issue-medium {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.issue-badge.issue-low {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.empty-issues-message {
+  padding: 30px;
+  text-align: center;
+  color: #64748b;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  font-style: italic;
+} 

@@ -1,0 +1,273 @@
+:root {
+  --primary-color: #2563eb;
+  --secondary-color: #10b981;
+  --bg-color: #f8fafc;
+  --sidebar-width: 250px;
+  --header-height: 60px;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* 側邊欄樣式 */
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: white;
+  position: fixed;
+  left: 0;
+  top: 0;
+  border-right: 1px solid rgba(0,0,0,0.05);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: bold;
+  color: var(--primary-color);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.logo-icon {
+  margin-right: 12px;
+}
+
+.menu {
+  padding: 20px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.menu-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  color: #64748b;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.menu-item.active {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  border-left: 3px solid var(--primary-color);
+}
+
+.menu-item:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+  color: var(--primary-color);
+}
+
+.menu-icon {
+  margin-right: 12px;
+  width: 20px;
+  text-align: center;
+}
+
+/* 主內容區域樣式 */
+.main-container {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  height: var(--header-height);
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  color: #64748b;
+}
+
+.search-icon {
+  margin-right: 10px;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #64748b;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.notification-bell {
+  position: relative;
+  margin-right: 20px;
+  font-size: 1.1rem;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--danger);
+  color: white;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-role {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* 內容區域樣式 */
+.content-container {
+  padding: 30px;
+  flex: 1;
+}
+
+/* 響應式設計 */
+@media (max-width: 992px) {
+  .sidebar {
+    width: 70px;
+    overflow: visible;
+  }
+  
+  .logo {
+    justify-content: center;
+    padding: 0 10px;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+  
+  .menu-item {
+    padding: 15px 0;
+    justify-content: center;
+  }
+  
+  .menu-item span:not(.menu-icon) {
+    display: none;
+  }
+  
+  .menu-icon {
+    margin-right: 0;
+  }
+  
+  .main-container {
+    margin-left: 70px;
+  }
+  
+  .sidebar:hover {
+    width: var(--sidebar-width);
+  }
+  
+  .sidebar:hover .logo-text {
+    display: block;
+  }
+  
+  .sidebar:hover .menu-item {
+    padding: 12px 20px;
+    justify-content: flex-start;
+  }
+  
+  .sidebar:hover .menu-item span:not(.menu-icon) {
+    display: inline;
+  }
+  
+  .sidebar:hover .menu-icon {
+    margin-right: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 15px;
+  }
+  
+  .search-bar input {
+    display: none;
+  }
+  
+  .user-info {
+    display: none;
+  }
+  
+  .content-container {
+    padding: 20px 15px;
+  }
+}
+
+/* 為系統設定頁面中的登出選項添加樣式 */
+.settings-tab-logout {
+  color: #ef4444 !important;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+.settings-tab-logout:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+} 
