@@ -2,6 +2,7 @@
 
 # dependencies
 /frontend/node_modules
+/node_modules
 /.pnp
 .pnp.js
 
@@ -9,23 +10,19 @@
 /coverage
 
 # production
-build
+/build
 
 # misc
 .DS_Store
-.env.local
+.env.locals
 .env.development.local
 .env.test.local
 .env.production.local
-<<<<<<< HEAD
 .env
-=======
->>>>>>> e0ad6132a7c6ad02e72be42522270a7533388ba5
 
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-<<<<<<< HEAD
 
 # IDE
 .idea/
@@ -41,6 +38,4 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db 
-=======
->>>>>>> e0ad6132a7c6ad02e72be42522270a7533388ba5
 /node_modules

@@ -14,10 +14,7 @@
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.8",
     "formik": "^2.4.6",
-<<<<<<< HEAD
     "http-proxy-middleware": "^3.0.5",
-=======
->>>>>>> e0ad6132a7c6ad02e72be42522270a7533388ba5
     "react": "^19.0.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-bootstrap": "^2.10.9",
@@ -52,11 +49,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-<<<<<<< HEAD
   }
-=======
-  },
-  "proxy": "http://localhost:8080"
-  
->>>>>>> e0ad6132a7c6ad02e72be42522270a7533388ba5
 }
