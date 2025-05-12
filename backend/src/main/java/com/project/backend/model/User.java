@@ -39,6 +39,9 @@ public class User {
     @Column(nullable = false)
     private String department = "default department";
 
+    // default constructor for JPA
+    public User(){}
+
 
     public User(String name, Role role, String email, String department){
         this.name = name;
