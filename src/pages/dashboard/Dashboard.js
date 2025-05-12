@@ -294,22 +294,22 @@ const Dashboard = () => {
                 <div className="stats-card-header">
                   <div className="stats-card-title">
                     <div className="stats-card-icon">
-              <FontAwesomeIcon icon={card.icon} />
-            </div>
+                      <FontAwesomeIcon icon={card.icon} />
+                    </div>
                     {card.title}
                   </div>
                 </div>
                 <div className="stats-card-value">
                   {card.value}
-              {card.urgentCount && (
+                  {card.urgentCount && (
                     <span className="stats-card-urgent">
                       (含 {card.urgentCount} 個緊急)
                     </span>
                   )}
                 </div>
-              {card.description && (
+                {card.description && (
                   <div className="stats-card-description">{card.description}</div>
-              )}
+                )}
               </div>
               <FontAwesomeIcon 
                 icon={card.icon} 

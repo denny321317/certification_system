@@ -54,7 +54,7 @@ const SupplierManagement = () => {
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
    */
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   /**
    * 當前頁碼狀態
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
