@@ -31,7 +31,7 @@ public class UserManagementController {
     @Autowired
     private UserManagementService userManagementService;
 
-    // TODO: function for creating new Users
+    
 
     @GetMapping("/allUsers")
     public ResponseEntity<List<User>> getAllUsers(){
@@ -57,6 +57,25 @@ public class UserManagementController {
         return ResponseEntity.ok(stats);
     }
 
+
+    /**
+     * This API uses PUT method.
+     * The request body should be a JSON array of booleans.
+     * Example: [true, false, true, true, false, true, true]
+     * 
+     * @param roleName
+     * @param authorizations a boolean Array of Authorizations.
+     *  Each index corresponds to different authorization.
+     *      0: system settings
+     *      1: user management
+     *      2: document management
+     *      3: template center
+     *      4: certification project
+     *      5: report management
+     *      6: supplier management
+     * @return
+     * 
+     */
     @PutMapping("/role/{roleName}/authorizations")
     public ResponseEntity<?> updateRoleAuthorizations(@PathVariable String roleName, @RequestBody boolean[] authorizations) {
         try{
