@@ -1,15 +1,13 @@
-import React, { useState, useContext} from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldAlt, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
-import { AuthContext } from '../../contexts/AuthContext';  // 引入 AuthContext
+import { forgotPassword } from '../../services/authService';
 import './Auth.css';
 
 const ForgotPassword = () => {
-  const { forgotPassword } = useContext(AuthContext);
-
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
