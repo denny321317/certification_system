@@ -2,6 +2,18 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Current Features in this branch
+- GET
+  - 取得所有用戶
+  - 根據 Role 取得用戶
+  - 取得用戶統計數據
+- POST
+  - 新增用戶
+  - 新增 Role
+- PUT
+  - 更改各個 Role 的權限
+  - 更改用戶的 Role
+
 ## Available Scripts
 
 In the project directory, you can run:
