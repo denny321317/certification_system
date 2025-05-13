@@ -18,6 +18,7 @@ import com.project.backend.model.User;
 import com.project.backend.dto.UserStatsDTO;
 import com.project.backend.model.Role;
 import com.project.backend.dto.UserCreationDTO;
+import com.project.backend.dto.UserRoleUpdateDTO;
 import com.project.backend.dto.RoleCreationDTO;
 
 import java.util.List;
@@ -125,7 +126,7 @@ public class UserManagementController {
      * example request body:
      * {
   "roleName": "Test_add_role",
-  "authorizations": [true, false, true, true, false, false, false]
+  "authorizations": [true, false, true, true, false, false, false, true]
 } 
      *Each index corresponds to different authorization.
      *      0: system settings
@@ -154,5 +155,26 @@ public class UserManagementController {
     
 
     // TODO: alter the role of a user
+
+    /**
+     * Alters the role of a user.
+     * Example request body:
+     * {
+     *   "userId": 123,
+     *   "newRoleName": "Admin"
+     * }
+     */
+    @PutMapping("/user/role")
+    public ResponseEntity<?> updateUserRole(@RequestBody UserRoleUpdateDTO dto){
+        try{
+            User updatedUser = userManagementService.updateUserRole(dto.getUserId(), dto.getNewRoleName());
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured while updating the user role");
+        }
+    }
+    
     
 }

@@ -108,6 +108,23 @@ public class UserManagementService {
         return roleRepository.save(role);
     }
 
+    /**
+     * updates the Role of a user
+     * @param userId
+     * @param newRoleName
+     * @return
+     */
+    public User updateUserRole(Long userId, String newRoleName){
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found" + userId));
+        Role newRole = roleRepository.findByName(newRoleName);
+        if (newRole == null){
+            throw new IllegalArgumentException("Role not found" + newRoleName);
+        }
+        user.setRole(newRole);
+        return userRepository.save(user);
+    }
+
     public long getTotalUserCount(){
         return userRepository.count();
     }
