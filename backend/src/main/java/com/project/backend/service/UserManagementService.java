@@ -9,6 +9,7 @@ import com.project.backend.model.User;
 import com.project.backend.model.Role;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.RoleRepository;
+import com.project.backend.dto.UserCreationDTO;
 
 @Service
 public class UserManagementService {
@@ -21,6 +22,19 @@ public class UserManagementService {
         this.roleRepository = roleRepository;
     }
 
+    public User createUser(UserCreationDTO userDTO){
+        Role role = roleRepository.findByName(userDTO.getRoleName());
+        if (role == null){
+            throw new IllegalArgumentException("Role not found: " + userDTO.getRoleName());
+        }
+
+        // TODO: check email, needs some more work to work properly
+
+        User user = new User(userDTO.getName(), role, userDTO.getEmail(), userDTO.getDepartment());
+        return userRepository.save(user);   
+    }
+
+    // old version
     public User createUser(String name, String email, String roleName, String deparment){
         Role role = roleRepository.findByName(roleName);
         if (role == null){
@@ -100,5 +114,8 @@ public class UserManagementService {
         // return userRepository.countByIsOnlineTrue();
         return 0; // Placeholder - implement actual online user tracking
     }
+
+
+    
 
 }

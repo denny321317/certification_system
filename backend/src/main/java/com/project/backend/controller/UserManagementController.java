@@ -17,9 +17,11 @@ import com.project.backend.service.UserManagementService;
 import com.project.backend.model.User;
 import com.project.backend.dto.UserStatsDTO;
 import com.project.backend.model.Role;
+import com.project.backend.dto.UserCreationDTO;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/user-management")
@@ -29,7 +31,7 @@ public class UserManagementController {
     @Autowired
     private UserManagementService userManagementService;
 
-    // TODO: finish the controller mappings
+    // TODO: function for creating new Users
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers(){
@@ -66,6 +68,19 @@ public class UserManagementController {
         }
         catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured");
+        }
+    }
+
+    @PostMapping("/createUser")
+    public ResponseEntity<?> createUser(@RequestBody UserCreationDTO userDTO){
+        try {
+            User newUser = userManagementService.createUser(userDTO);
+            return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            // Log the exception e for debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred while creating the user.");
         }
     }
 
