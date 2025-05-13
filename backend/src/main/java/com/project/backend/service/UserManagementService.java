@@ -34,7 +34,9 @@ public class UserManagementService {
         return userRepository.save(user);   
     }
 
-    // old version
+    /**
+     * the old version of createUser not using DTO
+     */
     public User createUser(String name, String email, String roleName, String deparment){
         Role role = roleRepository.findByName(roleName);
         if (role == null){

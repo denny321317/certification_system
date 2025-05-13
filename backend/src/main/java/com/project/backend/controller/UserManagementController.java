@@ -33,7 +33,7 @@ public class UserManagementController {
 
     // TODO: function for creating new Users
 
-    @GetMapping
+    @GetMapping("/allUsers")
     public ResponseEntity<List<User>> getAllUsers(){
         List<User> users = userManagementService.getAllUsers();
         return ResponseEntity.ok(users);
@@ -71,6 +71,12 @@ public class UserManagementController {
         }
     }
 
+
+
+    /**
+     * This API takes in json reqeust body
+     * @param userDTO the user data to create, parsed from the JSON request body
+     */
     @PostMapping("/createUser")
     public ResponseEntity<?> createUser(@RequestBody UserCreationDTO userDTO){
         try {
