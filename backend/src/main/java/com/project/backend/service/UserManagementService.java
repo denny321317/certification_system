@@ -10,6 +10,7 @@ import com.project.backend.model.Role;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.RoleRepository;
 import com.project.backend.dto.UserCreationDTO;
+import com.project.backend.dto.RoleCreationDTO;
 
 @Service
 public class UserManagementService {
@@ -62,6 +63,24 @@ public class UserManagementService {
     public void setRoleAuthorizations(Role role, boolean[] authorizations){
         role.setAuthorizations(authorizations);
         roleRepository.save(role);
+    }
+
+    /**
+     * create a new role that was not in the database
+     * @param roleDTO the DTO for RoleCreation, contains the name of the new role and a boolean array of authorizations
+     * @return the Role object of the new role
+     * 
+     */
+    public Role createRole(RoleCreationDTO roleDTO){
+        // check if the role already exist
+        if (roleRepository.findByName(roleDTO.getRoleName()) != null) {
+            throw new IllegalArgumentException("Role already exists: " + roleDTO.getRoleName());
+        }
+        
+        Role newRole = new Role();
+        newRole.setName(roleDTO.getRoleName());
+        newRole.setAuthorizations(roleDTO.getAuthorizations());
+        return roleRepository.save(newRole);
     }
 
     /**

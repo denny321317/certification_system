@@ -18,6 +18,7 @@ import com.project.backend.model.User;
 import com.project.backend.dto.UserStatsDTO;
 import com.project.backend.model.Role;
 import com.project.backend.dto.UserCreationDTO;
+import com.project.backend.dto.RoleCreationDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -60,10 +61,11 @@ public class UserManagementController {
 
     /**
      * This API uses PUT method.
+     * The role whose authorizations to be altered is set as a PathVariable and should be in the request URL
      * The request body should be a JSON array of booleans.
      * Example: [true, false, true, true, false, true, true]
      * 
-     * @param roleName
+     * @param roleName the role whose authorizations to be altered, PathVariable
      * @param authorizations a boolean Array of Authorizations.
      *  Each index corresponds to different authorization.
      *      0: system settings
@@ -73,6 +75,7 @@ public class UserManagementController {
      *      4: certification project
      *      5: report management
      *      6: supplier management
+     *      7: dashboard
      * @return
      * 
      */
@@ -116,7 +119,40 @@ public class UserManagementController {
         }
     }
 
-
+    
+    /**
+     * This API takes in json reqeust body
+     * example request body:
+     * {
+  "roleName": "Test_add_role",
+  "authorizations": [true, false, true, true, false, false, false]
+} 
+     *Each index corresponds to different authorization.
+     *      0: system settings
+     *      1: user management
+     *      2: document management
+     *      3: template center
+     *      4: certification project
+     *      5: report management
+     *      6: supplier management
+     *      7: dashboard
+     * @param roleDTO
+     * @return
+     * 
+     */
+    @PostMapping("/createRole")
+    public ResponseEntity<?> createRole(@RequestBody RoleCreationDTO roleDTO){
+        try {
+            Role newRole = userManagementService.createRole(roleDTO);
+            return new ResponseEntity<>(newRole, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured while creating the role");
+        }
+    }
     
 
+    // TODO: alter the role of a user
+    
 }

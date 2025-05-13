@@ -41,6 +41,10 @@ public class Role {
     @Column(nullable = false)
     private boolean allowSupplierManagement = false;
 
+    @Column(nullable = false)
+    private boolean allowDashboard = false;
+
+    
 
     /*Getters and Setters below */
     // Getter for all authorizations
@@ -52,14 +56,15 @@ public class Role {
             allowTemplateCenter,
             allowCertificationProjects,
             allowReportManagment,
-            allowSupplierManagement
+            allowSupplierManagement,
+            allowDashboard
         };
     }
 
     // Setter for all authorizations
     public void setAuthorizations(boolean[] authorizations) {
-        if (authorizations.length != 7) {
-            throw new IllegalArgumentException("Authorizations array must have exactly 7 elements.");
+        if (authorizations.length != 8) {
+            throw new IllegalArgumentException("Authorizations array must have exactly 8 elements.");
         }
         this.allowSystemSettings = authorizations[0];
         this.allowUserManagment = authorizations[1];
@@ -68,6 +73,7 @@ public class Role {
         this.allowCertificationProjects = authorizations[4];
         this.allowReportManagment = authorizations[5];
         this.allowSupplierManagement = authorizations[6];
+        this.allowDashboard = authorizations[7];
     }
 
     // Individual getters and setters for name and id
