@@ -75,6 +75,13 @@ public class UserManagementController {
 
     /**
      * This API takes in json reqeust body
+     * example request body:
+     * {
+  "name": "Test_add_user",
+  "email": "testadduser@example.com",
+  "roleName": "Admin",
+  "department": "IT"
+}
      * @param userDTO the user data to create, parsed from the JSON request body
      */
     @PostMapping("/createUser")
