@@ -76,19 +76,19 @@ const Login = () => {
                   <Form.Group className="mb-3 position-relative">
                     <Form.Label>密碼</Form.Label>
                     <div className="position-relative">
-                    <Form.Control
-                      type={showPassword ? "text" : "password"}
-                      placeholder="請輸入密碼"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                      <Form.Control
+                        type={showPassword ? "text" : "password"}
+                        placeholder="請輸入密碼"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
                       <button 
                         type="button"
-                      className="password-toggle" 
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
+                        className="password-toggle" 
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                       </button>
                     </div>
                   </Form.Group>

@@ -15,7 +15,9 @@ const Register = () => {
     position: '',
     password: '',
     confirmPassword: '',
-    termsAccepted: false
+    termsAccepted: false,
+    role: '', 
+    avatar: '' 
   });
   
   const [showPassword, setShowPassword] = useState(false);
