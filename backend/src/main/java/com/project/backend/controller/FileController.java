@@ -123,21 +123,27 @@ public ResponseEntity<?> uploadFile(
         }
     }
 
-    // 檔案清單
-    @GetMapping
-    public List<Map<String, Object>> getAllFiles() {
-        return fileRepository.findAll().stream().map(file -> {
+    @GetMapping("/project/{projectId}")    
+    public ResponseEntity<?> listDocumentsByProject(@PathVariable Long projectId) {
+        List<FileEntity> files = fileRepository.findByProjectId(projectId);
+
+        List<Map<String, Object>> responseList = files.stream().map(file -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", file.getId());
             map.put("name", file.getOriginalFilename());
+            map.put("category", file.getCategory());
             map.put("type", file.getFileType());
-            map.put("updatedAt", file.getUploadTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            map.put("updatedBy", file.getUploadedBy());
-            map.put("size", formatFileSize(file.getSizeInBytes()));
+            map.put("uploadedBy", file.getUploadedBy());
+            map.put("uploadDate", file.getUploadTime().toLocalDate().toString());
+            map.put("description", file.getDescription());
             map.put("status", file.getStatus());
             return map;
-        }).collect(Collectors.toList());
+        }).toList();
+
+        return ResponseEntity.ok(responseList);
     }
+
+
 
     // 工具：檔案大小格式化
     private String formatFileSize(long sizeInBytes) {
