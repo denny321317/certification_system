@@ -29,5 +29,7 @@ public class FileEntity {
     private String uploadedBy;         // 與 User 關聯
     private Long sizeInBytes;
     private String status;
+    private String category;
+    private String description;
 
 }

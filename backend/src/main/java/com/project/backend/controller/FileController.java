@@ -34,7 +34,11 @@ public class FileController {
     }
 
 @PostMapping("/upload")
-public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
+public ResponseEntity<?> uploadFile(
+    @RequestParam("file") MultipartFile file,
+    @RequestParam("category") String category,
+    @RequestParam("description") String description
+) {
     try {
         String originalFilename = file.getOriginalFilename();
         String extension = getExtension(originalFilename);
@@ -51,18 +55,19 @@ public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
         fileEntity.setUploadedBy("admin"); // 實際應從登入者取得
         fileEntity.setSizeInBytes(file.getSize());
         fileEntity.setStatus("pending");
+        fileEntity.setCategory(category);
+        fileEntity.setDescription(description);
 
-        // 保存至資料庫
         fileRepository.save(fileEntity);
 
-        // 構建回應資料
         Map<String, Object> response = new HashMap<>();
         response.put("id", fileEntity.getId());
         response.put("name", fileEntity.getOriginalFilename());
+        response.put("category", fileEntity.getCategory());
         response.put("type", fileEntity.getFileType());
-        response.put("updatedAt", fileEntity.getUploadTime().toString());
-        response.put("updatedBy", fileEntity.getUploadedBy());
-        response.put("size", formatFileSize(fileEntity.getSizeInBytes()));
+        response.put("uploadedBy", fileEntity.getUploadedBy());
+        response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
+        response.put("description", fileEntity.getDescription());
         response.put("status", fileEntity.getStatus());
 
         return ResponseEntity.ok(response);
@@ -72,6 +77,7 @@ public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file) {
                 .body(Map.of("success", false, "error", "檔案上傳失敗"));
     }
 }
+
 
     // 下載檔案
     @GetMapping("/download/{filename}")
