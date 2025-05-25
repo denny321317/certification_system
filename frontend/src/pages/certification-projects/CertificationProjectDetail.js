@@ -1552,21 +1552,40 @@ const CertificationProjectDetail = () => {
    * 處理刪除文件
    * @param {Object} doc - 要刪除的文件對象
    */
-  const handleDeleteDocument = (doc) => {
-    // 在實際應用中，這裡應該調用API刪除文件
-    if (window.confirm(`確定要刪除文件：${doc.name}？此操作無法恢復。`)) {
-      console.log('刪除文件:', doc.name);
-      
-      // 從文件列表中移除
-      const updatedDocuments = projectDetail.documents.filter(d => d.id !== doc.id);
-      setProjectDetail({
-        ...projectDetail,
-        documents: updatedDocuments
+  const handleDeleteDocument = async (doc) => {
+    if (!doc || !doc.id) {
+      alert('找不到要刪除的文件ID');
+      return;
+    }
+
+    if (!window.confirm(`確定要刪除文件：${doc.name}？此操作無法恢復。`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/documents/delete/${doc.id}`, { 
+        method: 'DELETE' 
       });
-      
-      alert(`文件 ${doc.name} 已刪除`);
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // 刪除成功才更新前端狀態
+        const updatedDocuments = projectDetail.documents.filter(d => d.id !== doc.id);
+        setProjectDetail({
+          ...projectDetail,
+          documents: updatedDocuments
+        });
+
+        alert(`文件 ${doc.name} 已刪除`);
+      } else {
+        alert(`刪除失敗：${result.error || '未知錯誤'}`);
+      }
+    } catch (error) {
+      console.error('刪除失敗', error);
+      alert('刪除過程發生錯誤，請稍後再試');
     }
   };
+
 
   return (
     <div className="certification-project-detail">

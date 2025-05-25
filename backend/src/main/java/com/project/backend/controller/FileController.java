@@ -39,60 +39,59 @@ public class FileController {
         Files.createDirectories(fileStorageLocation);
     }
 
-@PostMapping("/certification-projects/{projectId}/upload")
-public ResponseEntity<?> uploadFile(
-    @PathVariable("projectId") Long projectId,
-    @RequestParam("file") MultipartFile file,
-    @RequestParam("category") String category,
-    @RequestParam("description") String description
-) {
-    try {
-        Optional<Project> optionalProject = projectRepository.findById(projectId);
-        if (optionalProject.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("success", false, "error", "找不到專案"));
+    @PostMapping("/certification-projects/{projectId}/upload")
+    public ResponseEntity<?> uploadFile(
+        @PathVariable("projectId") Long projectId,
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("category") String category,
+        @RequestParam("description") String description
+    ) {
+        try {
+            Optional<Project> optionalProject = projectRepository.findById(projectId);
+            if (optionalProject.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "error", "找不到專案"));
+            }
+
+            Project project = optionalProject.get();
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = getExtension(originalFilename);
+            String filename = UUID.randomUUID().toString() + "." + extension;
+            Path targetPath = fileStorageLocation.resolve(filename);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            FileEntity fileEntity = new FileEntity();
+            fileEntity.setFilename(filename);
+            fileEntity.setOriginalFilename(originalFilename);
+            fileEntity.setFileType(extension);
+            fileEntity.setUploadTime(LocalDateTime.now());
+            fileEntity.setUploadedBy("admin");
+            fileEntity.setSizeInBytes(file.getSize());
+            fileEntity.setStatus("pending");
+            fileEntity.setCategory(category);
+            fileEntity.setDescription(description);
+            fileEntity.setProject(project); // 關聯專案
+
+            fileRepository.save(fileEntity);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", fileEntity.getId());
+            response.put("name", fileEntity.getOriginalFilename());
+            response.put("category", fileEntity.getCategory());
+            response.put("type", fileEntity.getFileType());
+            response.put("uploadedBy", fileEntity.getUploadedBy());
+            response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
+            response.put("description", fileEntity.getDescription());
+            response.put("status", fileEntity.getStatus());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "error", "檔案上傳失敗"));
         }
-
-        Project project = optionalProject.get();
-
-        String originalFilename = file.getOriginalFilename();
-        String extension = getExtension(originalFilename);
-        String filename = UUID.randomUUID().toString() + "." + extension;
-        Path targetPath = fileStorageLocation.resolve(filename);
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-        FileEntity fileEntity = new FileEntity();
-        fileEntity.setFilename(filename);
-        fileEntity.setOriginalFilename(originalFilename);
-        fileEntity.setFileType(extension);
-        fileEntity.setUploadTime(LocalDateTime.now());
-        fileEntity.setUploadedBy("admin");
-        fileEntity.setSizeInBytes(file.getSize());
-        fileEntity.setStatus("pending");
-        fileEntity.setCategory(category);
-        fileEntity.setDescription(description);
-        fileEntity.setProject(project); // 關聯專案
-
-        fileRepository.save(fileEntity);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", fileEntity.getId());
-        response.put("name", fileEntity.getOriginalFilename());
-        response.put("category", fileEntity.getCategory());
-        response.put("type", fileEntity.getFileType());
-        response.put("uploadedBy", fileEntity.getUploadedBy());
-        response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
-        response.put("description", fileEntity.getDescription());
-        response.put("status", fileEntity.getStatus());
-
-        return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "error", "檔案上傳失敗"));
     }
-}
-
 
 
     // 下載檔案
