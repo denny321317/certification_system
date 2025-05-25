@@ -52,8 +52,8 @@ const CertificationProjectDetail = () => {
    * 項目詳細信息狀態
    * @type {[Object, Function]} [項目詳情, 設置項目詳情的函數]
    */
-  const [projectDetail, setProjectDetail] = useState(null);
-  
+    const [projectDetail, setProjectDetail] = useState(null);
+
   /**
    * 加載狀態
    * @type {[boolean, Function]} [是否加載中, 設置加載狀態的函數]
@@ -216,12 +216,9 @@ const CertificationProjectDetail = () => {
     }
   };
 
-  // 模擬從API獲取項目詳情
+  // 從API獲取項目詳情
   useEffect(() => {
-    // 模擬API調用延遲
-    const timer = setTimeout(() => {
-      // 項目詳情模擬數據
-      const mockProjectDetail = {
+    const mockProjectDetail = {
         id: parseInt(projectId),
         name: 'SMETA 4支柱認證',
         status: 'internal-review',
@@ -276,44 +273,32 @@ const CertificationProjectDetail = () => {
             description: '外部審核機構現場審核'
           }
         ],
-        documents: [
-          { id: 1, name: '項目計劃書.pdf', category: 'plan', type: 'pdf', uploadedBy: '王經理', uploadDate: '2023-07-16', description: '包含專案時程、目標、團隊組成和主要里程碑' },
-          { id: 2, name: 'SMETA自我評估問卷.xlsx', category: 'audit', type: 'excel', uploadedBy: '陳專員', uploadDate: '2023-08-20', description: '依照SMETA審核範圍進行的內部自我評估結果' },
-          { id: 3, name: '勞工權益政策聲明.pdf', category: 'policy', type: 'pdf', uploadedBy: '張協理', uploadDate: '2023-09-05', description: '公司勞工權益保障政策與遵循承諾' },
-          { id: 4, name: '環境管理程序.docx', category: 'procedure', type: 'word', uploadedBy: '林工程師', uploadDate: '2023-09-12', description: '廢棄物管理與處理程序文件' },
-          { id: 5, name: '員工工時記錄範本.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-08-25', description: '員工工時記錄檔案格式' },
-          { id: 6, name: '健康安全風險評估.pdf', category: 'audit', type: 'pdf', uploadedBy: '林工程師', uploadDate: '2023-09-08', description: '現場作業安全風險評估報告' },
-          { id: 7, name: '供應商行為準則.pdf', category: 'policy', type: 'pdf', uploadedBy: '王經理', uploadDate: '2023-07-18', description: '對供應商的社會責任要求與規範' },
-          { id: 8, name: '上次審核發現改善項目追蹤.xlsx', category: 'record', type: 'excel', uploadedBy: '陳專員', uploadDate: '2023-08-14', description: '針對先前審核中發現問題的改善狀況追蹤表' },
-          { id: 9, name: 'ISO 14001認證證書.jpg', category: 'certificate', type: 'image', uploadedBy: '王經理', uploadDate: '2023-07-20', description: '企業取得的環境管理系統認證證書' },
-          { id: 10, name: '商業道德政策.pdf', category: 'policy', type: 'pdf', uploadedBy: '張協理', uploadDate: '2023-09-01', description: '企業商業道德與反貪腐相關政策' },
-          { id: 11, name: '審核預備會議紀錄.docx', category: 'record', type: 'word', uploadedBy: '陳專員', uploadDate: '2023-09-15', description: '審核前會議討論事項與分工內容' },
-          { id: 12, name: '教育訓練記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '林工程師', uploadDate: '2023-08-30', description: '員工教育訓練參與記錄與評估結果' },
-          { id: 13, name: '2023年Q1員工出勤記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-04-10', description: '第一季度員工出勤統計資料' },
-          { id: 14, name: '2023年Q2員工出勤記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-07-10', description: '第二季度員工出勤統計資料' },
-          { id: 15, name: '工廠水電使用記錄2023Q1.xlsx', category: 'record', type: 'excel', uploadedBy: '林工程師', uploadDate: '2023-04-05', description: '第一季度工廠能源使用統計' },
-          { id: 16, name: '工廠水電使用記錄2023Q2.xlsx', category: 'record', type: 'excel', uploadedBy: '林工程師', uploadDate: '2023-07-05', description: '第二季度工廠能源使用統計' },
-          { id: 17, name: '年度安全演習紀錄.docx', category: 'record', type: 'word', uploadedBy: '林工程師', uploadDate: '2023-06-20', description: '年度消防與安全疏散演習報告' },
-          { id: 18, name: '員工滿意度調查結果.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-05-15', description: '年度員工工作環境與福利滿意度調查' },
-          { id: 19, name: '供應商評估記錄2023上半年.xlsx', category: 'record', type: 'excel', uploadedBy: '王經理', uploadDate: '2023-07-25', description: '主要供應商社會責任表現評估' },
-          { id: 20, name: '環境監測報告2023Q1.pdf', category: 'record', type: 'pdf', uploadedBy: '林工程師', uploadDate: '2023-04-20', description: '第一季度廠區環境監測數據報告' },
-          { id: 21, name: '環境監測報告2023Q2.pdf', category: 'record', type: 'pdf', uploadedBy: '林工程師', uploadDate: '2023-07-20', description: '第二季度廠區環境監測數據報告' },
-          { id: 22, name: '職業健康檢查記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-03-30', description: '年度員工健康檢查統計資料' },
-          { id: 23, name: '內部稽核紀錄-勞工標準.docx', category: 'record', type: 'word', uploadedBy: '陳專員', uploadDate: '2023-08-05', description: '勞工標準項目內部稽核發現與建議' },
-          { id: 24, name: '內部稽核紀錄-健康安全.docx', category: 'record', type: 'word', uploadedBy: '陳專員', uploadDate: '2023-08-06', description: '健康安全項目內部稽核發現與建議' },
-          { id: 25, name: '內部稽核紀錄-環境.docx', category: 'record', type: 'word', uploadedBy: '陳專員', uploadDate: '2023-08-07', description: '環境管理項目內部稽核發現與建議' },
-          { id: 26, name: '內部稽核紀錄-商業道德.docx', category: 'record', type: 'word', uploadedBy: '陳專員', uploadDate: '2023-08-08', description: '商業道德項目內部稽核發現與建議' },
-          { id: 27, name: '員工申訴處理記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '張協理', uploadDate: '2023-08-12', description: '員工申訴案件處理與改善追蹤' },
-          { id: 28, name: '工作環境改善計劃執行記錄.xlsx', category: 'record', type: 'excel', uploadedBy: '林工程師', uploadDate: '2023-08-28', description: '工作場所安全與舒適度改善專案執行狀況' }
-        ]
-      };
-      
-      setProjectDetail(mockProjectDetail);
-      setLoading(false);
-    }, 800);
-    
-    return () => clearTimeout(timer);
+        documents: []
+    }
+    const fetchDocuments = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/documents/project/${projectId}`);
+        if (!response.ok) throw new Error('載入文件失敗');
+
+        const data = await response.json();
+        //更新模擬資料，填入真實的 documents
+        mockProjectDetail.documents = data;
+
+        setProjectDetail(mockProjectDetail);
+
+          console.log("projectDetail:", projectDetail);
+      } catch (err) {
+        console.error('抓取文件錯誤:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (projectId) {
+      fetchDocuments();
+    }
   }, [projectId]);
+
 
   /**
    * 根據項目狀態返回對應的狀態標籤元素
@@ -1292,7 +1277,7 @@ const CertificationProjectDetail = () => {
                           type="file"
                           id="fileUpload"
                           className="form-control file-upload"
-                          name="file"
+                          name="file" 
                           onChange={handleUploadFormChange}
                         />
                       </div>
