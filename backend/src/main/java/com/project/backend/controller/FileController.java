@@ -78,6 +78,7 @@ public class FileController {
             Map<String, Object> response = new HashMap<>();
             response.put("id", fileEntity.getId());
             response.put("name", fileEntity.getOriginalFilename());
+            response.put("filename", fileEntity.getFilename());
             response.put("category", fileEntity.getCategory());
             response.put("type", fileEntity.getFileType());
             response.put("uploadedBy", fileEntity.getUploadedBy());
