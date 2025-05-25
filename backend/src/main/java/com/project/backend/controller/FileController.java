@@ -7,14 +7,17 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.model.FileEntity;
+import com.project.backend.model.Project;
 import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
+import com.project.backend.repository.ProjectRepository;
 import com.project.backend.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,34 +32,46 @@ public class FileController {
     @Autowired
     private FileRepository fileRepository;
 
+    @Autowired
+    private ProjectRepository projectRepository;
+
     public FileController() throws IOException {
         Files.createDirectories(fileStorageLocation);
     }
 
-@PostMapping("/upload")
+@PostMapping("/certification-projects/{projectId}/upload")
 public ResponseEntity<?> uploadFile(
+    @PathVariable("projectId") Long projectId,
     @RequestParam("file") MultipartFile file,
     @RequestParam("category") String category,
     @RequestParam("description") String description
 ) {
     try {
+        Optional<Project> optionalProject = projectRepository.findById(projectId);
+        if (optionalProject.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("success", false, "error", "找不到專案"));
+        }
+
+        Project project = optionalProject.get();
+
         String originalFilename = file.getOriginalFilename();
         String extension = getExtension(originalFilename);
         String filename = UUID.randomUUID().toString() + "." + extension;
         Path targetPath = fileStorageLocation.resolve(filename);
         Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // 創建新的 FileEntity 並保存
         FileEntity fileEntity = new FileEntity();
         fileEntity.setFilename(filename);
         fileEntity.setOriginalFilename(originalFilename);
         fileEntity.setFileType(extension);
-        fileEntity.setUploadTime(java.time.LocalDateTime.now());
-        fileEntity.setUploadedBy("admin"); // 實際應從登入者取得
+        fileEntity.setUploadTime(LocalDateTime.now());
+        fileEntity.setUploadedBy("admin");
         fileEntity.setSizeInBytes(file.getSize());
         fileEntity.setStatus("pending");
         fileEntity.setCategory(category);
         fileEntity.setDescription(description);
+        fileEntity.setProject(project); // 關聯專案
 
         fileRepository.save(fileEntity);
 
@@ -77,6 +92,7 @@ public ResponseEntity<?> uploadFile(
                 .body(Map.of("success", false, "error", "檔案上傳失敗"));
     }
 }
+
 
 
     // 下載檔案

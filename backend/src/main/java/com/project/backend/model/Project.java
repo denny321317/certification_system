@@ -51,7 +51,7 @@ public class Project {
     // 這裡用 OneToMany 關聯檔案
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "project_id")  // file 表裡要有 project_id 外鍵
-    private List<File> documents;
+    private List<FileEntity> documents;
 
     @Embeddable
     public static class TeamMember {
