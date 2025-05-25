@@ -21,7 +21,8 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
@@ -78,6 +79,8 @@ const UserManagement = () => {
    *   lastLogin: string     // 最後登入時間
    * }>}
    */
+
+  /* the old users const used for presentation before the API
   const users = [
     {
       id: 1,
@@ -161,17 +164,77 @@ const UserManagement = () => {
       lastLogin: '2023-09-19 17:45'
     }
   ];
-  
+  */
+
+  const [users, setUsers] = useState([]); // init empty array
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [errorUsers, setErrorUsers] = useState(null);
+
+  /**
+   * User statistics state
+   * @type {[{totalUsers: number, usersByRole: Object, onlineUsers: number} | null, Function]}
+   */
+  const [userStats, setUserStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [errorStats, setErrorStats] = useState(null);
+
+  // API base URL
+  const API_BASE_URL = 'http://localhost:3000/api';
+  /** 
+   * 原本沒有的新 Function
+   * 用來從後段 API 獲取資料
+  */
+  useEffect(() => {
+    // fetch all users
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      setErrorUsers(null);
+      try{
+        const response = await axios.get(`${API_BASE_URL}/user-management/allUsers`);
+        setUsers(response.data);
+      } catch (err) {
+        setErrorUsers('無法獲取使用者列表: ' + (err.response?.data?.message || err.message));
+        console.error("Error fetching users: ", err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    const fetchUserStats = async () => {
+      setLoadingStats(true);
+      setErrorStats(null);
+      try {
+        const response = await axios.get(`${API_BASE_URL}/user-management/stats`);
+        setUserStats(response.data);
+      } catch (err) {
+        setErrorStats('無法獲取使用者統計資料: ' + (err.response?.data?.message || err.message));
+        console.error("Error featching user stats: ", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchUsers();
+    fetchUserStats();
+  }, []); // Empty dependency array means this runs once when the component mounts
+
+
+
+
   /**
    * 根據當前標籤和搜索關鍵字過濾用戶
    * @returns {Array} 過濾後的用戶列表
    */
   const filteredUsers = users.filter(user => {
+
+    const userRoleName = user.role && typeof user.role === 'object' ? user.role.name : user.role;
+
     // 標籤篩選
-    if (activeTab === '管理員' && user.role !== 'admin') return false;
-    if (activeTab === '審核員' && user.role !== 'auditor') return false;
-    if (activeTab === '一般使用者' && user.role !== 'user') return false;
-    if (activeTab === '訪客' && user.role !== 'guest') return false;
+    if (activeTab === '管理員' && userRoleName !== 'Admin') return false;
+    if (activeTab === '審核員' && userRoleName !== 'Auditor') return false;
+    if (activeTab === '一般使用者' && userRoleName !== 'User') return false;
+    if (activeTab === '經理' && userRoleName !== 'Manager') return false;
+    if (activeTab === '訪客' && userRoleName !== 'Guest') return false;
     
     // 搜索篩選
     if (searchTerm && 
@@ -185,31 +248,34 @@ const UserManagement = () => {
   
   /**
    * 渲染角色標籤
-   * @param {string} role - 用戶角色
+   * @param {string | object} role - 用戶角色
    * @returns {JSX.Element} 角色標籤元素
    */
+  
   const renderRoleBadge = (role) => {
     let badgeClass = '';
     let icon = null;
     let text = '';
+
+    const roleName = typeof role === 'object' && role !== null ? role.name : role;
     
-    switch (role) {
-      case 'admin':
+    switch (roleName) {
+      case 'Admin':
         badgeClass = 'role-badge admin';
         icon = faShield;
         text = '系統管理員';
         break;
-      case 'manager':
+      case 'Manager':
         badgeClass = 'role-badge manager';
         icon = faBriefcase;
         text = '部門經理';
         break;
-      case 'auditor':
+      case 'Auditor':
         badgeClass = 'role-badge auditor';
         icon = faClipboardCheck;
         text = '認證審核員';
         break;
-      case 'user':
+      case 'User':
         badgeClass = 'role-badge user';
         icon = faPerson;
         text = '一般使用者';
@@ -253,6 +319,17 @@ const UserManagement = () => {
     setCurrentPage(newPage);
   };
 
+
+  /**
+   * 處理載入和錯誤
+  */
+ if (loadingUsers) {
+  return <div className='user-management-container text-center'><p>載入使用者列表中...</p></div>;
+ }
+ if (errorUsers) {
+  return <div className='user-management-container text-center text-danger'><p>{errorUsers}</p></div>;
+ }
+
   return (
     <div className="user-management-container">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -270,7 +347,7 @@ const UserManagement = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="btn upload-btn">
+          <button className="btn upload-btn">{/* TODO: 實作新增使用者 */}
             <FontAwesomeIcon icon={faPlus} className="me-2" />新增使用者
           </button>
         </div>
@@ -327,8 +404,8 @@ const UserManagement = () => {
                           </td>
                           <td>{renderRoleBadge(user.role)}</td>
                           <td>{user.department}</td>
-                          <td>{renderStatusBadge(user.status)}</td>
-                          <td>{user.lastLogin}</td>
+                          <td>{renderStatusBadge(user.status || 'unknown')}</td>
+                          <td>{user.lastLogin || 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div className="action-icon" title="編輯使用者">
@@ -378,30 +455,26 @@ const UserManagement = () => {
               <h5 className="mb-0">使用者統計</h5>
             </div>
             <div className="card-body">
-              <div className="d-flex justify-content-between mb-3">
-                <div>總使用者數</div>
-                <div className="fw-bold">32</div>
-              </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div>系統管理員</div>
-                <div className="fw-bold">3</div>
-              </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div>部門經理</div>
-                <div className="fw-bold">8</div>
-              </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div>認證審核員</div>
-                <div className="fw-bold">6</div>
-              </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div>一般使用者</div>
-                <div className="fw-bold">15</div>
-              </div>
-              <div className="d-flex justify-content-between mb-3">
-                <div>當前在線</div>
-                <div className="fw-bold text-success">12</div>
-              </div>
+              {loadingStats && <p>統計資料載入中...</p>}
+              {errorStats && <p className='text-danger'>{errorStats}</p>}
+              {userStats && !loadingStats && !errorStats && (
+                <>
+                  <div className='d-flex justify-content-between mb-3'>
+                    <div>使用者總數</div>
+                    <div className='fw-bold'>{userStats.totalUsers}</div>
+                  </div>
+                  {Object.entries(userStats.usersByRole || {}).map(([role, count]) => (
+                    <div className='d-flex justify-content-between mb-3' key={role}>
+                      <div>role.slice(1)</div>
+                      <div className='fw-bold'>{count}</div>
+                    </div>
+                  ))}
+                  <div className='d-flex justify-content-between mb-3'>
+                    <div>當前在線</div>
+                    <div className='fw-bold text-success'>{userStats.onlineUsers}</div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           
