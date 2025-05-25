@@ -444,7 +444,7 @@ const CertificationProjectDetail = () => {
     console.log(uploadForm.file);
 
     try {
-      const response = await fetch('http://localhost:8000/api/documents/upload', {
+      const response = await fetch(`http://localhost:8000/api/documents/certification-projects/${projectId}/upload`, {
         method: 'POST',
         body: formData
       });
