@@ -180,6 +180,13 @@ const UserManagement = () => {
 
   // API base URL
   const API_BASE_URL = 'http://localhost:3000/api';
+  const ROLE_NAME_MAP ={
+    Admin: '系統管理員',
+    Manager: '部門經理',
+    Auditor: '認證審核員',
+    User: '一般使用者',
+    Guest: '訪客'
+  }
   /** 
    * 原本沒有的新 Function
    * 用來從後段 API 獲取資料
@@ -405,7 +412,7 @@ const UserManagement = () => {
                           <td>{renderRoleBadge(user.role)}</td>
                           <td>{user.department}</td>
                           <td>{renderStatusBadge(user.status || 'unknown')}</td>
-                          <td>{user.lastLogin || 'N/A'}</td>
+                          <td>{user.lastTimeLogin || 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div className="action-icon" title="編輯使用者">
@@ -465,7 +472,7 @@ const UserManagement = () => {
                   </div>
                   {Object.entries(userStats.usersByRole || {}).map(([role, count]) => (
                     <div className='d-flex justify-content-between mb-3' key={role}>
-                      <div>role.slice(1)</div>
+                      <div>{ROLE_NAME_MAP[role] || '測試加入新角色'}</div>
                       <div className='fw-bold'>{count}</div>
                     </div>
                   ))}
