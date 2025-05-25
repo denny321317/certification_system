@@ -427,46 +427,73 @@ const CertificationProjectDetail = () => {
     setShowUploadModal(false);
   };
 
-  /**
-   * 處理上傳文件表單變更
-   * @param {Event} e - 事件對象
-   */
+
   const handleUploadFormChange = (e) => {
-    const { name, value } = e.target;
-    setUploadForm({
-      ...uploadForm,
-      [name]: value
-    });
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      setUploadForm({
+        ...uploadForm,
+        [name]: files[0] // 取得第一個檔案
+      });
+    } else {
+      setUploadForm({
+        ...uploadForm,
+        [name]: value
+      });
+    }
   };
+
 
   /**
    * 處理上傳文件
    * @param {Event} e - 事件對象
    */
-  const handleUploadFile = (e) => {
+  const handleUploadFile = async (e) => {
     e.preventDefault();
-    // 在實際應用中，這裡應該有文件上傳API調用
-    console.log('上傳文件:', uploadForm);
-    
-    // 模擬上傳成功後添加到文件列表
-    const newDoc = {
-      id: projectDetail.documents.length + 1,
-      name: uploadForm.fileName,
-      category: uploadForm.category,
-      type: uploadForm.fileName.split('.').pop().toLowerCase(),
-      uploadedBy: '當前用戶',
-      uploadDate: new Date().toISOString().split('T')[0],
-      description: uploadForm.description
-    };
-    
-    setProjectDetail({
-      ...projectDetail,
-      documents: [...projectDetail.documents, newDoc]
-    });
-    
-    setShowUploadModal(false);
-    alert('文件上傳成功');
+
+    // 建立 FormData，放入檔案及其他欄位
+    const formData = new FormData();
+    formData.append('file', uploadForm.file); // 假設 uploadForm.file 是 File 物件
+    formData.append('category', uploadForm.category);
+    formData.append('description', uploadForm.description);
+    console.log(uploadForm.file);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/documents/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('上傳失敗');
+      }
+
+      const data = await response.json();
+
+      // 將後端回傳的資料加入文件列表
+      const newDoc = {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        type: data.type,
+        uploadedBy: data.uploadedBy,
+        uploadDate: data.uploadDate,
+        description: data.description
+      };
+
+      setProjectDetail({
+        ...projectDetail,
+        documents: [...projectDetail.documents, newDoc]
+      });
+
+      setShowUploadModal(false);
+      alert('文件上傳成功');
+
+    } catch (error) {
+      alert(error.message);
+    }
   };
+
 
   /**
    * 獲取文件圖標
@@ -1265,6 +1292,8 @@ const CertificationProjectDetail = () => {
                           type="file"
                           id="fileUpload"
                           className="form-control file-upload"
+                          name="file"
+                          onChange={handleUploadFormChange}
                         />
                       </div>
                     </div>
