@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.File;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -228,6 +229,33 @@ public class FileController {
                     .body(Map.of("success", false, "error", "刪除失敗：" + e.getMessage()));
         }
     }
+
+    //取得所有存在的類別資料夾名稱
+    @GetMapping("/categories")
+    public ResponseEntity<?> listCategories() {
+        try {
+            File folder = new File("uploads");
+            if (!folder.exists()) {
+                folder.mkdirs();
+            }
+
+            File[] subdirs = folder.listFiles(File::isDirectory);
+            List<String> categoryList = new ArrayList<>();
+
+            if (subdirs != null) {
+                for (File dir : subdirs) {
+                    categoryList.add(dir.getName());
+                }
+            }
+
+            return ResponseEntity.ok(categoryList);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "讀取類別資料夾失敗"));
+        }
+    }
+
 
 
 
