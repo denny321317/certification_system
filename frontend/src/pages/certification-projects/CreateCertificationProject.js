@@ -173,22 +173,36 @@ const CreateCertificationProject = () => {
    * 處理表單提交
    * @param {Event} e - 事件對象
    */
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      // 模擬API請求 - 在實際應用中替換為真實的API調用
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('提交的表單數據:', formData);
-      
-      // 提交成功後導航回項目列表頁面
+      const response = await fetch('http://localhost:8000/api/projects/CreateProject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      console.log(formData)
+
+      if (!response.ok) {
+        throw new Error('伺服器回傳錯誤');
+      }
+
+      const result = await response.json();
+      console.log('提交的表單數據:', result);
+
+      // 可選：清空表單
+      // setFormData({ projectName: '', description: '', status: '' });
+
+      // 提交成功後導航
       navigate('/certification-projects');
     } catch (error) {
       console.error('提交表單時發生錯誤:', error);
@@ -200,6 +214,7 @@ const CreateCertificationProject = () => {
       setIsSubmitting(false);
     }
   };
+
 
   /**
    * 處理取消操作

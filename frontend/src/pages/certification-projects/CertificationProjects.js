@@ -21,7 +21,7 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -111,115 +111,39 @@ const CertificationProjects = () => {
    *   }>
    * }>}
    */
-  const certificationProjects = [
-    {
-      id: 1,
-      name: 'SMETA 4支柱認證',
-      status: 'internal-review',
-      startDate: '2023-07-15',
-      endDate: '2023-10-30',
-      manager: '王經理',
-      agency: 'SGS Taiwan',
-      progress: 75,
-      progressColor: 'primary',
-      internalReviewDate: '2023-09-20',
-      externalReviewDate: '2023-10-25',
-      timeline: [
-        {
-          stage: '準備階段',
-          status: 'completed',
-          date: '2023-08-15',
-          description: '完成團隊組建、資源分配和初步資料收集'
-        },
-        {
-          stage: '自我評估',
-          status: 'completed',
-          date: '2023-09-10',
-          description: '根據SMETA標準完成內部評估和差距分析'
-        },
-        {
-          stage: '文件準備',
-          status: 'current',
-          date: '進行中',
-          description: '收集和整理所有必要的證明文件',
-          tasks: [
-            { id: 1, name: '更新勞工權益政策文件', completed: true },
-            { id: 2, name: '完成健康安全管理程序書', completed: true },
-            { id: 3, name: '準備最近6個月的工時記錄', completed: false },
-            { id: 4, name: '更新環境管理計劃', completed: false }
-          ]
-        },
-        {
-          stage: '預備審核',
-          status: 'pending',
-          date: '預計 2023-10-15',
-          description: '內部團隊進行最終審核準備'
-        },
-        {
-          stage: '正式審核',
-          status: 'pending',
-          date: '預計 2023-10-25',
-          description: '外部審核機構現場審核'
+  
+  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [projects, setProjects] = useState([]);
+
+  // 1. 從後端拉資料
+  useEffect(() => {
+    fetch('http://localhost:8000/api/projects/GetAllProject') // 你可以加上完整URL: http://localhost:8080/GetAllProject
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
-      ]
-    },
-    {
-      id: 2,
-      name: 'ISO 14001 環境管理系統認證',
-      status: 'external-review',
-      startDate: '2023-06-01',
-      endDate: '2023-09-25',
-      manager: '李總監',
-      agency: 'BSI Taiwan',
-      progress: 90,
-      progressColor: 'secondary',
-      internalReviewDate: '2023-08-15',
-      externalReviewDate: '2023-09-10'
-    },
-    {
-      id: 3,
-      name: 'ISO 9001 品質管理系統認證',
-      status: 'completed',
-      startDate: '2023-03-10',
-      endDate: '2023-08-15',
-      manager: '張經理',
-      agency: 'TÜV Rheinland',
-      progress: 100,
-      progressColor: 'success',
-      internalReviewDate: '2023-06-20',
-      externalReviewDate: '2023-07-30'
-    },
-    {
-      id: 4,
-      name: 'SA8000 社會責任認證',
-      status: 'preparing',
-      startDate: '2023-10-01',
-      endDate: '2024-04-30',
-      manager: '林經理',
-      agency: 'Bureau Veritas',
-      progress: 35,
-      progressColor: 'warning',
-      internalReviewDate: '2024-01-15',
-      externalReviewDate: '2024-03-20'
-    }
-  ];
+        return response.json();
+      })
+      .then(data => {
+        setProjects(data);
+        console.log(data)
+      })
+      .catch(error => {
+        console.error('Error fetching project data:', error);
+      });
+  }, []);
 
-  /**
-   * 根據當前標籤和搜索關鍵字過濾項目
-   * @returns {Array} 過濾後的項目列表
-   */
-  const filteredProjects = certificationProjects.filter(project => {
-    if (activeTab !== 'all' && project.status !== activeTab) {
-      return false;
-    }
-    
-    if (searchQuery && !project.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    
-    return true;
-  });
+  // 2. 根據 activeTab 和 searchQuery 過濾
+  useEffect(() => {
+    const filtered = projects.filter(project => {
+      const matchTab = activeTab === 'all' || project.status === activeTab;
+      const matchSearch = !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchTab && matchSearch;
+    });
 
+    setFilteredProjects(filtered);
+  }, [projects, activeTab, searchQuery]);
+  
   /**
    * 根據項目狀態返回對應的狀態標籤元素
    * @param {string} status - 項目狀態
@@ -670,7 +594,10 @@ const CertificationProjects = () => {
                 </button>
                 <button 
                   className="btn btn-sm btn-outline-primary"
-                  onClick={() => handleViewProject(project.id)}
+                  onClick={() => {
+                    console.log('akashaksproject:', project);
+                    handleViewProject(project.id);
+                  }}                
                 >
                   <FontAwesomeIcon icon={faEye} className="me-1" /> 
                   進入專案
