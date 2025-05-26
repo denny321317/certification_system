@@ -10,6 +10,7 @@ public interface FileRepository extends JpaRepository<FileEntity, Long> {
     Optional<FileEntity> findByFilename(String filename);
     void deleteByFilename(String filename);
     List<FileEntity> findByProjectId(Long projectId);
+    List<FileEntity> findByCategory(String category);
 
 }
 

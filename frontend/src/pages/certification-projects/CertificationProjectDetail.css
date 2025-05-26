@@ -2019,3 +2019,8 @@ textarea.form-control {
     padding: 12px;
   }
 } 
+
+.delete-category-icon {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
