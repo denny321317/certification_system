@@ -1,11 +1,13 @@
 package com.project.backend.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
-@Data
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

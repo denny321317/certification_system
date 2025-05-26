@@ -56,7 +56,7 @@ const ReportsAnalysis = () => {
   const projectProgressChartRef = useRef(null);
   const certTypeChartRef = useRef(null);
   const issueTypeChartRef = useRef(null);
-
+  
   /**
    * 初始化圖表
    * 在組件掛載後創建各種統計圖表
@@ -385,7 +385,7 @@ const ReportsAnalysis = () => {
           <div className="stats-card-new">
             <div className="stats-top-row">
               <div className="stats-icon-new blue">
-                <FontAwesomeIcon icon={faCheckSquare} />
+              <FontAwesomeIcon icon={faCheckSquare} />
               </div>
               <div className="stats-value">12</div>
             </div>
@@ -403,7 +403,7 @@ const ReportsAnalysis = () => {
           <div className="stats-card-new">
             <div className="stats-top-row">
               <div className="stats-icon-new green">
-                <FontAwesomeIcon icon={faCheckCircle} />
+              <FontAwesomeIcon icon={faCheckCircle} />
               </div>
               <div className="stats-value">8</div>
             </div>
@@ -421,7 +421,7 @@ const ReportsAnalysis = () => {
           <div className="stats-card-new">
             <div className="stats-top-row">
               <div className="stats-icon-new amber">
-                <FontAwesomeIcon icon={faHourglassHalf} />
+              <FontAwesomeIcon icon={faHourglassHalf} />
               </div>
               <div className="stats-value">24</div>
             </div>
@@ -439,7 +439,7 @@ const ReportsAnalysis = () => {
           <div className="stats-card-new">
             <div className="stats-top-row">
               <div className="stats-icon-new red">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
+              <FontAwesomeIcon icon={faExclamationTriangle} />
               </div>
               <div className="stats-value">3</div>
             </div>

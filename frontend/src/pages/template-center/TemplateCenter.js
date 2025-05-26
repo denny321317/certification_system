@@ -238,117 +238,117 @@ const TemplateCenter = () => {
     <div className="template-center-container">
       {!isEditorOpen ? (
         <>
-          <div className="header-actions">
-            <h4>模板中心</h4>
-            <div className="action-buttons">
-              <button className="btn btn-outline">
-                <FontAwesomeIcon icon={faFilter} className="me-2" />
-                篩選
-              </button>
+      <div className="header-actions">
+        <h4>模板中心</h4>
+        <div className="action-buttons">
+          <button className="btn btn-outline">
+            <FontAwesomeIcon icon={faFilter} className="me-2" />
+            篩選
+          </button>
               <button 
                 className="btn btn-primary"
                 onClick={() => setIsEditorOpen(true)}
               >
-                <FontAwesomeIcon icon={faPlus} className="me-2" />
-                建立新模板
+            <FontAwesomeIcon icon={faPlus} className="me-2" />
+            建立新模板
+          </button>
+        </div>
+      </div>
+      
+      <div className="row">
+        {/* 左側分類列表 */}
+        <div className="col-md-3">
+          <div className="search-container mb-4">
+            <FontAwesomeIcon icon={faSearch} className="search-icon" />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="搜尋模板"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="category-list">
+            {categories.map(category => (
+              <div 
+                className={`template-category ${activeCategory === category.id ? 'active' : ''}`}
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+              >
+                <div className="template-category-icon">
+                  <FontAwesomeIcon icon={category.icon} />
+                </div>
+                <div className="template-category-info">
+                  <div>{category.name}</div>
+                  <div className="template-category-count">{category.count} 個模板</div>
+                </div>
+              </div>
+            ))}
+            
+            <div className="mt-4">
+              <button className="btn btn-outline btn-full">
+                <FontAwesomeIcon icon={faPlusCircle} className="me-2" />
+                新增分類
               </button>
             </div>
           </div>
-          
-          <div className="row">
-            {/* 左側分類列表 */}
-            <div className="col-md-3">
-              <div className="search-container mb-4">
-                <FontAwesomeIcon icon={faSearch} className="search-icon" />
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="搜尋模板"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              
-              <div className="category-list">
-                {categories.map(category => (
-                  <div 
-                    className={`template-category ${activeCategory === category.id ? 'active' : ''}`}
-                    key={category.id}
-                    onClick={() => setActiveCategory(category.id)}
-                  >
-                    <div className="template-category-icon">
-                      <FontAwesomeIcon icon={category.icon} />
-                    </div>
-                    <div className="template-category-info">
-                      <div>{category.name}</div>
-                      <div className="template-category-count">{category.count} 個模板</div>
-                    </div>
-                  </div>
-                ))}
-                
-                <div className="mt-4">
-                  <button className="btn btn-outline btn-full">
-                    <FontAwesomeIcon icon={faPlusCircle} className="me-2" />
-                    新增分類
-                  </button>
-                </div>
-              </div>
+        </div>
+        
+        {/* 右側模板列表 */}
+        <div className="col-md-9">
+          <div className="templates-header">
+            <h5>
+              {activeCategory === 'all' 
+                ? '所有模板' 
+                : categories.find(c => c.id === activeCategory)?.name} 
+              ({filteredTemplates.length})
+            </h5>
+            <div className="sort-options">
+              <select 
+                className="sort-select" 
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+              >
+                <option value="recent">最近更新</option>
+                <option value="frequency">使用頻率</option>
+                <option value="nameAsc">名稱 (A-Z)</option>
+                <option value="nameDesc">名稱 (Z-A)</option>
+              </select>
             </div>
-            
-            {/* 右側模板列表 */}
-            <div className="col-md-9">
-              <div className="templates-header">
-                <h5>
-                  {activeCategory === 'all' 
-                    ? '所有模板' 
-                    : categories.find(c => c.id === activeCategory)?.name} 
-                  ({filteredTemplates.length})
-                </h5>
-                <div className="sort-options">
-                  <select 
-                    className="sort-select" 
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                  >
-                    <option value="recent">最近更新</option>
-                    <option value="frequency">使用頻率</option>
-                    <option value="nameAsc">名稱 (A-Z)</option>
-                    <option value="nameDesc">名稱 (Z-A)</option>
-                  </select>
+          </div>
+          
+          <div className="template-grid">
+            {sortedTemplates.map(template => (
+              <div className="template-card" key={template.id}>
+                <div className="template-preview">
+                  {getTemplateIcon(template.type)}
                 </div>
-              </div>
-              
-              <div className="template-grid">
-                {sortedTemplates.map(template => (
-                  <div className="template-card" key={template.id}>
-                    <div className="template-preview">
-                      {getTemplateIcon(template.type)}
-                    </div>
-                    <div className="template-info">
-                      <h6 className="template-title">{template.name}</h6>
-                      <div className="template-tags">
-                        {template.tags.map((tag, index) => (
-                          <span className="template-tag" key={index}>{tag}</span>
-                        ))}
-                      </div>
-                      <div className="template-meta">
-                        <span className="template-date">
-                          <FontAwesomeIcon icon={faClock} className="me-1" />
-                          {template.updatedAt}
-                        </span>
-                        <div>
-                          <button className="btn btn-sm btn-outline-primary">使用</button>
-                        </div>
-                      </div>
+                <div className="template-info">
+                  <h6 className="template-title">{template.name}</h6>
+                  <div className="template-tags">
+                    {template.tags.map((tag, index) => (
+                      <span className="template-tag" key={index}>{tag}</span>
+                    ))}
+                  </div>
+                  <div className="template-meta">
+                    <span className="template-date">
+                      <FontAwesomeIcon icon={faClock} className="me-1" />
+                      {template.updatedAt}
+                    </span>
+                    <div>
+                      <button className="btn btn-sm btn-outline-primary">使用</button>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-              
-              <div className="pagination-container">
-                <nav aria-label="模板分頁">
+            ))}
+          </div>
+          
+            <div className="pagination-container">
+              <nav aria-label="模板分頁">
                   <ul className="pagination justify-content-center mt-4">
-                    <li className="page-item disabled">
+                  <li className="page-item disabled">
                       <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled>上一頁</button>
                     </li>
                     <li className="page-item active">
@@ -359,13 +359,13 @@ const TemplateCenter = () => {
                     </li>
                     <li className="page-item">
                       <button className="page-link" onClick={() => handlePageChange(3)}>3</button>
-                    </li>
-                    <li className="page-item">
+                  </li>
+                  <li className="page-item">
                       <button className="page-link" onClick={() => handlePageChange(currentPage + 1)}>下一頁</button>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
+                  </li>
+                </ul>
+              </nav>
+            </div>
             </div>
           </div>
         </>
