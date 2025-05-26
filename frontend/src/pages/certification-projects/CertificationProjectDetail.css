@@ -2018,13 +2018,9 @@ textarea.form-control {
     grid-template-columns: 1fr;
     padding: 12px;
   }
-<<<<<<< HEAD
-} 
-=======
 } 
 
 .delete-category-icon {
   cursor: pointer;
   font-size: 0.85rem;
 }
->>>>>>> Ryan_Test

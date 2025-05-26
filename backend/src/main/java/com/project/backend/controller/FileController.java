@@ -199,8 +199,6 @@ public class FileController {
         }
     }
 
-<<<<<<< HEAD
-=======
     //刪除類別資料夾
     @DeleteMapping("/delete-category")
     public ResponseEntity<?> deleteCategory(@RequestParam("category") String category) {
@@ -233,5 +231,4 @@ public class FileController {
 
 
 
->>>>>>> Ryan_Test
 }
