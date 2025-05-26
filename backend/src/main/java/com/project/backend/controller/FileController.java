@@ -58,11 +58,19 @@ public class FileController {
             String originalFilename = file.getOriginalFilename();
             String extension = getExtension(originalFilename);
             String filename = UUID.randomUUID().toString() + "." + extension;
-            Path targetPath = fileStorageLocation.resolve(filename);
+            // 新增分類資料夾邏輯
+            Path categoryFolder = fileStorageLocation.resolve(category);
+            Files.createDirectories(categoryFolder); // 若不存在則自動建立
+
+            // 將檔案存入 uploads/category/
+            Path targetPath = categoryFolder.resolve(filename);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            // Path targetPath = fileStorageLocation.resolve(filename);
+            // Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             FileEntity fileEntity = new FileEntity();
-            fileEntity.setFilename(filename);
+            // fileEntity.setFilename(filename);
+            fileEntity.setFilename(category + "/" + filename); // 儲存相對路徑，方便下載時定位
             fileEntity.setOriginalFilename(originalFilename);
             fileEntity.setFileType(extension);
             fileEntity.setUploadTime(LocalDateTime.now());
@@ -96,7 +104,7 @@ public class FileController {
 
 
     // 下載檔案
-    @GetMapping("/download/{filename}")
+    @GetMapping("/download/{filename:.+}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename, HttpServletRequest request) {
         try {
             Path filePath = fileStorageLocation.resolve(filename).normalize();
