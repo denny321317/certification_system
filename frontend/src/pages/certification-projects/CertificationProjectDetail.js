@@ -621,14 +621,6 @@ const CertificationProjectDetail = () => {
         icon: faFile // 默認使用一般文件圖標
       };
       
-      // // 更新類別列表
-      // setDocumentCategories([...documentCategories, newCategory]);
-      
-      // // 關閉對話框
-      // setShowAddCategoryModal(false);
-      
-      // // 通知用戶成功新增
-      // alert(`已成功新增『${newCategoryForm.name}』類別`);
       try {
         // 呼叫後端 API 建立對應資料夾
         const res = await axios.post("http://localhost:8000/api/documents/create-category", null, {
@@ -652,6 +644,51 @@ const CertificationProjectDetail = () => {
       }
     }
   };
+
+
+  /**
+   * 處理刪除類別
+   */
+  const handleDeleteCategory = async (categoryId, categoryName) => {
+    if (categoryId === 'all') {
+      alert("預設類別無法刪除！");
+      return;
+    }
+
+    const confirmDelete = window.confirm(`確定要刪除類別「${categoryName}」嗎？該資料夾與檔案將一併刪除。`);
+    if (!confirmDelete) return;
+
+    try {
+      const response = await axios.delete("http://localhost:8000/api/documents/delete-category", {
+        params: { category: categoryId }
+      });
+
+      if (response.data.success) {
+        alert("類別刪除成功");
+
+        // 更新前端類別列表
+        setDocumentCategories(prev => prev.filter(cat => cat.id !== categoryId));
+
+        // 更新文件清單，移除該類別下文件（如需要）
+        setProjectDetail(prev => ({
+          ...prev,
+          documents: prev.documents.filter(doc => doc.category !== categoryId)
+        }));
+
+        // 若目前正選中該分類，重設為 all
+        if (activeDocCategory === categoryId) {
+          setActiveDocCategory('all');
+        }
+
+      } else {
+        alert("刪除失敗：" + response.data.message);
+      }
+    } catch (error) {
+      alert("刪除失敗：" + (error.response?.data?.error || error.message));
+    }
+  };
+
+
 
   /**
    * 獲取當前頁面的文件
@@ -1139,10 +1176,11 @@ const CertificationProjectDetail = () => {
                 </div>
               </div>
             </div>
-            
+
+            {/* 文件類別區塊 */}
             <div className="documents-container">
               <div className="document-categories">
-                {documentCategories.map(category => (
+                {/* {documentCategories.map(category => (
                   <div 
                     key={category.id}
                     className={`document-category ${activeDocCategory === category.id ? 'active' : ''}`}
@@ -1158,7 +1196,35 @@ const CertificationProjectDetail = () => {
                       </span>
                     )}
                   </div>
+                ))} */}
+                {documentCategories.map(category => (
+                  <div 
+                    key={category.id}
+                    className={`document-category ${activeDocCategory === category.id ? 'active' : ''}`}
+                    onClick={() => handleCategoryChange(category.id)}
+                  >
+                    <FontAwesomeIcon icon={category.icon} className="category-icon" />
+                    <span className="category-name">{category.name}</span>
+                    {category.id === 'all' ? (
+                      <span className="category-count">{projectDetail.documents.length}</span>
+                    ) : (
+                      <>
+                        <span className="category-count">
+                          {projectDetail.documents.filter(doc => doc.category === category.id).length}
+                        </span>
+                        <FontAwesomeIcon
+                          icon={faTrash}
+                          className="delete-category-icon text-red-500 hover:text-red-700 ml-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(category.id, category.name);
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
                 ))}
+
                 
                 <div className="document-category add-category" onClick={handleShowAddCategoryModal}>
                   <FontAwesomeIcon icon={faPlus} className="category-icon" />

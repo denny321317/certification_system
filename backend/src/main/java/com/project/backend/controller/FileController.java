@@ -199,4 +199,39 @@ public class FileController {
         }
     }
 
+<<<<<<< HEAD
+=======
+    //刪除類別資料夾
+    @DeleteMapping("/delete-category")
+    public ResponseEntity<?> deleteCategory(@RequestParam("category") String category) {
+        try {
+            // 1. 刪除資料夾下所有檔案（如有記錄）
+            List<FileEntity> filesToDelete = fileRepository.findByCategory(category);
+            for (FileEntity file : filesToDelete) {
+                Path path = Paths.get("uploads", category, file.getFilename());
+                Files.deleteIfExists(path);
+            }
+
+            // 2. 刪除資料夾本身
+            Path categoryFolder = Paths.get("uploads", category);
+            if (Files.exists(categoryFolder)) {
+                Files.delete(categoryFolder); // 若非空資料夾會拋出 DirectoryNotEmptyException
+            }
+
+            // 3. 刪除資料庫紀錄
+            fileRepository.deleteAll(filesToDelete);
+
+            return ResponseEntity.ok(Map.of("success", true, "message", "類別與檔案刪除成功"));
+        } catch (DirectoryNotEmptyException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "資料夾非空，請先刪除所有檔案"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "error", "刪除失敗：" + e.getMessage()));
+        }
+    }
+
+
+
+>>>>>>> Ryan_Test
 }
