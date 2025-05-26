@@ -1,5 +1,7 @@
 package com.project.backend.model;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +31,8 @@ public class User {
     private String position;
 
     @Column(name = "password_reset_token")
-    private String passwordResetToken; // 密碼重設 token
+    private String passwordResetToken;
 
+    @ManyToMany(mappedBy = "users")
+    private List<Project> projects;
 }

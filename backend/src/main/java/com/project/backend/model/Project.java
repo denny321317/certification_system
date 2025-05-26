@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,22 +19,26 @@ import lombok.*;
 public class Project {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // 確保自動生成主鍵
     private Integer id;
-
+    
     private String name;
-
     private String status;
+    private String certType;
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
-
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
     @Column(name = "end_date")
-    private LocalDateTime endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate internalReviewDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate externalReviewDate;
 
     private String manager;
-
     private String agency;
-
     private Integer progress;
 
     @Column(name = "progress_color")
@@ -40,37 +47,20 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ElementCollection
-    @CollectionTable(name = "project_team", joinColumns = @JoinColumn(name = "project_id"))
-    private List<TeamMember> team;
-
-    @ElementCollection
-    @CollectionTable(name = "project_timeline", joinColumns = @JoinColumn(name = "project_id"))
-    private List<TimelineStage> timeline;
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "project_user",
+        joinColumns = @JoinColumn(name = "project_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> users;
 
     // 這裡用 OneToMany 關聯檔案
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "project_id")  // file 表裡要有 project_id 外鍵
     private List<FileEntity> documents;
 
-    @Embeddable
-    public static class TeamMember {
-        private String name;
-        private String role;
-        private String email;
-        // getters/setters
-    }
 
-    @Embeddable
-    public static class TimelineStage {
-        private String stage;
-        private String status;
-        private String date;
-        @Column(columnDefinition = "TEXT")
-        private String description;
-        // getters/setters
-    }
-
-    // getters and setters...
 }
 
