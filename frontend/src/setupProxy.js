@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
   const apiProxy = createProxyMiddleware({
-    target: 'http://localhost:8000',
+    target: 'http://localhost:8080',
     changeOrigin: true,
     logLevel: 'debug', // Enable http-proxy-middleware's own verbose logging
     onProxyReq: (proxyReq, req, res) => {
