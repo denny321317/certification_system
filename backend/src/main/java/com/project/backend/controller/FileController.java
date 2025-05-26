@@ -181,4 +181,22 @@ public class FileController {
                 ? filename.substring(filename.lastIndexOf('.') + 1)
                 : "";
     }
+
+    //新增類別資料夾
+    @PostMapping("/create-category")
+    public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category) {
+        try {
+            // 建立 uploads/category 子資料夾
+            Path categoryPath = fileStorageLocation.resolve(category).normalize();
+            if (!Files.exists(categoryPath)) {
+                Files.createDirectories(categoryPath);
+            }
+
+            return ResponseEntity.ok(Map.of("success", true, "message", "類別資料夾已建立"));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "error", "無法建立資料夾"));
+        }
+    }
+
 }

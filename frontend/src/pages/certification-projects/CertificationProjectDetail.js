@@ -33,6 +33,8 @@ import './CertificationProjectDetail.css';
 // 引入審核與回饋組件
 import ReviewFeedback from '../../components/certification-projects/ReviewFeedback';
 
+import axios from "axios";
+
 /**
  * 認證項目詳情頁面
  * @returns {JSX.Element} 認證項目詳情頁面
@@ -605,11 +607,12 @@ const CertificationProjectDetail = () => {
     });
   };
 
+
   /**
    * 處理新增類別
    * @param {Event} e - 事件對象
    */
-  const handleAddCategory = (e) => {
+  const handleAddCategory = async (e) => {
     e.preventDefault();
     if (newCategoryForm.id && newCategoryForm.name) {
       const newCategory = {
@@ -618,14 +621,35 @@ const CertificationProjectDetail = () => {
         icon: faFile // 默認使用一般文件圖標
       };
       
-      // 更新類別列表
-      setDocumentCategories([...documentCategories, newCategory]);
+      // // 更新類別列表
+      // setDocumentCategories([...documentCategories, newCategory]);
       
-      // 關閉對話框
-      setShowAddCategoryModal(false);
+      // // 關閉對話框
+      // setShowAddCategoryModal(false);
       
-      // 通知用戶成功新增
-      alert(`已成功新增『${newCategoryForm.name}』類別`);
+      // // 通知用戶成功新增
+      // alert(`已成功新增『${newCategoryForm.name}』類別`);
+      try {
+        // 呼叫後端 API 建立對應資料夾
+        const res = await axios.post("http://localhost:8000/api/documents/create-category", null, {
+          params: { category: newCategory.id } // 用 id 作為資料夾名稱（通常為英文）
+        });
+
+        if (res.data.success) {
+          // 更新前端類別列表
+          setDocumentCategories((prev) => [...prev, newCategory]);
+          // 關閉對話框
+          setShowAddCategoryModal(false);
+          // 通知用戶成功
+          alert(`已成功新增『${newCategoryForm.name}』類別，並建立資料夾`);
+          // 清空表單（可選）
+          setNewCategoryForm({ id: "", name: "" });
+        } else {
+         alert("建立資料夾失敗：" + res.data.error);
+        }
+      } catch (err) {
+        alert("建立類別資料夾時發生錯誤：" + (err.response?.data?.error || err.message));
+      }
     }
   };
 
