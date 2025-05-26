@@ -12,11 +12,8 @@ const AddUserModal = ({ show, onClose, API_BASE_URL, rolesList, onUserAddedSucce
 
   useEffect(() => {
     // Pre-select the first role if rolesList is available and no role is selected
-    if (show && rolesList && rolesList.length > 0 && !selectedRoleName) {
-      setSelectedRoleName(rolesList[0].name);
-    }
-    // Reset form when modal is opened/closed or rolesList changes
-    if (!show) {
+    // and reset form when modal is shown or rolesList changes
+    if (show) {
         setName('');
         setEmail('');
         setDepartment('');
@@ -44,6 +41,7 @@ const AddUserModal = ({ show, onClose, API_BASE_URL, rolesList, onUserAddedSucce
     };
 
     try {
+      // Ensure API_BASE_URL is correctly passed and used
       await axios.post(`${API_BASE_URL}/user-management/createUser`, newUser);
       onUserAddedSuccess(); // Callback to refresh user list in parent
       onClose(); // Close the modal
@@ -92,17 +90,16 @@ const AddUserModal = ({ show, onClose, API_BASE_URL, rolesList, onUserAddedSucce
               />
             </div>
             <div className="mb-3">
-              <label htmlFor="userRole" className="form-label">角色 <span className="text-danger">*</span></label>
+              <label htmlFor="userRoleModal" className="form-label">角色 <span className="text-danger">*</span></label>
               <select
                 className="form-select"
-                id="userRole"
+                id="userRoleModal"
                 value={selectedRoleName}
                 onChange={(e) => setSelectedRoleName(e.target.value)}
                 required
               >
                 <option value="" disabled>選擇一個角色</option>
                 {rolesList && rolesList.map(role => (
-                  // Assuming role object has 'name' property for display and value
                   <option key={role.id || role.name} value={role.name}>{role.name}</option>
                 ))}
               </select>

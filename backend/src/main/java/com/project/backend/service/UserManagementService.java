@@ -52,6 +52,10 @@ public class UserManagementService {
         return userRepository.findAll();
     }
 
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
     public List<User> getUsersByRole(String roleName){
         Role role = roleRepository.findByName(roleName);
         if (role == null){

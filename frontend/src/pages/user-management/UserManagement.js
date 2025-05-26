@@ -37,6 +37,7 @@ import {
   faCircle
 } from '@fortawesome/free-solid-svg-icons';
 import './UserManagement.css';
+import AddUserModal from '../../components/modals/AddUserModal';
 
 /**
  * 用戶管理組件
@@ -178,6 +179,14 @@ const UserManagement = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState(null);
 
+  /**
+   * for adding Users
+   */
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [rolesForForm, setRolesForForm] = useState([]);
+  const [loadingRolesForForm, setLoadingRolesForForm] = useState(true);
+  const [errorRolesForForm, setErrorRolesForForm] = useState(null);
+
   // API base URL
   const API_BASE_URL = 'http://localhost:3000/api';
   const ROLE_NAME_MAP ={
@@ -191,41 +200,62 @@ const UserManagement = () => {
    * 原本沒有的新 Function
    * 用來從後段 API 獲取資料
   */
+  // fetch all users
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    setErrorUsers(null);
+    try{
+      const response = await axios.get(`${API_BASE_URL}/user-management/allUsers`);
+      setUsers(response.data);
+    } catch (err) {
+      setErrorUsers('無法獲取使用者列表: ' + (err.response?.data?.message || err.message));
+      console.error("Error fetching users: ", err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    setLoadingStats(true);
+    setErrorStats(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user-management/stats`);
+      setUserStats(response.data);
+    } catch (err) {
+      setErrorStats('無法獲取使用者統計資料: ' + (err.response?.data?.message || err.message));
+      console.error("Error featching user stats: ", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   useEffect(() => {
-    // fetch all users
-    const fetchUsers = async () => {
-      setLoadingUsers(true);
-      setErrorUsers(null);
-      try{
-        const response = await axios.get(`${API_BASE_URL}/user-management/allUsers`);
-        setUsers(response.data);
-      } catch (err) {
-        setErrorUsers('無法獲取使用者列表: ' + (err.response?.data?.message || err.message));
-        console.error("Error fetching users: ", err);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
     
-    const fetchUserStats = async () => {
-      setLoadingStats(true);
-      setErrorStats(null);
+    
+
+    const fetchRolesForFormInternal = async () => {
+      setLoadingRolesForForm(true);
+      setErrorRolesForForm(null);
       try {
-        const response = await axios.get(`${API_BASE_URL}/user-management/stats`);
-        setUserStats(response.data);
+        const response = await axios.get(`${API_BASE_URL}/user-management/allRoles`);
+        setRolesForForm(response.data);
       } catch (err) {
-        setErrorStats('無法獲取使用者統計資料: ' + (err.response?.data?.message || err.message));
-        console.error("Error featching user stats: ", err);
+        setErrorRolesForForm('無法獲取角色列表: ' + (err.response?.data?.message || err.message));
+        console.error("Error fetching roles for form ", err);
       } finally {
-        setLoadingStats(false);
+        setLoadingRolesForForm(false);
       }
-    };
+    }
 
     fetchUsers();
     fetchUserStats();
+    fetchRolesForFormInternal();
   }, []); // Empty dependency array means this runs once when the component mounts
 
-
+  const handleUserAddedSuccess = () => {
+    fetchUsers();
+    fetchUserStats();
+  }
 
 
   /**
@@ -354,7 +384,11 @@ const UserManagement = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="btn upload-btn">{/* TODO: 實作新增使用者 */}
+          <button 
+            className="btn upload-btn"
+            onClick={() => setShowAddUserModal(true)}
+            disabled={loadingRolesForForm || !!errorRolesForForm}
+          >{/* TODO: 實作新增使用者 */}
             <FontAwesomeIcon icon={faPlus} className="me-2" />新增使用者
           </button>
         </div>
@@ -604,6 +638,22 @@ const UserManagement = () => {
           </div>
         </div>
       </div>
+
+      {/* render AddUserModal */}
+      <AddUserModal
+        show={showAddUserModal}
+        onClose={() => setShowAddUserModal(false)}
+        API_BASE_URL={API_BASE_URL}
+        rolesList={rolesForForm}
+        onUserAddedSuccess={handleUserAddedSuccess}
+      />
+      {/* error part */}
+      {errorRolesForForm && !loadingRolesForForm && (
+        <div className='alert alert-warning- mt-3'>
+          無法載入新增使用者表單所需角色列表: {errorRolesForForm}
+        </div>
+      )
+      }
     </div>
   );
 };

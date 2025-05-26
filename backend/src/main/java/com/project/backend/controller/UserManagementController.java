@@ -41,6 +41,12 @@ public class UserManagementController {
         return ResponseEntity.ok(users);
     }
 
+    @GetMapping("/allRoles")
+    public ResponseEntity<List<Role>> getAllRoles(){
+        List<Role> roles = userManagementService.getAllRoles();
+        return ResponseEntity.ok(roles);
+    }
+
     
 
     @GetMapping("/role/{roleName}")
