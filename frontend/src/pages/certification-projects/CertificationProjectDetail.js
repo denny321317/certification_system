@@ -688,6 +688,55 @@ const CertificationProjectDetail = () => {
     }
   };
 
+  // //取得後端現存的資料夾
+  // useEffect(() => {
+  //   // 取得後端存在的資料夾名稱
+  //   const fetchCategoriesFromServer = async () => {
+  //     try {
+  //       const res = await axios.get('http://localhost:8000/api/documents/categories');
+  //       const serverCategories = res.data;
+
+  //       // 把回傳的類別整合到現有的 documentCategories（避免重複）
+  //       const newCategories = serverCategories
+  //         .filter(cat => !documentCategories.some(c => c.id === cat))
+  //         .map(cat => ({
+  //           id: cat,
+  //           name: cat,
+  //           icon: faFile // 或依照類別自訂 icon
+  //         }));
+
+  //       setDocumentCategories(prev => [...prev, ...newCategories]);
+  //     } catch (err) {
+  //       console.error("無法載入類別", err);
+  //     }
+  //   };
+
+  //   fetchCategoriesFromServer();
+  // }, []);
+  
+  useEffect(() => {
+    fetch('http://localhost:8000/api/documents/categories')
+      .then(res => res.json())
+      .then(fetchedCategories => {
+        setDocumentCategories(prevCategories => {
+          // 取得現有的 id 陣列
+          const existingIds = prevCategories.map(cat => cat.id);
+
+          // 過濾掉重複的類別
+          const newCategories = fetchedCategories
+            .filter(id => !existingIds.includes(id))
+            .map(id => ({
+              id,
+              name: id, // 這裡可根據你的 mapping 修改
+              icon: faFile,
+            }));
+
+          return [...prevCategories, ...newCategories];
+        });
+      });
+  }, []);
+
+
 
 
   /**
@@ -1180,23 +1229,6 @@ const CertificationProjectDetail = () => {
             {/* 文件類別區塊 */}
             <div className="documents-container">
               <div className="document-categories">
-                {/* {documentCategories.map(category => (
-                  <div 
-                    key={category.id}
-                    className={`document-category ${activeDocCategory === category.id ? 'active' : ''}`}
-                    onClick={() => handleCategoryChange(category.id)}
-                  >
-                    <FontAwesomeIcon icon={category.icon} className="category-icon" />
-                    <span className="category-name">{category.name}</span>
-                    {category.id === 'all' ? (
-                      <span className="category-count">{projectDetail.documents.length}</span>
-                    ) : (
-                      <span className="category-count">
-                        {projectDetail.documents.filter(doc => doc.category === category.id).length}
-                      </span>
-                    )}
-                  </div>
-                ))} */}
                 {documentCategories.map(category => (
                   <div 
                     key={category.id}
