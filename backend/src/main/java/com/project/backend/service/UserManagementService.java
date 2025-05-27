@@ -90,13 +90,22 @@ public class UserManagementService {
     /**
      * Updates the authorizations for a given role.
      * The authorizations array must correspond to the predefined order of permissions in the Role entity:
-     * 0: allowSystemSettings
-     * 1: allowUserManagment
-     * 2: allowDocumentManagment
-     * 3: allowTemplateCenter
-     * 4: allowCertificationProjects
-     * 5: allowReportManagment
-     * 6: allowSupplierManagement
+     * 0: allowReadSystemSettings
+     * 1: allowWriteSystemSettings
+     * 2: allowReadUserManagment
+     * 3: allowWriteUserManagment
+     * 4: allowReadDocumentManagment
+     * 5: allowWriteDocumentManagment
+     * 6: allowReadTemplateCenter
+     * 7: allowWriteTemplateCenter
+     * 8: allowReadCertificationProjects
+     * 9: allowWriteCertificationProjects
+     * 10: allowReadReportManagment
+     * 11: allowWriteReportManagment
+     * 12: allowReadSupplierManagement
+     * 13: allowWriteSupplierManagement
+     * 14: allowReadDashboard
+     * 15: allowWriteDashboard
      * @param roleName The name of the role to update.
      * @param authorizations A boolean array representing the new authorizations.
      * @return The updated Role object.

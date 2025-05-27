@@ -70,19 +70,27 @@ public class UserManagementController {
      * This API uses PUT method.
      * The role whose authorizations to be altered is set as a PathVariable and should be in the request URL
      * The request body should be a JSON array of booleans.
-     * Example: [true, false, true, true, false, true, true]
+     * Example: [true, false, true, true, false, true, true, true, false, true, false, false, false, false, true, false]
      * 
      * @param roleName the role whose authorizations to be altered, PathVariable
      * @param authorizations a boolean Array of Authorizations.
      *  Each index corresponds to different authorization.
-     *      0: system settings
-     *      1: user management
-     *      2: document management
-     *      3: template center
-     *      4: certification project
-     *      5: report management
-     *      6: supplier management
-     *      7: dashboard
+     * 0: allowReadSystemSettings
+     * 1: allowWriteSystemSettings
+     * 2: allowReadUserManagment
+     * 3: allowWriteUserManagment
+     * 4: allowReadDocumentManagment
+     * 5: allowWriteDocumentManagment
+     * 6: allowReadTemplateCenter
+     * 7: allowWriteTemplateCenter
+     * 8: allowReadCertificationProjects
+     * 9: allowWriteCertificationProjects
+     * 10: allowReadReportManagment
+     * 11: allowWriteReportManagment
+     * 12: allowReadSupplierManagement
+     * 13: allowWriteSupplierManagement
+     * 14: allowReadDashboard
+     * 15: allowWriteDashboard
      * @return
      * 
      */
@@ -135,14 +143,22 @@ public class UserManagementController {
   "authorizations": [true, false, true, true, false, false, false, true]
 } 
      *Each index corresponds to different authorization.
-     *      0: system settings
-     *      1: user management
-     *      2: document management
-     *      3: template center
-     *      4: certification project
-     *      5: report management
-     *      6: supplier management
-     *      7: dashboard
+     * 0: allowReadSystemSettings
+     * 1: allowWriteSystemSettings
+     * 2: allowReadUserManagment
+     * 3: allowWriteUserManagment
+     * 4: allowReadDocumentManagment
+     * 5: allowWriteDocumentManagment
+     * 6: allowReadTemplateCenter
+     * 7: allowWriteTemplateCenter
+     * 8: allowReadCertificationProjects
+     * 9: allowWriteCertificationProjects
+     * 10: allowReadReportManagment
+     * 11: allowWriteReportManagment
+     * 12: allowReadSupplierManagement
+     * 13: allowWriteSupplierManagement
+     * 14: allowReadDashboard
+     * 15: allowWriteDashboard
      * @param roleDTO
      * @return
      * 
