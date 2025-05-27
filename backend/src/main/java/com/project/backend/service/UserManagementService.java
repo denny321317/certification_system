@@ -121,6 +121,14 @@ public class UserManagementService {
         return roleRepository.save(role);
     }
 
+    public Role getRole(String roleName){
+        Role role = roleRepository.findByName(roleName);
+        if (role == null){
+            throw new IllegalArgumentException("Role not found: " + roleName);
+        }
+        return role;
+    }
+
     /**
      * updates the Role of a user
      * @param userId

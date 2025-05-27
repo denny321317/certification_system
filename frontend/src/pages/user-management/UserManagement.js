@@ -60,7 +60,7 @@ const UserManagement = () => {
    * 當前選中的角色狀態
    * @type {[string, Function]} [當前角色, 設置當前角色的函數]
    */
-  const [selectedRole, setSelectedRole] = useState('系統管理員');
+  const [selectedRole, setSelectedRole] = useState('');
 
   /**
    * 當前頁碼狀態
@@ -80,6 +80,20 @@ const UserManagement = () => {
    *   lastLogin: string     // 最後登入時間
    * }>}
    */
+
+    /**
+   * for 設定角色權限
+   */
+  const permissionLabels = [
+    {key: 'SystemSettings', lable: '系統設定'},
+    {key: 'UserManagement', label: '使用者管理'},
+    {key: 'DocumentManagement', label: '文件管理'},
+    {key: 'TemplateCenter', label: '模板中心'},
+    {key: 'CertificationProjects', label: '認證專案'},
+    {key: 'ReportManagement', label: '報表分析'},
+    {key: 'SupplierManagement', label: '供應商管理'},
+    {key: 'Dashboard', label:' 儀表板'}
+  ];
 
   /* the old users const used for presentation before the API
   const users = [
@@ -187,6 +201,15 @@ const UserManagement = () => {
   const [loadingRolesForForm, setLoadingRolesForForm] = useState(true);
   const [errorRolesForForm, setErrorRolesForForm] = useState(null);
 
+  /**
+   * for role authorizations
+   */
+  const [roleAuthorizations, setRoleAuthorizations] = useState(Array(16).fill(false));
+  const [loadingRoleAuth, setLoadingRoleAuth] = useState(false);
+  const [errorRoleAuth, setErrorRoleAuth] = useState(null);
+
+
+
   // API base URL
   const API_BASE_URL = 'http://localhost:3000/api';
   const ROLE_NAME_MAP ={
@@ -229,33 +252,104 @@ const UserManagement = () => {
     }
   };
 
-  useEffect(() => {
-    
-    
+  const fetchRoleAuth = async () => {
+    if (!selectedRole) return;
+    setLoadingRoleAuth(true);
+    setErrorRoleAuth(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user-management/role/${selectedRole}/getRole`);
+      setRoleAuthorizations(response.data.authorizations);
+    } catch (err) {
+      setErrorRoleAuth('無法獲取權限列表: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoadingRoleAuth(false);
+    }
 
-    const fetchRolesForFormInternal = async () => {
+  };
+
+  useEffect(() => {
+    const fetchInitialPageData = async () => {
+      // Fetch users and stats concurrently
+      setLoadingUsers(true);
+      setErrorUsers(null);
+      setLoadingStats(true);
+      setErrorStats(null);
+      Promise.all([
+        axios.get(`${API_BASE_URL}/user-management/allUsers`),
+        axios.get(`${API_BASE_URL}/user-management/stats`)
+      ]).then(([usersResponse, statsResponse]) => {
+        setUsers(usersResponse.data);
+        setUserStats(statsResponse.data);
+      }).catch(err => {
+        console.error("Error fetching users or stats: ", err);
+        // Set specific errors if needed
+        setErrorUsers('無法獲取使用者列表: ' + (err.response?.data?.message || err.message));
+        setErrorStats('無法獲取使用者統計資料: ' + (err.response?.data?.message || err.message));
+      }).finally(() => {
+        setLoadingUsers(false);
+        setLoadingStats(false);
+      });
+
+      // Fetch roles for form and then set the initial selectedRole
       setLoadingRolesForForm(true);
       setErrorRolesForForm(null);
       try {
         const response = await axios.get(`${API_BASE_URL}/user-management/allRoles`);
-        setRolesForForm(response.data);
+        const fetchedRoles = response.data;
+        setRolesForForm(fetchedRoles);
+        // If roles are fetched and selectedRole is not yet set (or needs resetting)
+        if (fetchedRoles && fetchedRoles.length > 0) {
+          // Set selectedRole to the 'name' (system identifier) of the first role
+          // This will then trigger the useEffect hook that fetches role authorizations
+          if (!selectedRole || !fetchedRoles.some(r => r.name === selectedRole)) {
+            setSelectedRole(fetchedRoles[0].name);
+          }
+        } else {
+          setSelectedRole(''); // No roles available
+        }
       } catch (err) {
         setErrorRolesForForm('無法獲取角色列表: ' + (err.response?.data?.message || err.message));
-        console.error("Error fetching roles for form ", err);
+        console.error("Error fetching roles for form: ", err);
+        setSelectedRole(''); // Clear selected role on error
       } finally {
         setLoadingRolesForForm(false);
       }
-    }
+    };
 
-    fetchUsers();
-    fetchUserStats();
-    fetchRolesForFormInternal();
-  }, []); // Empty dependency array means this runs once when the component mounts
+    fetchInitialPageData();
+  }, []); // Empty dependency array: runs once when the component mounts
+
+  // This useEffect hook will run whenever 'selectedRole' changes.
+  useEffect(() => {
+    const fetchRoleAuthData = async () => {
+      if (!selectedRole) { // Don't fetch if no role is selected (e.g., initially or if roles list is empty)
+        setRoleAuthorizations(Array(16).fill(false)); // Reset authorizations
+        setErrorRoleAuth(null); // Clear any previous error
+        return;
+      }
+      setLoadingRoleAuth(true);
+      setErrorRoleAuth(null);
+      try {
+        // 'selectedRole' should now be the system name like "Admin", "Manager", etc.
+        const response = await axios.get(`${API_BASE_URL}/user-management/role/${selectedRole}/getRole`);
+        setRoleAuthorizations(response.data.authorizations);
+      } catch (err) {
+        setErrorRoleAuth(`無法獲取權限列表 (${selectedRole}): ` + (err.response?.data?.message || err.message));
+        console.error(`Error fetching authorizations for role ${selectedRole}:`, err);
+      } finally {
+        setLoadingRoleAuth(false);
+      }
+    };
+
+    fetchRoleAuthData();
+      
+  }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
 
   const handleUserAddedSuccess = () => {
     fetchUsers();
     fetchUserStats();
   }
+
 
 
   /**
@@ -531,109 +625,66 @@ const UserManagement = () => {
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
               >
-                <option>系統管理員</option>
-                <option>部門經理</option>
-                <option>認證審核員</option>
-                <option>一般使用者</option>
-                <option>訪客</option>
+                {rolesForForm.map(role => (
+                  <option key={role.name} value={role.name}>
+                    {ROLE_NAME_MAP[role.name] || role.name}
+                  </option>
+                ))}
               </select>
               
               <h6 className="mb-3">權限設置</h6>
-              <ul className="permission-list">
-                <li>
-                  <div>系統設定</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permSystemSettings"
-                      name="permSystemSettings"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={selectedRole === '系統管理員'} 
-                      readOnly={selectedRole !== '系統管理員'}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>使用者管理</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permUserManagement"
-                      name="permUserManagement"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={['系統管理員', '部門經理'].includes(selectedRole)} 
-                      readOnly={!['系統管理員', '部門經理'].includes(selectedRole)}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>文件管理</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permDocManagement"
-                      name="permDocManagement"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={selectedRole !== '訪客'} 
-                      readOnly={selectedRole === '訪客'}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>模板中心</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permTemplateCenter"
-                      name="permTemplateCenter"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={['系統管理員', '部門經理', '認證審核員'].includes(selectedRole)} 
-                      readOnly={!['系統管理員', '部門經理', '認證審核員'].includes(selectedRole)}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>認證專案</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permCertProjects"
-                      name="permCertProjects"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={selectedRole !== '訪客'} 
-                      readOnly={selectedRole === '訪客'}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>報表分析</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permReportsAnalysis"
-                      name="permReportsAnalysis"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={['系統管理員', '部門經理'].includes(selectedRole)} 
-                      readOnly={!['系統管理員', '部門經理'].includes(selectedRole)}
-                    />
-                  </div>
-                </li>
-                <li>
-                  <div>供應商管理</div>
-                  <div className="form-check form-switch">
-                    <input 
-                      id="permSupplierManagement"
-                      name="permSupplierManagement"
-                      className="form-check-input" 
-                      type="checkbox" 
-                      checked={['系統管理員', '部門經理', '認證審核員'].includes(selectedRole)} 
-                      readOnly={!['系統管理員', '部門經理', '認證審核員'].includes(selectedRole)}
-                    />
-                  </div>
-                </li>
-              </ul>
+              {loadingRoleAuth && <div>載入中...</div>}
+              {errorRoleAuth && <div className="text-danger">{errorRoleAuth}</div>}
+              {!loadingRoleAuth && !errorRoleAuth && (
+                <ul className="permission-list">
+                  {permissionLabels.map((perm, i) => (
+                    <li key={perm.key} className="d-flex align-items-center mb-2">
+                      <div style={{width: 100}}>{perm.label || perm.lable}</div>
+                      <div className="form-check form-switch ms-3">
+                        <label className="me-1">讀</label>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={roleAuthorizations[i * 2]}
+                          onChange={e => {
+                            const updated = [...roleAuthorizations];
+                            updated[i * 2] = e.target.checked;
+                            setRoleAuthorizations(updated);
+                          }}
+                        />
+                      </div>
+                      <div className="form-check form-switch ms-3">
+                        <label className="me-1">寫</label>
+                        <input
+                          type="checkbox"
+                          className="form-check-input"
+                          checked={roleAuthorizations[i * 2 + 1]}
+                          onChange={e => {
+                            const updated = [...roleAuthorizations];
+                            updated[i * 2 + 1] = e.target.checked;
+                            setRoleAuthorizations(updated);
+                          }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
               
-              <button className="btn btn-primary w-100 mt-3">儲存權限設置</button>
+              <button 
+                className="btn btn-primary w-100 mt-3"
+                onClick={async () => {
+                  try {
+                    await axios.put(`${API_BASE_URL}/user-management/role/${selectedRole}/authorizations`, roleAuthorizations);
+                    alert('權限已儲存');
+                  } catch (err) {
+                    alert('儲存失敗: ' + (err.response?.data?.message || err.message));
+                  }
+                }} 
+                disabled={loadingRoleAuth}
+              >
+                儲存權限設置
+              </button>
             </div>
           </div>
         </div>

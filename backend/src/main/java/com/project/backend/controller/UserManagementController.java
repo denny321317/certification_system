@@ -108,6 +108,18 @@ public class UserManagementController {
         }
     }
 
+    @GetMapping("/role/{roleName}/getRole")
+    public ResponseEntity<?> getAuthByRole (@PathVariable String roleName) {
+        try {
+            Role role = userManagementService.getRole(roleName);
+            return ResponseEntity.ok(role);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured");
+        }
+    }
+
 
 
     /**
