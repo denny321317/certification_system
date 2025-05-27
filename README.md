@@ -7,6 +7,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   - 取得所有用戶
   - 根據 Role 取得用戶
   - 取得用戶統計數據
+  - 取得所有 Roles
+  - 取得個別 Role
 - POST
   - 新增用戶
   - 新增 Role
