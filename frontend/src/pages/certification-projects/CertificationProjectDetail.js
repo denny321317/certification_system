@@ -233,10 +233,10 @@ const CertificationProjectDetail = () => {
         progressColor: 'primary',
         description: '遵循Sedex會員道德貿易審核(SMETA)標準進行社會責任審核，包含勞工標準、健康與安全、環境與商業道德四大支柱。',
         team: [
-          { name: '王經理', role: '項目負責人', email: 'wang@example.com' },
-          { name: '陳專員', role: '文件管理', email: 'chen@example.com' },
-          { name: '林工程師', role: '環保負責人', email: 'lin@example.com' },
-          { name: '張協理', role: '人資負責人', email: 'zhang@example.com' }
+          { name: '王經理', role: '項目負責人', email: 'wang@example.com', permission: 'edit', duties: ['認證文件上傳', '內部審核'] },
+          { name: '陳專員', role: '文件管理', email: 'chen@example.com', permission: 'view', duties: ['認證文件上傳'] },
+          { name: '林工程師', role: '環保負責人', email: 'lin@example.com', permission: 'view', duties: ['認證文件上傳'] },
+          { name: '張協理', role: '人資負責人', email: 'zhang@example.com', permission: 'edit', duties: ['內部審核'] }
         ],
         timeline: [
           {
@@ -1358,7 +1358,7 @@ const CertificationProjectDetail = () => {
           <div className="project-team">
             <div className="team-header">
               <h5>團隊成員</h5>
-              <button className="btn btn-primary btn-sm">
+              <button className="btn btn-primary btn-sm" onClick={handleShowAddMemberModal}>
                 <FontAwesomeIcon icon={faUsers} className="me-2" />
                 添加成員
               </button>
@@ -1375,9 +1375,14 @@ const CertificationProjectDetail = () => {
                       <div className="member-name-large">{member.name}</div>
                       <div className="member-role-badge">{member.role}</div>
                       <div className="member-email-large">{member.email}</div>
+                      <div className="member-permission">
+                        <span className="badge bg-secondary me-2">
+                          {member.permission === 'edit' ? '可編輯' : '僅檢視'}
+                        </span>
+                      </div>
                     </div>
                     <div className="member-actions">
-                      <button className="btn btn-sm btn-outline-secondary">
+                      <button className="btn btn-sm btn-outline-secondary" onClick={() => handleShowPermissionModal(index)}>
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
                     </div>
@@ -1385,10 +1390,11 @@ const CertificationProjectDetail = () => {
                   <div className="member-responsibilities">
                     <h6>職責與任務</h6>
                     <ul className="responsibilities-list">
-                      <li>項目計劃制定和審核</li>
-                      <li>團隊協調和資源分配</li>
-                      <li>與認證機構溝通</li>
-                      <li>進度監控和風險管理</li>
+                      {member.duties && member.duties.length > 0 ? (
+                        member.duties.map(duty => <li key={duty}>{duty}</li>)
+                      ) : (
+                        <li>無</li>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1552,6 +1558,103 @@ const CertificationProjectDetail = () => {
       
       alert(`文件 ${doc.name} 已刪除`);
     }
+  };
+
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [selectedMemberIndex, setSelectedMemberIndex] = useState(null);
+
+  const handleShowPermissionModal = (index) => {
+    setSelectedMemberIndex(index);
+    setShowPermissionModal(true);
+  };
+  const handleClosePermissionModal = () => {
+    setShowPermissionModal(false);
+    setSelectedMemberIndex(null);
+  };
+  const handlePermissionChange = (e) => {
+    const newPermission = e.target.value;
+    setProjectDetail(prev => {
+      const newTeam = [...prev.team];
+      newTeam[selectedMemberIndex] = {
+        ...newTeam[selectedMemberIndex],
+        permission: newPermission
+      };
+      return { ...prev, team: newTeam };
+    });
+  };
+
+  // 1. 新增狀態
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [addMemberForm, setAddMemberForm] = useState({
+    name: '',
+    email: '',
+    role: '',
+    permission: 'view',
+    duties: ['認證文件上傳', '內部審核']
+  });
+  const [addMemberError, setAddMemberError] = useState('');
+
+  // 2. 處理開關彈窗
+  const handleShowAddMemberModal = () => {
+    setAddMemberForm({ name: '', email: '', role: '', permission: 'view', duties: ['認證文件上傳', '內部審核'] });
+    setAddMemberError('');
+    setShowAddMemberModal(true);
+  };
+  const handleCloseAddMemberModal = () => {
+    setShowAddMemberModal(false);
+  };
+
+  // 3. 處理表單輸入
+  const handleAddMemberFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (name === 'duties') {
+      setAddMemberForm(prev => {
+        let newDuties = prev.duties || [];
+        if (checked) {
+          newDuties = [...newDuties, value];
+        } else {
+          newDuties = newDuties.filter(d => d !== value);
+        }
+        return { ...prev, duties: newDuties };
+      });
+    } else {
+      setAddMemberForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // 4. 處理新增成員
+  const handleAddMember = (e) => {
+    e.preventDefault();
+    // 基本驗證
+    if (!addMemberForm.name.trim() || !addMemberForm.email.trim() || !addMemberForm.role.trim()) {
+      setAddMemberError('請填寫所有欄位');
+      return;
+    }
+    // Email 格式驗證
+    if (!/^\S+@\S+\.\S+$/.test(addMemberForm.email)) {
+      setAddMemberError('Email 格式不正確');
+      return;
+    }
+    // 檢查是否重複
+    if (projectDetail.team.some(m => m.email === addMemberForm.email)) {
+      setAddMemberError('此 Email 已存在於團隊中');
+      return;
+    }
+    // 新增成員
+    setProjectDetail(prev => ({
+      ...prev,
+      team: [
+        ...prev.team,
+        {
+          name: addMemberForm.name,
+          email: addMemberForm.email,
+          role: addMemberForm.role,
+          permission: addMemberForm.permission,
+          duties: addMemberForm.duties
+        }
+      ]
+    }));
+    setShowAddMemberModal(false);
   };
 
   return (
@@ -1945,6 +2048,89 @@ const CertificationProjectDetail = () => {
                   <FontAwesomeIcon icon={faFileExport} /> 匯出報告
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPermissionModal && selectedMemberIndex !== null && (
+        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">編輯權限</h5>
+                <button type="button" className="btn-close" onClick={handleClosePermissionModal}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">選擇權限</label>
+                  <select className="form-select" value={projectDetail.team[selectedMemberIndex].permission} onChange={handlePermissionChange}>
+                    <option value="view">僅檢視</option>
+                    <option value="edit">可編輯</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleClosePermissionModal}>關閉</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddMemberModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">添加團隊成員</h5>
+                <button type="button" className="btn-close" onClick={handleCloseAddMemberModal}></button>
+              </div>
+              <form onSubmit={handleAddMember}>
+                <div className="modal-body">
+                  {addMemberError && <div className="alert alert-danger py-2">{addMemberError}</div>}
+                  <div className="mb-3">
+                    <label className="form-label">姓名</label>
+                    <input type="text" className="form-control" name="name" value={addMemberForm.name} onChange={handleAddMemberFormChange} required />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Email</label>
+                    <input type="email" className="form-control" name="email" value={addMemberForm.email} onChange={handleAddMemberFormChange} required />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">角色</label>
+                    <input type="text" className="form-control" name="role" value={addMemberForm.role} onChange={handleAddMemberFormChange} required placeholder="如：文件管理、負責人..." />
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">權限</label>
+                    <select className="form-select" name="permission" value={addMemberForm.permission} onChange={handleAddMemberFormChange}>
+                      <option value="view">僅檢視</option>
+                      <option value="edit">可編輯</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">職責與任務</label>
+                    <div>
+                      {['認證文件上傳', '內部審核'].map(option => (
+                        <div className="form-check form-check-inline" key={option}>
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            name="duties"
+                            value={option}
+                            id={`duty-${option}`}
+                            checked={addMemberForm.duties.includes(option)}
+                            onChange={handleAddMemberFormChange}
+                          />
+                          <label className="form-check-label" htmlFor={`duty-${option}`}>{option}</label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={handleCloseAddMemberModal}>取消</button>
+                  <button type="submit" className="btn btn-primary">新增</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
