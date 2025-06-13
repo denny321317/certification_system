@@ -182,7 +182,7 @@ const CertificationProjectDetail = () => {
     status: '',
     startDate: '',
     endDate: '',
-    manager: '',
+    managerId: '',
     agency: '',
     description: ''
   });
@@ -839,7 +839,7 @@ const CertificationProjectDetail = () => {
         status: projectDetail.status,
         startDate: projectDetail.startDate,
         endDate: projectDetail.endDate,
-        manager: projectDetail.manager,
+        managerId: Number(projectDetail.manager), // 假設 manager 是 userId
         agency: projectDetail.agency,
         description: projectDetail.description
       });
@@ -862,7 +862,7 @@ const CertificationProjectDetail = () => {
     const { name, value } = e.target;
     setEditProjectForm({
       ...editProjectForm,
-      [name]: value
+      [name]: name === 'managerId' ? Number(value) : value
     });
   };
 
@@ -1835,7 +1835,7 @@ const CertificationProjectDetail = () => {
                 <select
                   id="managerId"
                   name="managerId"
-                  value={editProjectForm.manager || ''}
+                  value={editProjectForm.managerId || ''}
                   onChange={handleEditProjectFormChange}
                   className="form-control"
                   required

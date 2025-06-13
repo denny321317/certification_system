@@ -144,6 +144,27 @@ const CertificationProjects = () => {
     setFilteredProjects(filtered);
   }, [projects, activeTab, searchQuery]);
   
+  // 1. 新增 userList 狀態與 useEffect
+  const [userList, setUserList] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/users/all')
+      .then(res => res.json())
+      .then(data => {
+        let arr = [];
+        if (Array.isArray(data)) {
+          arr = data;
+        } else if (data && Array.isArray(data.data)) {
+          arr = data.data;
+        } else if (data && Array.isArray(data.users)) {
+          arr = data.users;
+        }
+        console.log('userList:', arr);
+        setUserList(arr);
+      })
+      .catch(err => console.error('載入用戶失敗', err));
+  }, []);
+
   /**
    * 根據項目狀態返回對應的狀態標籤元素
    * @param {string} status - 項目狀態
@@ -239,7 +260,10 @@ const CertificationProjects = () => {
    */
   const handleSettingsClick = (project, e) => {
     e.stopPropagation(); // 防止事件冒泡觸發查看詳情
-    setCurrentProject({...project});
+    setCurrentProject({
+      ...project,
+      managerId: project.managerId || Number(project.manager) || '', // 兼容舊資料
+    });
     setSettingsTab('edit');
     setShowSettingsModal(true);
   };
@@ -316,15 +340,20 @@ const CertificationProjects = () => {
     alert('報告匯出成功');
   };
   
-  /**
-   * 處理項目表單輸入變更
-   * @param {Event} e - 事件對象
-   */
+  // 2. 新增顯示負責人名字的輔助函數
+  const getManagerName = (managerId, fallbackId) => {
+    if (!Array.isArray(userList)) return '未指定';
+    const id = managerId !== undefined ? managerId : fallbackId;
+    const user = userList.find(u => String(u.id) === String(id));
+    return user ? user.name : '未指定';
+  };
+
+  // 3. 修改 handleProjectInputChange 以支援 managerId
   const handleProjectInputChange = (e) => {
     const { name, value } = e.target;
     setCurrentProject({
       ...currentProject,
-      [name]: value
+      [name]: name === 'managerId' ? Number(value) : value
     });
   };
 
@@ -476,15 +505,22 @@ const CertificationProjects = () => {
                   <h5 className="section-title">責任與機構</h5>
                   
                   <div className="form-group">
-                    <label htmlFor="manager">專案負責人</label>
-                    <input
-                      type="text"
-                      id="manager"
-                      name="manager"
-                      value={currentProject.manager}
+                    <label htmlFor="managerId">專案負責人</label>
+                    <select
+                      id="managerId"
+                      name="managerId"
+                      value={currentProject.managerId || ''}
                       onChange={handleProjectInputChange}
                       className="form-control"
-                    />
+                      required
+                    >
+                      <option value="">請選擇負責人</option>
+                      {userList.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}（{user.email}）
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div className="form-group">
@@ -659,8 +695,7 @@ const CertificationProjects = () => {
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">專案負責人</div>
-                  <div className="project-meta-value">{project.manager}</div>
-                </div>
+                  <div className="project-meta-value">{getManagerName(project.managerId, project.manager)}</div>                </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">審核機構</div>
                   <div className="project-meta-value">{project.agency}</div>

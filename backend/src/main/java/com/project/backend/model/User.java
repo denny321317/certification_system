@@ -2,6 +2,8 @@ package com.project.backend.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +35,7 @@ public class User {
     @Column(name = "password_reset_token")
     private String passwordResetToken;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "users")
     private List<Project> projects;
 }

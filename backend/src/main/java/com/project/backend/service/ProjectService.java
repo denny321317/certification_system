@@ -98,6 +98,7 @@ public class ProjectService {
         if (project.getUsers() != null) {
             Long managerId = project.getManagerId();
             team = project.getUsers().stream().map(user -> new TeamMemberDTO(
+                    user.getId(),
                     user.getName(),
                     user.getRole(),
                     user.getEmail(),
