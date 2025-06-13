@@ -36,4 +36,12 @@ public class ProjectService {
                 project.getProgress()
         )).collect(Collectors.toList());
     }
+
+    @Transactional
+    public void deleteProjectById(Integer id) {
+        if (!projectRepository.existsById(id)) {
+            throw new IllegalArgumentException("Project with id " + id + " does not exist.");
+        }
+        projectRepository.deleteById(id);
+    }
 }

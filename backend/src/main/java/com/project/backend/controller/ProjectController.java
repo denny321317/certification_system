@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.project.backend.dto.ShowProjectDTO;
 import com.project.backend.model.Project;
@@ -38,5 +40,9 @@ public class ProjectController {
     public List<ShowProjectDTO> getAllProjects() {
         return projectService.getAllProjects();
     }
-  
+
+    @DeleteMapping("/DeleteProject/{id}")
+    public void deleteProject(@PathVariable Integer id) {
+        projectService.deleteProjectById(id);
+    }
 }

@@ -42,7 +42,7 @@ public class FileController {
 
     @PostMapping("/certification-projects/{projectId}/upload")
     public ResponseEntity<?> uploadFile(
-        @PathVariable("projectId") Long projectId,
+        @PathVariable("projectId") Integer projectId,
         @RequestParam("file") MultipartFile file,
         @RequestParam("category") String category,
         @RequestParam("description") String description
