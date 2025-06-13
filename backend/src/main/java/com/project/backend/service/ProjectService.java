@@ -8,6 +8,7 @@ import com.project.backend.model.Project;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,11 @@ import java.util.stream.Collectors;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
-    public ProjectService(ProjectRepository projectRepository) {
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository) {
         this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -68,6 +71,18 @@ public class ProjectService {
         project.setProgressColor(updatedProject.getProgressColor());
         project.setDescription(updatedProject.getDescription());
         // users, documents 不在此API更新
+        if (updatedProject.getManagerId() != null) {
+            User manager = userRepository.findById(updatedProject.getManagerId()).orElse(null);
+            if (manager != null) {
+                List<User> team = project.getUsers();
+                if (team == null) team = new java.util.ArrayList<>();
+                boolean alreadyInTeam = team.stream().anyMatch(u -> u.getId().equals(manager.getId()));
+                if (!alreadyInTeam) {
+                    team.add(manager);
+                    project.setUsers(team);
+                }
+            }
+        }
         projectRepository.save(project);
         return toShowProjectDTO(project);
     }
