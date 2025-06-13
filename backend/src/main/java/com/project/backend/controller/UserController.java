@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.model.User;
 import com.project.backend.repository.UserRepository;
+import com.project.backend.dto.UserDTO;
 
 
 @RestController
@@ -20,7 +21,9 @@ public class UserController {
     private UserRepository userRepository;
 
     @GetMapping("/all")
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+            .map(u -> new UserDTO(u.getId(), u.getName(), u.getEmail()))
+            .toList();
     }
 } 

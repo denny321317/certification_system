@@ -32,6 +32,42 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjects.css';
 
+// 狀態標籤輔助函數
+const getStatusBadge = (status) => {
+  switch (status) {
+    case 'preparing':
+      return (
+        <div className="status-badge preparing">
+          <FontAwesomeIcon icon={faUpload} className="me-1" />
+          準備中
+        </div>
+      );
+    case 'internal-review':
+      return (
+        <div className="status-badge internal-review">
+          <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
+          內部審核中
+        </div>
+      );
+    case 'external-review':
+      return (
+        <div className="status-badge external-review">
+          <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
+          外部審核中
+        </div>
+      );
+    case 'completed':
+      return (
+        <div className="status-badge completed">
+          <FontAwesomeIcon icon={faCheckCircle} className="me-1" />
+          已完成
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
 /**
  * 認證項目管理組件
  * @returns {JSX.Element} 認證項目管理介面
@@ -115,6 +151,9 @@ const CertificationProjects = () => {
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [projects, setProjects] = useState([]);
 
+  // 新增 teamMembers 狀態
+  const [teamMembers, setTeamMembers] = useState([]);
+
   // 1. 從後端拉資料
   useEffect(() => {
     fetch('http://localhost:8000/api/projects/GetAllProject') // 你可以加上完整URL: http://localhost:8080/GetAllProject
@@ -144,83 +183,14 @@ const CertificationProjects = () => {
     setFilteredProjects(filtered);
   }, [projects, activeTab, searchQuery]);
   
-  // 1. 新增 userList 狀態與 useEffect
-  const [userList, setUserList] = useState([]);
-
+  // 彈窗開啟時同步查詢團隊成員
   useEffect(() => {
-    fetch('http://localhost:8000/api/users/all')
-      .then(res => res.json())
-      .then(data => {
-        let arr = [];
-        if (Array.isArray(data)) {
-          arr = data;
-        } else if (data && Array.isArray(data.data)) {
-          arr = data.data;
-        } else if (data && Array.isArray(data.users)) {
-          arr = data.users;
-        }
-        console.log('userList:', arr);
-        setUserList(arr);
-      })
-      .catch(err => console.error('載入用戶失敗', err));
-  }, []);
-
-  /**
-   * 根據項目狀態返回對應的狀態標籤元素
-   * @param {string} status - 項目狀態
-   * @returns {JSX.Element|null} 狀態標籤元素
-   */
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'preparing':
-        return (
-          <div className="status-badge preparing">
-            <FontAwesomeIcon icon={faUpload} className="me-1" />
-            準備中
-          </div>
-        );
-      case 'internal-review':
-        return (
-          <div className="status-badge internal-review">
-            <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
-            內部審核中
-          </div>
-        );
-      case 'external-review':
-        return (
-          <div className="status-badge external-review">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
-            外部審核中
-          </div>
-        );
-      case 'completed':
-        return (
-          <div className="status-badge completed">
-            <FontAwesomeIcon icon={faCheckCircle} className="me-1" />
-            已完成
-          </div>
-        );
-      default:
-        return null;
+    if (showSettingsModal && currentProject) {
+      fetch(`http://localhost:8000/api/projects/${currentProject.id}/team`)
+        .then(res => res.json())
+        .then(data => setTeamMembers(Array.isArray(data) ? data : []));
     }
-  };
-
-  /**
-   * 根據時間線階段狀態返回對應的圖標
-   * @param {string} status - 階段狀態（completed/current/pending）
-   * @returns {JSX.Element} FontAwesome圖標元素
-   */
-  const getTimelineIcon = (status) => {
-    switch (status) {
-      case 'completed':
-        return <FontAwesomeIcon icon={faCheck} />;
-      case 'current':
-        return <FontAwesomeIcon icon={faHourglassHalf} />;
-      case 'pending':
-      default:
-        return <FontAwesomeIcon icon={faMinus} />;
-    }
-  };
+  }, [showSettingsModal, currentProject]);
   
   /**
    * 處理查看項目詳情
@@ -262,7 +232,6 @@ const CertificationProjects = () => {
     e.stopPropagation(); // 防止事件冒泡觸發查看詳情
     setCurrentProject({
       ...project,
-      managerId: project.managerId || Number(project.manager) || '', // 兼容舊資料
     });
     setSettingsTab('edit');
     setShowSettingsModal(true);
@@ -278,6 +247,8 @@ const CertificationProjects = () => {
   
   /**
    * 處理編輯項目
+   * 注意：此 API 僅更新專案基本資料，不處理團隊成員。
+   * 團隊成員請用 /add-member、/remove-member API 管理。
    */
   const handleEditProject = async () => {
     try {
@@ -286,7 +257,10 @@ const CertificationProjects = () => {
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentProject)
+          body: JSON.stringify({
+            ...currentProject,
+            // 不要傳 users/team/teamMembers 等欄位
+          })
         }
       );
       if (!response.ok) {
@@ -307,6 +281,7 @@ const CertificationProjects = () => {
   
   /**
    * 處理刪除項目
+   * 不需特別處理團隊成員，後端會 cascade 刪除 project_team 關聯。
    */
   const handleDeleteProject = async () => {
     if (window.confirm(`確定要刪除專案「${currentProject.name}」嗎？此操作無法復原。`)) {
@@ -340,23 +315,6 @@ const CertificationProjects = () => {
     alert('報告匯出成功');
   };
   
-  // 2. 新增顯示負責人名字的輔助函數
-  const getManagerName = (managerId, fallbackId) => {
-    if (!Array.isArray(userList)) return '未指定';
-    const id = managerId !== undefined ? managerId : fallbackId;
-    const user = userList.find(u => String(u.id) === String(id));
-    return user ? user.name : '未指定';
-  };
-
-  // 3. 修改 handleProjectInputChange 以支援 managerId
-  const handleProjectInputChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentProject({
-      ...currentProject,
-      [name]: name === 'managerId' ? Number(value) : value
-    });
-  };
-
   /**
    * 渲染設定彈窗
    * @returns {JSX.Element|null} 設定彈窗元素或null
@@ -411,7 +369,10 @@ const CertificationProjects = () => {
                       id="name"
                       name="name"
                       value={currentProject.name}
-                      onChange={handleProjectInputChange}
+                      onChange={(e) => setCurrentProject({
+                        ...currentProject,
+                        [e.target.name]: e.target.value
+                      })}
                       className="form-control"
                     />
                   </div>
@@ -422,7 +383,10 @@ const CertificationProjects = () => {
                       id="status"
                       name="status"
                       value={currentProject.status}
-                      onChange={handleProjectInputChange}
+                      onChange={(e) => setCurrentProject({
+                        ...currentProject,
+                        [e.target.name]: e.target.value
+                      })}
                       className="form-control"
                     >
                       <option value="preparing">準備中</option>
@@ -438,7 +402,10 @@ const CertificationProjects = () => {
                       id="description"
                       name="description"
                       value={currentProject.description || ''}
-                      onChange={handleProjectInputChange}
+                      onChange={(e) => setCurrentProject({
+                        ...currentProject,
+                        [e.target.name]: e.target.value
+                      })}
                       className="form-control"
                       rows="3"
                     ></textarea>
@@ -456,7 +423,10 @@ const CertificationProjects = () => {
                         id="startDate"
                         name="startDate"
                         value={currentProject.startDate}
-                        onChange={handleProjectInputChange}
+                        onChange={(e) => setCurrentProject({
+                          ...currentProject,
+                          [e.target.name]: e.target.value
+                        })}
                         className="form-control"
                       />
                     </div>
@@ -468,7 +438,10 @@ const CertificationProjects = () => {
                         id="endDate"
                         name="endDate"
                         value={currentProject.endDate}
-                        onChange={handleProjectInputChange}
+                        onChange={(e) => setCurrentProject({
+                          ...currentProject,
+                          [e.target.name]: e.target.value
+                        })}
                         className="form-control"
                       />
                     </div>
@@ -482,7 +455,10 @@ const CertificationProjects = () => {
                         id="internalReviewDate"
                         name="internalReviewDate"
                         value={currentProject.internalReviewDate}
-                        onChange={handleProjectInputChange}
+                        onChange={(e) => setCurrentProject({
+                          ...currentProject,
+                          [e.target.name]: e.target.value
+                        })}
                         className="form-control"
                       />
                     </div>
@@ -494,7 +470,10 @@ const CertificationProjects = () => {
                         id="externalReviewDate"
                         name="externalReviewDate"
                         value={currentProject.externalReviewDate}
-                        onChange={handleProjectInputChange}
+                        onChange={(e) => setCurrentProject({
+                          ...currentProject,
+                          [e.target.name]: e.target.value
+                        })}
                         className="form-control"
                       />
                     </div>
@@ -506,23 +485,29 @@ const CertificationProjects = () => {
                   
                   <div className="form-group">
                     <label htmlFor="managerId">專案負責人</label>
-                    <select
-                      id="managerId"
-                      name="managerId"
-                      value={currentProject.managerId || ''}
-                      onChange={handleProjectInputChange}
-                      className="form-control"
-                      required
-                    >
-                      <option value="">請選擇負責人</option>
-                      {userList.map(user => (
-                        <option key={user.id} value={user.id}>
-                          {user.name}（{user.email}）
-                        </option>
-                      ))}
-                    </select>
+                    {teamMembers.length === 0 ? (
+                      <div className="text-muted">請先於團隊成員區塊新增成員後再指定負責人</div>
+                    ) : (
+                      <select
+                        id="managerId"
+                        name="managerId"
+                        value={currentProject.managerId || ''}
+                        onChange={e => setCurrentProject({
+                          ...currentProject,
+                          managerId: e.target.value
+                        })}
+                        className="form-control"
+                        required
+                      >
+                        <option value="">請選擇負責人</option>
+                        {teamMembers.map(member => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}（{member.email}）
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
-                  
                   <div className="form-group">
                     <label htmlFor="agency">認證機構</label>
                     <input
@@ -530,7 +515,10 @@ const CertificationProjects = () => {
                       id="agency"
                       name="agency"
                       value={currentProject.agency}
-                      onChange={handleProjectInputChange}
+                      onChange={(e) => setCurrentProject({
+                        ...currentProject,
+                        [e.target.name]: e.target.value
+                      })}
                       className="form-control"
                     />
                   </div>
@@ -694,8 +682,11 @@ const CertificationProjects = () => {
                   </div>
                 </div>
                 <div className="project-meta-item">
-                  <div className="project-meta-label">專案負責人</div>
-                  <div className="project-meta-value">{getManagerName(project.managerId, project.manager)}</div>                </div>
+                  <div className="project-meta-label">負責人</div>
+                  <div className="project-meta-value">
+                    {project.managerName || '未指定'}
+                  </div>
+                </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">審核機構</div>
                   <div className="project-meta-value">{project.agency}</div>

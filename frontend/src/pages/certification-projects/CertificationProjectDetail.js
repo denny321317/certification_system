@@ -200,6 +200,66 @@ const CertificationProjectDetail = () => {
     includeHistory: true
   });
 
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [userList, setUserList] = useState([]);
+
+  // 取得團隊成員
+  const fetchTeamMembers = async () => {
+    const res = await fetch(`http://localhost:8000/api/projects/${projectId}/team`);
+    const data = await res.json();
+    setTeamMembers(Array.isArray(data) ? data : []);
+  };
+  useEffect(() => { if (projectId) fetchTeamMembers(); }, [projectId]);
+
+  // 取得所有用戶（供添加成員用）
+  useEffect(() => {
+    fetch('http://localhost:8000/api/users/all')
+      .then(res => res.json())
+      .then(data => {
+        setUserList(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setUserList([]));
+  }, []);
+
+  // 計算可選用戶（排除已在團隊中的 user）
+  const availableUsers = userList.filter(u => !teamMembers.some(tm => String(tm.id) === String(u.id)));
+
+  // Debug 輸出
+  useEffect(() => {
+    if (showAddMemberModal) {
+      console.log('userList:', userList);
+      console.log('teamMembers:', teamMembers);
+      console.log('availableUsers:', availableUsers);
+    }
+  }, [showAddMemberModal, userList, teamMembers, availableUsers]);
+
+  // 添加團隊成員
+  const handleAddMember = async () => {
+    if (!selectedUserId || !selectedRole) return;
+    await fetch(`http://localhost:8000/api/projects/${projectId}/add-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: selectedUserId, role: selectedRole }),
+    });
+    setShowAddMemberModal(false);
+    setSelectedUserId('');
+    setSelectedRole('');
+    fetchTeamMembers();
+  };
+
+  // 移除團隊成員
+  const handleRemoveMember = async (userId) => {
+    await fetch(`http://localhost:8000/api/projects/${projectId}/remove-member`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    fetchTeamMembers();
+  };
+
   // 當文件篩選條件變更時，重置頁碼為1
   useEffect(() => {
     setCurrentDocPage(1);
@@ -1431,42 +1491,73 @@ const CertificationProjectDetail = () => {
           <div className="project-team">
             <div className="team-header">
               <h5>團隊成員</h5>
-              <button className="btn btn-primary btn-sm">
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddMemberModal(true)}>
                 <FontAwesomeIcon icon={faUsers} className="me-2" />
                 添加成員
               </button>
             </div>
-            
             <div className="team-members-extended">
-              {projectDetail.team.map((member, index) => (
+              {teamMembers.length === 0 ? (
+                <div>尚無團隊成員，請新增。</div>
+              ) : teamMembers.map((member, index) => (
                 <div className="team-member-card" key={index}>
                   <div className="member-card-header">
-                    <div className="member-avatar-large">
-                      {member.name.charAt(0)}
-                    </div>
+                    <div className="member-avatar-large">{member.name.charAt(0)}</div>
                     <div className="member-main-info">
                       <div className="member-name-large">{member.name}</div>
                       <div className="member-role-badge">{member.role}</div>
                       <div className="member-email-large">{member.email}</div>
+                      {member.manager && <div className="member-manager-badge">【負責人】</div>}
                     </div>
                     <div className="member-actions">
-                      <button className="btn btn-sm btn-outline-secondary">
-                        <FontAwesomeIcon icon={faEdit} />
-                      </button>
+                      {!member.manager && (
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => handleRemoveMember(member.id)}>
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      )}
                     </div>
-                  </div>
-                  <div className="member-responsibilities">
-                    <h6>職責與任務</h6>
-                    <ul className="responsibilities-list">
-                      <li>項目計劃制定和審核</li>
-                      <li>團隊協調和資源分配</li>
-                      <li>與認證機構溝通</li>
-                      <li>進度監控和風險管理</li>
-                    </ul>
                   </div>
                 </div>
               ))}
             </div>
+            {/* 添加成員彈窗 */}
+            {showAddMemberModal && (
+              <div className="modal-overlay">
+                <div className="upload-modal">
+                  <div className="upload-modal-header">
+                    <h5>添加團隊成員</h5>
+                    <button className="btn-close" onClick={() => setShowAddMemberModal(false)}>
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  </div>
+                  <div className="upload-form">
+                    <div className="form-group">
+                      <label>選擇用戶</label>
+                      {userList.length === 0 ? (
+                        <div className="text-muted">尚無可用用戶，請先建立用戶</div>
+                      ) : availableUsers.length === 0 ? (
+                        <div className="text-muted">所有用戶都已在團隊中，無可新增成員</div>
+                      ) : (
+                        <select className="form-control" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)}>
+                          <option value="">請選擇</option>
+                          {availableUsers.map(u => (
+                            <option key={u.id} value={u.id}>{u.name}（{u.email}）</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    <div className="form-group">
+                      <label>職責</label>
+                      <input className="form-control" value={selectedRole} onChange={e => setSelectedRole(e.target.value)} placeholder="請輸入職責" />
+                    </div>
+                    <div className="form-actions">
+                      <button className="btn btn-outline" onClick={() => setShowAddMemberModal(false)}>取消</button>
+                      <button className="btn btn-primary" onClick={handleAddMember} disabled={!selectedUserId || !selectedRole || availableUsers.length === 0}>新增</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       

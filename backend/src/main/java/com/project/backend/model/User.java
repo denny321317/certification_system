@@ -35,7 +35,6 @@ public class User {
     @Column(name = "password_reset_token")
     private String passwordResetToken;
 
-    @JsonIgnore
-    @ManyToMany(mappedBy = "users")
-    private List<Project> projects;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ProjectTeam> projectMemberships;
 }

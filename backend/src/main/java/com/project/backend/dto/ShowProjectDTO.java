@@ -15,7 +15,7 @@ public class ShowProjectDTO {
   private String endDate;
   private String internalReviewDate;
   private String externalReviewDate;
-  private String manager;
+  private String managerName;
   private String agency;
   private String progressColor;
   private Integer progress;
