@@ -220,87 +220,23 @@ const CertificationProjectDetail = () => {
 
   // 從API獲取項目詳情
   useEffect(() => {
-    const mockProjectDetail = {
-      id: parseInt(projectId),
-      name: 'SMETA 4支柱認證',
-      status: 'internal-review',
-      startDate: '2023-07-15',
-      endDate: '2023-10-30',
-      manager: '王經理',
-      agency: 'SGS Taiwan',
-      progress: 75,
-      progressColor: 'primary',
-      description: '遵循Sedex會員道德貿易審核(SMETA)標準進行社會責任審核，包含勞工標準、健康與安全、環境與商業道德四大支柱。',
-      team: [
-        { name: '王經理', role: '項目負責人', email: 'wang@example.com' },
-        { name: '陳專員', role: '文件管理', email: 'chen@example.com' },
-        { name: '林工程師', role: '環保負責人', email: 'lin@example.com' },
-        { name: '張協理', role: '人資負責人', email: 'zhang@example.com' }
-      ],
-      timeline: [
-        {
-          stage: '準備階段',
-          status: 'completed',
-          date: '2023-08-15',
-          description: '完成團隊組建、資源分配和初步資料收集'
-        },
-        {
-          stage: '自我評估',
-          status: 'completed',
-          date: '2023-09-10',
-          description: '根據SMETA標準完成內部評估和差距分析'
-        },
-        {
-          stage: '文件準備',
-          status: 'current',
-          date: '進行中',
-          description: '收集和整理所有必要的證明文件',
-          tasks: [
-            { id: 1, name: '更新勞工權益政策文件', completed: true },
-            { id: 2, name: '完成健康安全管理程序書', completed: true },
-            { id: 3, name: '準備最近6個月的工時記錄', completed: false },
-            { id: 4, name: '更新環境管理計劃', completed: false }
-          ]
-        },
-        {
-          stage: '預備審核',
-          status: 'pending',
-          date: '預計 2023-10-15',
-          description: '內部團隊進行最終審核準備'
-        },
-        {
-          stage: '正式審核',
-          status: 'pending',
-          date: '預計 2023-10-25',
-          description: '外部審核機構現場審核'
-        }
-      ],
-        documents: []
-    }
-    const fetchDocuments = async () => {
+    const fetchProjectDetail = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/documents/project/${projectId}`);
-        if (!response.ok) throw new Error('載入文件失敗');
-
+        const response = await fetch(`http://localhost:8000/api/projects/${projectId}`);
+        if (!response.ok) throw new Error('載入專案細節失敗');
         const data = await response.json();
-        //更新模擬資料，填入真實的 documents
-        mockProjectDetail.documents = data;
-
-        setProjectDetail(mockProjectDetail);
-
-          console.log("projectDetail:", projectDetail);
+        setProjectDetail(data);
       } catch (err) {
-        console.error('抓取文件錯誤:', err);
+        console.error('抓取專案細節錯誤:', err);
       } finally {
         setLoading(false);
       }
     };
 
     if (projectId) {
-      fetchDocuments();
+      fetchProjectDetail();
     }
   }, [projectId]);
-
 
   /**
    * 根據項目狀態返回對應的狀態標籤元素
@@ -1895,16 +1831,22 @@ const CertificationProjectDetail = () => {
               </div>
               
               <div className="form-group">
-                <label htmlFor="projectManager">專案負責人</label>
-                <input
-                  type="text"
-                  id="projectManager"
-                  name="manager"
-                  className="form-control"
-                  value={editProjectForm.manager}
+                <label htmlFor="managerId">專案負責人</label>
+                <select
+                  id="managerId"
+                  name="managerId"
+                  value={editProjectForm.manager || ''}
                   onChange={handleEditProjectFormChange}
+                  className="form-control"
                   required
-                />
+                >
+                  <option value="">請選擇負責人</option>
+                  {(projectDetail.team || []).map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="form-group">

@@ -37,7 +37,9 @@ public class Project {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate externalReviewDate;
 
-    private String manager;
+    @Column(name = "manager_id")
+    private Long managerId; // 指向專案負責人 user 的 id
+
     private String agency;
     private Integer progress;
 

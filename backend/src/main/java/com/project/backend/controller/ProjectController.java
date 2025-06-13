@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 
 import com.project.backend.dto.ShowProjectDTO;
+import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.model.Project;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.service.AuthService;
@@ -50,5 +51,10 @@ public class ProjectController {
     @PutMapping("/UpdateProject/{id}")
     public ShowProjectDTO updateProject(@PathVariable Long id, @RequestBody Project project) {
         return projectService.updateProject(id, project);
+    }
+
+    @GetMapping("/{id}")
+    public ProjectDetailDTO getProjectDetail(@PathVariable Long id) {
+        return projectService.getProjectDetailById(id);
     }
 }
