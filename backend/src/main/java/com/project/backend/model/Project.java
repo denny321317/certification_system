@@ -20,7 +20,7 @@ public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // 確保自動生成主鍵
-    private Integer id;
+    private Long id;
     
     private String name;
     private String status;

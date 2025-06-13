@@ -255,26 +255,53 @@ const CertificationProjects = () => {
   /**
    * 處理編輯項目
    */
-  const handleEditProject = () => {
-    // 實際應用中，應該有API調用保存項目數據
-    console.log('儲存項目修改:', currentProject);
-    
-    // 模擬更新成功
-    alert('項目已更新');
-    setShowSettingsModal(false);
+  const handleEditProject = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/projects/UpdateProject/${currentProject.id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentProject)
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '更新失敗');
+      }
+      // 更新成功，前端同步更新
+      const updated = await response.json();
+      setProjects(prev =>
+        prev.map(p => (p.id === updated.id ? updated : p))
+      );
+      alert('項目已更新');
+      setShowSettingsModal(false);
+    } catch (error) {
+      alert('更新失敗: ' + error.message);
+    }
   };
   
   /**
    * 處理刪除項目
    */
-  const handleDeleteProject = () => {
+  const handleDeleteProject = async () => {
     if (window.confirm(`確定要刪除專案「${currentProject.name}」嗎？此操作無法復原。`)) {
-      // 實際應用中，應該有API調用刪除項目
-      console.log('刪除項目:', currentProject.id);
-      
-      // 模擬刪除成功
-      alert('項目已刪除');
-      setShowSettingsModal(false);
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/projects/DeleteProject/${currentProject.id}`,
+          { method: 'DELETE' }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || '刪除失敗');
+        }
+        // 刪除成功，從前端移除該專案
+        setProjects(prev => prev.filter(p => p.id !== currentProject.id));
+        alert('項目已刪除');
+        setShowSettingsModal(false);
+      } catch (error) {
+        alert('刪除失敗: ' + error.message);
+      }
     }
   };
   
