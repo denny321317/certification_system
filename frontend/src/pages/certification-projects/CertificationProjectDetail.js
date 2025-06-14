@@ -1762,13 +1762,19 @@ const CertificationProjectDetail = () => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [selectedMemberIndex, setSelectedMemberIndex] = useState(null);
 
+  // 1. 新增狀態：編輯 duties
+  const [editDuties, setEditDuties] = useState([]);
+
   const handleShowPermissionModal = (index) => {
     setSelectedMemberIndex(index);
+    // duties 初始值
+    setEditDuties(projectDetail.team[index].duties || []);
     setShowPermissionModal(true);
   };
   const handleClosePermissionModal = () => {
     setShowPermissionModal(false);
     setSelectedMemberIndex(null);
+    setEditDuties([]);
   };
   const handlePermissionChange = (e) => {
     const newPermission = e.target.value;
@@ -1862,6 +1868,33 @@ const CertificationProjectDetail = () => {
       fetchTeamMembers();
     } catch (err) {
       alert('移除成員失敗，請稍後再試');
+    }
+  };
+
+  const handleEditDutiesChange = (e) => {
+    setEditDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+  };
+
+  const handleUpdateMember = async () => {
+    const member = projectDetail.team[selectedMemberIndex];
+    try {
+      const res = await fetch(`http://localhost:8000/api/projects/${projectId}/add-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: member.id,
+          role: '', // role 已廢棄
+          permission: member.permission,
+          duties: editDuties
+        })
+      });
+      if (!res.ok) throw new Error('更新失敗');
+      fetchTeamMembers();
+      setShowPermissionModal(false);
+      setSelectedMemberIndex(null);
+      setEditDuties([]);
+    } catch (err) {
+      alert('更新成員失敗，請稍後再試');
     }
   };
 
@@ -2271,7 +2304,7 @@ const CertificationProjectDetail = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">編輯權限</h5>
+                <h5 className="modal-title">編輯權限與職責</h5>
                 <button type="button" className="btn-close" onClick={handleClosePermissionModal}></button>
               </div>
               <div className="modal-body">
@@ -2282,9 +2315,20 @@ const CertificationProjectDetail = () => {
                     <option value="edit">可編輯</option>
                   </select>
                 </div>
+                <div className="mb-3">
+                  <label className="form-label">多重職責（可多選）</label>
+                  <input
+                    className="form-control"
+                    value={editDuties.join(',')}
+                    onChange={handleEditDutiesChange}
+                    placeholder="以逗號分隔多個職責"
+                  />
+                  <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
+                </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={handleClosePermissionModal}>關閉</button>
+                <button type="button" className="btn btn-primary" onClick={handleUpdateMember}>儲存</button>
               </div>
             </div>
           </div>
