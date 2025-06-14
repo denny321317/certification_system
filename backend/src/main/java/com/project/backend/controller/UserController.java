@@ -23,7 +23,7 @@ public class UserController {
     @GetMapping("/all")
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
-            .map(u -> new UserDTO(u.getId(), u.getName(), u.getEmail()))
+            .map(u -> new UserDTO(u.getId(), u.getName(), u.getPosition()))
             .toList();
     }
 } 

@@ -502,7 +502,7 @@ const CertificationProjects = () => {
                         <option value="">請選擇負責人</option>
                         {teamMembers.map(member => (
                           <option key={member.id} value={member.id}>
-                            {member.name}（{member.email}）
+                            {member.name}（{member.position || '無職稱'}）
                           </option>
                         ))}
                       </select>
