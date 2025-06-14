@@ -126,6 +126,7 @@ public class ProjectService {
                 pt.getUser().getId(),
                 pt.getUser().getName(),
                 pt.getRole(),
+                pt.getUser().getPosition(),
                 pt.getUser().getEmail(),
                 managerId != null && pt.getUser().getId().equals(managerId),
                 pt.getPermission(),
