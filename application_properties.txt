@@ -1,0 +1,7 @@
+因為 application.properties 在 .gitignore 裡，換 Branch 時會被刪掉
+在這邊貼一下方便弄回來
+
+spring.datasource.url=jdbc:mysql://localhost:3306/your_database_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver

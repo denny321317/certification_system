@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://localhost:8000/';
 
 // 設置請求攔截器，為請求添加認證令牌
 axios.interceptors.request.use(

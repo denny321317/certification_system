@@ -2,7 +2,7 @@
  * 認證項目管理組件
  * 
  * 此組件提供企業認證系統的認證項目管理功能，包含：
- * 1. 認證項目狀態追蹤（準備中、內部審核中、外部審核中、已完成）
+ * 1. 認證項目狀態追蹤（進行中、已完成、計畫中）
  * 2. 項目搜索和篩選
  * 3. 項目時程管理
  * 4. 任務清單管理
@@ -13,7 +13,6 @@
  * - 提供項目進度的視覺化展示
  * - 支持項目時間線追蹤
  * - 包含詳細的任務分解和檢查清單
- * - 顯示內部審核、外部審核日期
  * 
  * 使用方式：
  * ```jsx
@@ -25,10 +24,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSearch, faPlus, faCog, faEdit, faTrashAlt, faFileExport, faEye, 
-  faTools, faCheckCircle, faClipboardCheck, 
-  faExclamationTriangle, faCheck, faHourglassHalf, faMinus, faClock,
-  faUpload, faCalendarCheck, faTimes
+  faSearch, faPlus, faCog, faEye, 
+  faPlayCircle, faCheckCircle, faCalendar, 
+  faCheck, faHourglassHalf, faMinus, faClock
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjects.css';
 
@@ -73,8 +71,6 @@ const getStatusBadge = (status) => {
  * @returns {JSX.Element} 認證項目管理介面
  */
 const CertificationProjects = () => {
-  const navigate = useNavigate();
-  
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -88,24 +84,6 @@ const CertificationProjects = () => {
   const [activeTab, setActiveTab] = useState('all');
 
   /**
-   * 設定彈窗狀態
-   * @type {[boolean, Function]} [是否顯示設定彈窗, 設置彈窗顯示狀態的函數]
-   */
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
-  /**
-   * 當前選中的項目
-   * @type {[Object|null, Function]} [當前選中的項目, 設置當前項目的函數]
-   */
-  const [currentProject, setCurrentProject] = useState(null);
-  
-  /**
-   * 當前選中的設定頁籤
-   * @type {[string, Function]} [當前設定頁籤, 設置當前設定頁籤的函數]
-   */
-  const [settingsTab, setSettingsTab] = useState('edit');
-
-  /**
    * 標籤列表定義
    * @type {Array<{
    *   id: string,    // 標籤ID
@@ -114,10 +92,9 @@ const CertificationProjects = () => {
    */
   const tabs = [
     { id: 'all', label: '全部' },
-    { id: 'preparing', label: '準備中' },
-    { id: 'internal-review', label: '內部審核中' },
-    { id: 'external-review', label: '外部審核中' },
-    { id: 'completed', label: '已完成' }
+    { id: 'in-progress', label: '進行中' },
+    { id: 'completed', label: '已完成' },
+    { id: 'planned', label: '計畫中' }
   ];
 
   /**
@@ -125,15 +102,13 @@ const CertificationProjects = () => {
    * @type {Array<{
    *   id: number,           // 項目ID
    *   name: string,         // 項目名稱
-   *   status: string,       // 項目狀態（preparing/internal-review/external-review/completed）
+   *   status: string,       // 項目狀態（in-progress/completed/planned）
    *   startDate: string,    // 開始日期
    *   endDate: string,      // 結束日期
    *   manager: string,      // 負責人
    *   agency: string,       // 認證機構
    *   progress: number,     // 完成進度
    *   progressColor: string, // 進度條顏色
-   *   internalReviewDate: string, // 內部審核日期
-   *   externalReviewDate: string, // 外部審核日期
    *   timeline?: Array<{    // 時間線（可選）
    *     stage: string,      // 階段名稱
    *     status: string,     // 階段狀態
@@ -171,6 +146,90 @@ const CertificationProjects = () => {
         console.error('Error fetching project data:', error);
       });
   }, []);
+  const certificationProjects = [
+    {
+      id: 1,
+      name: 'SMETA 4支柱認證',
+      status: 'in-progress',
+      startDate: '2023-07-15',
+      endDate: '2023-10-30',
+      manager: '王經理',
+      agency: 'SGS Taiwan',
+      progress: 75,
+      progressColor: 'primary',
+      timeline: [
+        {
+          stage: '準備階段',
+          status: 'completed',
+          date: '2023-08-15',
+          description: '完成團隊組建、資源分配和初步資料收集'
+        },
+        {
+          stage: '自我評估',
+          status: 'completed',
+          date: '2023-09-10',
+          description: '根據SMETA標準完成內部評估和差距分析'
+        },
+        {
+          stage: '文件準備',
+          status: 'current',
+          date: '進行中',
+          description: '收集和整理所有必要的證明文件',
+          tasks: [
+            { id: 1, name: '更新勞工權益政策文件', completed: true },
+            { id: 2, name: '完成健康安全管理程序書', completed: true },
+            { id: 3, name: '準備最近6個月的工時記錄', completed: false },
+            { id: 4, name: '更新環境管理計劃', completed: false }
+          ]
+        },
+        {
+          stage: '預備審核',
+          status: 'pending',
+          date: '預計 2023-10-15',
+          description: '內部團隊進行最終審核準備'
+        },
+        {
+          stage: '正式審核',
+          status: 'pending',
+          date: '預計 2023-10-25',
+          description: '外部審核機構現場審核'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'ISO 14001 環境管理系統認證',
+      status: 'in-progress',
+      startDate: '2023-06-01',
+      endDate: '2023-09-25',
+      manager: '李總監',
+      agency: 'BSI Taiwan',
+      progress: 90,
+      progressColor: 'secondary'
+    },
+    {
+      id: 3,
+      name: 'ISO 9001 品質管理系統認證',
+      status: 'completed',
+      startDate: '2023-03-10',
+      endDate: '2023-08-15',
+      manager: '張經理',
+      agency: 'TÜV Rheinland',
+      progress: 100,
+      progressColor: 'success'
+    },
+    {
+      id: 4,
+      name: 'SA8000 社會責任認證',
+      status: 'planned',
+      startDate: '2023-11-01',
+      endDate: '2024-04-30',
+      manager: '尚未指派',
+      agency: '待定',
+      progress: 0,
+      progressColor: ''
+    }
+  ];
 
   // 2. 根據 activeTab 和 searchQuery 過濾
   useEffect(() => {
@@ -604,10 +663,7 @@ const CertificationProjects = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button 
-            className="btn btn-primary"
-            onClick={handleCreateProject}
-          >
+          <button className="btn btn-primary">
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             新增認證專案
           </button>
@@ -637,10 +693,7 @@ const CertificationProjects = () => {
                 {getStatusBadge(project.status)}
               </div>
               <div className="project-actions">
-                <button 
-                  className="btn btn-sm btn-outline" 
-                  onClick={(e) => handleSettingsClick(project, e)}
-                >
+                <button className="btn btn-sm btn-outline">
                   <FontAwesomeIcon icon={faCog} />
                 </button>
                 <button 
@@ -658,28 +711,16 @@ const CertificationProjects = () => {
             <div className="project-body">
               <div className="project-meta">
                 <div className="project-meta-item">
-                  <div className="project-meta-label">專案開始日期</div>
-                  <div className="project-meta-value">{formatDate(project.startDate)}</div>
+                  <div className="project-meta-label">
+                    {project.status === 'planned' ? '預計開始日期' : '專案開始日期'}
+                  </div>
+                  <div className="project-meta-value">{project.startDate}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">
                     {project.status === 'completed' ? '完成日期' : '預計完成日期'}
                   </div>
-                  <div className="project-meta-value">{formatDate(project.endDate)}</div>
-                </div>
-                <div className="project-meta-item">
-                  <div className="project-meta-label">內部審核日期</div>
-                  <div className="project-meta-value date-info">
-                    <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
-                    {formatDate(project.internalReviewDate)}
-                  </div>
-                </div>
-                <div className="project-meta-item">
-                  <div className="project-meta-label">外部審核日期</div>
-                  <div className="project-meta-value date-info">
-                    <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
-                    {formatDate(project.externalReviewDate)}
-                  </div>
+                  <div className="project-meta-value">{project.endDate}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">負責人</div>
@@ -705,12 +746,57 @@ const CertificationProjects = () => {
                   ></div>
                 </div>
               </div>
+              
+              {project.id === 1 && (
+                <div className="timeline">
+                  {project.timeline.map((item, index) => (
+                    <div className="timeline-item" key={index}>
+                      <div className={`timeline-dot ${item.status}`}>
+                        {getTimelineIcon(item.status)}
+                      </div>
+                      <div className="timeline-content">
+                        <div className="timeline-header">
+                          <strong>{item.stage}</strong>
+                          <span className="timeline-date">
+                            {item.status === 'current' ? (
+                              <span className="text-primary">
+                                <FontAwesomeIcon icon={faClock} className="me-1" />
+                                {item.date}
+                              </span>
+                            ) : (
+                              <span className="text-muted">{item.date}</span>
+                            )}
+                          </span>
+                        </div>
+                        <p className="timeline-description">{item.description}</p>
+                        
+                        {item.tasks && item.tasks.length > 0 && (
+                          <div className="task-checklist">
+                            <div className="task-list-heading">待完成項目</div>
+                            <ul className="checklist">
+                              {item.tasks.map(task => (
+                                <li className="checklist-item" key={task.id}>
+                                  <input 
+                                    type="checkbox" 
+                                    className="checklist-checkbox" 
+                                    checked={task.completed} 
+                                    readOnly
+                                  />
+                                  <div className="task-name">{task.name}</div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
-      
-      {renderSettingsModal()}
     </div>
   );
 };

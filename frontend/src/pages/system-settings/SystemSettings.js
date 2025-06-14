@@ -23,15 +23,12 @@
  * ```
  */
 
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faGear, faShieldHalved, faBell, faCloudArrowUp, 
-  faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash,
-  faSignOutAlt
+  faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash
 } from '@fortawesome/free-solid-svg-icons';
-import { AuthContext } from '../../contexts/AuthContext';
 import './SystemSettings.css';
 
 /**
@@ -39,9 +36,6 @@ import './SystemSettings.css';
  * @returns {JSX.Element} 系統設置界面
  */
 const SystemSettings = () => {
-  const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
-  
   /**
    * 當前選中的設置標籤
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -60,15 +54,6 @@ const SystemSettings = () => {
    */
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
-  };
-
-  /**
-   * 處理用戶登出
-   * 清除認證信息並導航到登入頁面
-   */
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
   };
 
   return (
@@ -119,13 +104,6 @@ const SystemSettings = () => {
                 >
                   <FontAwesomeIcon icon={faBook} className="me-2" />
                   稽核日誌
-                </div>
-                <div 
-                  className="settings-tab settings-tab-logout" 
-                  onClick={handleLogout}
-                >
-                  <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
-                  系統登出
                 </div>
               </div>
             </div>

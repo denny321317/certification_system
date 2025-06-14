@@ -2,6 +2,50 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Current Features in this branch
+- GET
+  - 取得所有用戶
+  - 根據 Role 取得用戶
+  - 取得用戶統計數據
+  - 取得所有 Roles
+  - 取得個別 Role
+- POST
+  - 新增用戶
+  - 新增 Role
+- PUT
+  - 更改各個 Role 的權限
+    - 27.May 更新: 分離讀寫功能
+  - 更改用戶的 Role
+
+### 前端
+- 已可使用
+  - 顯示使用者
+  - 使用者統計
+  - 角色與權限
+  - 透過名字搜索使用者
+- 可使用但是有 Bug
+  - 新增使用者 
+    - (背景莫名其妙全黑)
+- 尚未實作
+  - 新增角色
+  - 編輯使用者
+  - 查看使用者詳情
+  - 停用帳號
+
+## TODO
+### User Management
+- [ ] 和 Authentication merge 好
+- [ ] 新增角色
+- [ ] 詳細查看使用者內容
+  - [ ] 修改使用者內容
+  - [ ] 停用帳號
+
+### Supply Chain Management
+- [ ] 整體
+
+
+
+
 ## Available Scripts
 
 In the project directory, you can run:
