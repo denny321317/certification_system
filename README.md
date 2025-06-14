@@ -32,6 +32,19 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   - 查看使用者詳情
   - 停用帳號
 
+## TODO
+### User Management
+- [ ] 和 Authentication merge 好
+- [ ] 新增角色
+- [ ] 詳細查看使用者內容
+  - [ ] 修改使用者內容
+  - [ ] 停用帳號
+
+### Supply Chain Management
+- [ ] 整體
+
+
+
 
 ## Available Scripts
 
