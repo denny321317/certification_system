@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
+import com.project.backend.repository.RoleRepository;
 
 
 
@@ -55,8 +56,6 @@ public class User {
     private String department = "default department";
 
     // default constructor for JPA
-    public User(){}
-
 
     public User(String name, Role role, String email, String department){
         this.name = name;
@@ -89,7 +88,7 @@ public class User {
     }
     
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
     

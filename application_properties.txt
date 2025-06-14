@@ -1,7 +1,43 @@
 因為 application.properties 在 .gitignore 裡，換 Branch 時會被刪掉
 在這邊貼一下方便弄回來
 
-spring.datasource.url=jdbc:mysql://localhost:3306/your_database_name
-spring.datasource.username=your_username
-spring.datasource.password=your_password
+spring.application.name=backend
+
+# 資料庫連線設定
+spring.datasource.url=jdbc:mysql://localhost:33061/certification_system?useSSL=false&serverTimezone=Asia/Taipei
+spring.datasource.username=root
+spring.datasource.password=<password>
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA設定
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.properties.hibernate.format_sql=true
+
+logging.level.org.springframework=WARN
+spring.devtools.restart.enabled=false
+spring.jpa.open-in-view=false
+
+#很重要
+#port要和前端保持一致
+server.port=8080
+
+#這一行配置是否在控制台打印 SQL 語句。設置為 true 時，Hibernate 會在控制台輸出執行的 SQL 語句 
+spring.jpa.show-sql=true 
+
+
+# 郵件服務主機
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+
+# 郵件服務帳密
+spring.mail.username=authtest010@gmail.com
+spring.mail.password=cirg xtqi xcwl ywsp
+
+# 傳輸協定
+spring.mail.properties.mail.transport.protocol=smtp
+
+# 是否向郵件服務驗證身份
+spring.mail.properties.mail.smtp.auth=true
+
+# 是否啟用 TLS（傳輸層安全），對通訊加密
+spring.mail.properties.mail.smtp.starttls.enable=true

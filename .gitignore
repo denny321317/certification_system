@@ -38,7 +38,7 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db 
-<<<<<<< HEAD
-=======
 /node_modules
->>>>>>> feature/user-management
+
+# contain password
+/backend/src/main/resources/application.properties

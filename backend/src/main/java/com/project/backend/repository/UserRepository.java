@@ -13,6 +13,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRole(Role role);
     long countByRole(Role role);
-    List<User> findByEmail(String email);
+    Optional<User> findByEmail(String email);
     Optional<User> findByPasswordResetToken(String passwordResetToken); // 根據 token 查詢用戶
 }
