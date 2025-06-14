@@ -75,7 +75,9 @@ public class ProjectController {
     public List<TeamMemberDTO> addTeamMember(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
         Long userId = Long.valueOf(body.get("userId").toString());
         String role = body.get("role") != null ? body.get("role").toString() : "";
-        return projectService.addTeamMember(projectId, userId, role);
+        String permission = body.get("permission") != null ? body.get("permission").toString() : "view";
+        java.util.List<String> duties = (java.util.List<String>) body.get("duties");
+        return projectService.addTeamMember(projectId, userId, role, permission, duties);
     }
 
     @PostMapping("/{projectId}/remove-member")

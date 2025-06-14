@@ -22,4 +22,9 @@ public class ProjectTeam {
     private User user;
 
     private String role; // 團隊成員在此專案的職責
+
+    private String permission; // "view" or "edit"
+
+    @ElementCollection
+    private java.util.List<String> duties; // 多個職責
 } 

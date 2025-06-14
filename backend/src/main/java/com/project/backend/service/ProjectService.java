@@ -12,6 +12,7 @@ import com.project.backend.model.ProjectTeam;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.ProjectTeamRepository;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -118,7 +119,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<TeamMemberDTO> getTeamMembers(Long projectId) {
-        List<ProjectTeam> team = projectTeamRepository.findByProjectId(projectId);
+        List<ProjectTeam> team = projectTeamRepository.findByProjectIdWithDuties(projectId);
         Project project = projectRepository.findById(projectId).orElse(null);
         Long managerId = project != null ? project.getManagerId() : null;
         return team.stream().map(pt -> new TeamMemberDTO(
@@ -126,12 +127,14 @@ public class ProjectService {
                 pt.getUser().getName(),
                 pt.getRole(),
                 pt.getUser().getEmail(),
-                managerId != null && pt.getUser().getId().equals(managerId)
+                managerId != null && pt.getUser().getId().equals(managerId),
+                pt.getPermission(),
+                pt.getDuties()
         )).collect(Collectors.toList());
     }
 
     @Transactional
-    public List<TeamMemberDTO> addTeamMember(Long projectId, Long userId, String role) {
+    public List<TeamMemberDTO> addTeamMember(Long projectId, Long userId, String role, String permission, java.util.List<String> duties) {
         Project project = projectRepository.findById(projectId)
             .orElseThrow(() -> new IllegalArgumentException("Project not found"));
         User user = userRepository.findById(userId)
@@ -142,6 +145,8 @@ public class ProjectService {
             pt.setProject(project);
             pt.setUser(user);
             pt.setRole(role);
+            pt.setPermission(permission);
+            pt.setDuties(duties);
             projectTeamRepository.save(pt);
         }
         return getTeamMembers(projectId);

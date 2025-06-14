@@ -13,4 +13,6 @@ public class TeamMemberDTO {
     private String role; // 新增：團隊成員職責
     private String email;
     private boolean manager; // 是否為專案負責人
+    private String permission; // 權限：view/edit
+    private java.util.List<String> duties; // 多個職責
 } 
