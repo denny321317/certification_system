@@ -1505,7 +1505,7 @@ const CertificationProjectDetail = () => {
                     <div className="member-avatar-large">{member.name.charAt(0)}</div>
                     <div className="member-main-info">
                       <div className="member-name-large">{member.name}</div>
-                      <div className="member-role-badge">{member.role}</div>
+                      <div className="member-role-badge">{member.position || '無職稱'}</div>
                       <div className="member-email-large">{member.email}</div>
                       {member.manager && <div className="member-manager-badge">【負責人】</div>}
                     </div>
@@ -1516,6 +1516,9 @@ const CertificationProjectDetail = () => {
                         </button>
                       )}
                     </div>
+                  </div>
+                  <div className="member-responsibility-bar">
+                    <span className="member-responsibility-label">{member.role || '—'}</span>
                   </div>
                 </div>
               ))}
@@ -1541,7 +1544,7 @@ const CertificationProjectDetail = () => {
                         <select className="form-control" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)}>
                           <option value="">請選擇</option>
                           {availableUsers.map(u => (
-                            <option key={u.id} value={u.id}>{u.name}（{u.email}）</option>
+                            <option key={u.id} value={u.id}>{u.name}（{u.position || '無職稱'}）</option>
                           ))}
                         </select>
                       )}
