@@ -37,6 +37,7 @@ public class User {
     private String passwordResetToken;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private java.util.List<ProjectTeam> projectMemberships;
     
 
