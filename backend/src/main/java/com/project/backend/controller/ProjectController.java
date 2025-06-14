@@ -42,6 +42,7 @@ public class ProjectController {
 
     @PostMapping("/CreateProject")
     public Project createProject(@RequestBody Project project) {
+        projectService.updateProgressByStatus(project);
         return projectRepository.save(project);
     }
 

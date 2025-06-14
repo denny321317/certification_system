@@ -60,12 +60,37 @@ public class ProjectService {
         project.setExternalReviewDate(updatedProject.getExternalReviewDate());
         project.setManagerId(updatedProject.getManagerId());
         project.setAgency(updatedProject.getAgency());
-        project.setProgress(updatedProject.getProgress());
-        project.setProgressColor(updatedProject.getProgressColor());
         project.setDescription(updatedProject.getDescription());
+        // 根據 status 自動設定 progress/progressColor
+        updateProgressByStatus(project);
         // users, documents 不在此API更新
         projectRepository.save(project);
         return toShowProjectDTO(project);
+    }
+
+    //根據專案狀態自動設定進度與顏色
+    public void updateProgressByStatus(Project project) {
+        switch (project.getStatus()) {
+            case "preparing":
+                project.setProgress(10);
+                project.setProgressColor("progress-preparing");
+                break;
+            case "internal-review":
+                project.setProgress(40);
+                project.setProgressColor("progress-internal");
+                break;
+            case "external-review":
+                project.setProgress(70);
+                project.setProgressColor("progress-external");
+                break;
+            case "completed":
+                project.setProgress(100);
+                project.setProgressColor("progress-completed");
+                break;
+            default:
+                project.setProgress(0);
+                project.setProgressColor("progress-default");
+        }
     }
 
     public ShowProjectDTO toShowProjectDTO(Project project) {
