@@ -38,6 +38,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './UserManagement.css';
 import AddUserModal from '../../components/modals/AddUserModal';
+import AddRoleModal from '../../components/modals/AddRoleModal';
 
 /**
  * 用戶管理組件
@@ -86,7 +87,7 @@ const UserManagement = () => {
    */
   const permissionLabels = [
     {key: 'SystemSettings', lable: '系統設定'},
-    {key: 'UserManagement', label: '使用者管理'},
+    {key: 'UserManagement', label: '用戶管理'},
     {key: 'DocumentManagement', label: '文件管理'},
     {key: 'TemplateCenter', label: '模板中心'},
     {key: 'CertificationProjects', label: '認證專案'},
@@ -208,6 +209,11 @@ const UserManagement = () => {
   const [loadingRoleAuth, setLoadingRoleAuth] = useState(false);
   const [errorRoleAuth, setErrorRoleAuth] = useState(null);
 
+  /**
+   * for adding new roles
+   */
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  
 
 
   // API base URL
@@ -265,6 +271,22 @@ const UserManagement = () => {
       setLoadingRoleAuth(false);
     }
 
+  };
+
+  const fetchAllRoles = async () => {
+    setLoadingRolesForForm(true);
+    setErrorRolesForForm(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user-management/allRoles`);
+      const fetchedRoles = response.data;
+      setRolesForForm(fetchedRoles);
+
+    } catch (err) {
+      setErrorRolesForForm("無法獲取角色列表: " + (err.response?.data?.message || err.message));
+      console.error("Error fetching roles for form: ", err);
+    } finally {
+      setLoadingRolesForForm(false);
+    }
   };
 
   useEffect(() => {
@@ -348,7 +370,15 @@ const UserManagement = () => {
   const handleUserAddedSuccess = () => {
     fetchUsers();
     fetchUserStats();
+    fetchAllRoles();
   }
+
+  const handleRoleAddedSuccess = () => {
+    fetchAllRoles();
+    fetchUserStats();
+  }
+
+  
 
 
 
@@ -482,7 +512,7 @@ const UserManagement = () => {
             className="btn upload-btn"
             onClick={() => setShowAddUserModal(true)}
             disabled={loadingRolesForForm || !!errorRolesForForm}
-          >{/* TODO: 實作新增使用者 */}
+          >
             <FontAwesomeIcon icon={faPlus} className="me-2" />新增使用者
           </button>
         </div>
@@ -685,6 +715,13 @@ const UserManagement = () => {
               >
                 儲存權限設置
               </button>
+              <button
+                className='btn btn-primary w-100 mt-3'
+                onClick={() => setShowAddRoleModal(true)}
+                // TODO: implement AddRole
+              >
+                新增角色
+              </button>
             </div>
           </div>
         </div>
@@ -698,6 +735,16 @@ const UserManagement = () => {
         rolesList={rolesForForm}
         onUserAddedSuccess={handleUserAddedSuccess}
       />
+      
+      {/* render AddRoleModal */}
+      <AddRoleModal
+        show={showAddRoleModal}
+        onClose={() => setShowAddRoleModal(false)}
+        API_BASE_URL={API_BASE_URL}
+        onRoleAddedSuccess={handleRoleAddedSuccess}
+      />
+      
+      
       {/* error part */}
       {errorRolesForForm && !loadingRolesForForm && (
         <div className='alert alert-warning- mt-3'>
@@ -705,6 +752,9 @@ const UserManagement = () => {
         </div>
       )
       }
+
+      
+
     </div>
   );
 };
