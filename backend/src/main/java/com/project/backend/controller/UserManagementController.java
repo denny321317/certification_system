@@ -129,7 +129,7 @@ public class UserManagementController {
     }
 
 
-    // TODO: project membership
+    
     /**
      * This API is for looking at details of a specific user
      * @param id

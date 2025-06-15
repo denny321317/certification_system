@@ -40,11 +40,11 @@ public class UserManagementService {
     }
 
 
-    // TODO: reimplement this function with returning DTO
+   
     /**
      * This function is for attaining the information of a specific user
      * @param id the User ID
-     * @return the user with the ID 
+     * @return the user with that ID in DTO form 
      */
     public Optional<UserDetailDTO> getUser(Long id){
         Optional<User> userOptional = userRepository.findByIdWithProjectMembership(id);
