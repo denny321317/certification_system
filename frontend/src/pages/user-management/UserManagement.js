@@ -41,6 +41,7 @@ import './UserManagement.css';
 import AddUserModal from '../../components/modals/AddUserModal';
 import AddRoleModal from '../../components/modals/AddRoleModal';
 import UserInfoModal from '../../components/modals/UserInfoModal';
+import EditUserInfoModal from '../../components/modals/EditUserInfoModal';
 
 /**
  * 用戶管理組件
@@ -224,6 +225,15 @@ const UserManagement = () => {
   const [detailedUser, setDetailedUser] = useState(null);
   const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
   const [errorUserDetails, setErrorUserDetails] = useState(null);
+
+  /**
+   * for editing user info
+   */
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [userToEdit, setUserToEdit] = useState(null); // This will hold the detailed user data for editing
+  const [isLoadingEditUserDetail, setIsLoadingEditUserDetail] = useState(false);
+  const [errorEditUserDetail, setErrorEditUserDetail] = useState(null);
+
   
 
 
@@ -299,6 +309,7 @@ const UserManagement = () => {
       setLoadingRolesForForm(false);
     }
   };
+
 
   useEffect(() => {
     const fetchInitialPageData = async () => {
@@ -404,6 +415,42 @@ const UserManagement = () => {
       setErrorUserDetails('無法獲取使用者詳細資料: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsLoadingUserDetails(false);
+    }
+  }
+
+  const handleOpenEditModal = async (userFromList) => {
+    setShowEditUserModal(true);
+    setIsLoadingEditUserDetail(true);
+    setUserToEdit(null);
+    setErrorEditUserDetail(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user-management/user/getInfo?id=${userFromList.id}`);
+      setUserToEdit(response.data);
+    } catch (err) {
+      console.error("Error fetching user details for editing: ", err);
+      setErrorEditUserDetail('無法載入使用這資料進行編輯: ' + (err.response?.data?.message || err.message));
+      setUserToEdit(userFromList);
+    } finally {
+      setIsLoadingEditUserDetail(false);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditUserModal(false);
+    setUserToEdit(null);
+    setErrorEditUserDetail(null);
+  }
+
+  const handleSaveUserChanges = async (updatedUserData) => {
+    console.log("Attemping to save user data (projects not editable here): ", updatedUserData);
+    try {
+      await axios.put(`${API_BASE_URL}/user-management/user/update/${updatedUserData.id}`, updatedUserData);
+      alert('使用者資訊已成功更新！');
+      fetchUsers();
+      handleCloseEditModal();
+    } catch (error) {
+      console.error("Falsed to save user changes: ", error);
+      alert('儲存使用者資訊失敗: ' + (error.response?.data?.message || error.message));
     }
   }
 
@@ -602,7 +649,7 @@ const UserManagement = () => {
                           <td>{user.lastTimeLogin || 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
-                              <div className="action-icon" title="編輯使用者">
+                              <div className="action-icon" title="編輯使用者" onClick={() => handleOpenEditModal(user)}>
                                 <FontAwesomeIcon icon={faPencil} />
                               </div>
                               <div className="action-icon" title="查看詳情" onClick={() => (handleShowUserInfo(user))}>
@@ -790,6 +837,17 @@ const UserManagement = () => {
           />
         )
       }
+
+      {/* render EditUserInfoModal */}
+      {userToEdit && showEditUserModal && (
+        <EditUserInfoModal
+          show={showEditUserModal}
+          onClose={handleCloseEditModal}
+          user={userToEdit}
+          allRoles={rolesForForm}
+          onSave={handleSaveUserChanges}
+        />
+      )}
       
       {/* error part */}
       {errorRolesForForm && !loadingRolesForForm && (
