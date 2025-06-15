@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.*;
 import com.project.backend.service.UserManagementService;
 import com.project.backend.model.User;
 import com.project.backend.dto.UserStatsDTO;
+import com.project.backend.dto.UserUpdateDTO;
 import com.project.backend.model.Role;
 import com.project.backend.dto.UserCreationDTO;
 import com.project.backend.dto.UserDTO;
@@ -224,7 +225,6 @@ public class UserManagementController {
     
 
     // TODO: alter the role of a user
-
     /**
      * Alters the role of a user.
      * Example request body:
@@ -245,5 +245,24 @@ public class UserManagementController {
         }
     }
     
+
+    
+    /**
+     * This API is for updating user information for the edit user function in the frontend
+     * @param userId
+     * @param userUpdateDTO
+     * @return the updated User
+     */
+    @PutMapping("/user/update/{userId}")
+    public ResponseEntity<?> updateUserInfo(@PathVariable Long userId, @Valid @RequestBody UserUpdateDTO userUpdateDTO) {
+        try {
+            User updatedUser = userManagementService.updateUserInfo(userId, userUpdateDTO);
+            return ResponseEntity.ok(updatedUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpeccted error occured while updating user information: " + e.getMessage());
+        }
+    }
     
 }

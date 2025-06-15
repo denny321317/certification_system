@@ -1,6 +1,7 @@
 package com.project.backend.service;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import com.project.backend.repository.RoleRepository;
 import com.project.backend.dto.UserCreationDTO;
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.UserDetailDTO;
+import com.project.backend.dto.UserUpdateDTO;
 import com.project.backend.dto.ProjectTeamDTO;
 import com.project.backend.dto.ProjectUserManagementDTO;
 import com.project.backend.dto.RoleCreationDTO;
@@ -91,7 +93,7 @@ public class UserManagementService {
     }
 
     public User createUser(UserCreationDTO userDTO){
-        Role role = roleRepository.findByName(userDTO.getRoleName());
+        Role role = roleRepository.findByName(userDTO.getRoleName()).get();
         if (role == null){
             throw new IllegalArgumentException("Role not found: " + userDTO.getRoleName());
         }
@@ -102,11 +104,43 @@ public class UserManagementService {
         return userRepository.save(user);   
     }
 
+
+    /**
+     * This function is for editing user 
+     * @param userId
+     * @param userUpdateDTO
+     * @return
+     */
+    @Transactional
+    public User updateUserInfo(Long userId, UserUpdateDTO userUpdateDTO){
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        
+        // check if the Email is already used
+        if (!user.getEmail().equals(userUpdateDTO.getEmail()) && userRepository.findByEmail(userUpdateDTO.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already used: " + userUpdateDTO.getEmail());
+        }
+
+        Role newRole = roleRepository.findByName(userUpdateDTO.getRoleName())
+            .orElseThrow(() -> new IllegalArgumentException("Role not found: "  + userUpdateDTO.getRoleName()));
+
+
+        user.setName(userUpdateDTO.getName());
+        user.setEmail(userUpdateDTO.getEmail());
+        user.setRole(newRole);
+        user.setDepartment(userUpdateDTO.getDepartment());
+
+        user.setLastTimeLogin(LocalDateTime.now());
+
+        return userRepository.save(user);
+    }
+
     /**
      * the old version of createUser not using DTO
      */
     public User createUser(String name, String email, String roleName, String deparment){
-        Role role = roleRepository.findByName(roleName);
+        Role role = roleRepository.findByName(roleName).get();
         if (role == null){
             throw new IllegalArgumentException("Role not found: " + roleName);
         }
@@ -124,7 +158,7 @@ public class UserManagementService {
     }
 
     public List<User> getUsersByRole(String roleName){
-        Role role = roleRepository.findByName(roleName);
+        Role role = roleRepository.findByName(roleName).get();
         if (role == null){
             throw new IllegalArgumentException("Role not found: " + roleName);
         }
@@ -179,7 +213,7 @@ public class UserManagementService {
      * @throws IllegalArgumentException if the role is not found or the authorizations array is invalid.
      */
     public Role updateRoleAuthorizations(String roleName, boolean[] authorizations) {
-        Role role = roleRepository.findByName(roleName);
+        Role role = roleRepository.findByName(roleName).get();
         if (role == null) {
             throw new IllegalArgumentException("Role not found: " + roleName);
         }
@@ -189,7 +223,7 @@ public class UserManagementService {
     }
 
     public Role getRole(String roleName){
-        Role role = roleRepository.findByName(roleName);
+        Role role = roleRepository.findByName(roleName).get();
         if (role == null){
             throw new IllegalArgumentException("Role not found: " + roleName);
         }
@@ -209,7 +243,7 @@ public class UserManagementService {
     public User updateUserRole(Long userId, String newRoleName){
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found" + userId));
-        Role newRole = roleRepository.findByName(newRoleName);
+        Role newRole = roleRepository.findByName(newRoleName).get();
         if (newRole == null){
             throw new IllegalArgumentException("Role not found" + newRoleName);
         }

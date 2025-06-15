@@ -25,7 +25,7 @@ public class AuthService {
 
     public User register(String name, String email, String password, String department, String position) {
         User user = new User();
-        Role role = roleRepository.findByName("User");
+        Role role = roleRepository.findByName("User").get();
         user.setName(name);
         user.setEmail(email);
         user.setPassword(password); // 👉（正式版建議要加密處理）
