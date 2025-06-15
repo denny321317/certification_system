@@ -15,4 +15,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole(Role role);
     Optional<User> findByEmail(String email);
     Optional<User> findByPasswordResetToken(String passwordResetToken); // 根據 token 查詢用戶
+    Optional<User> findById(Long id);
 }

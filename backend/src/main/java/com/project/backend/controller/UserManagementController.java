@@ -2,6 +2,7 @@ package com.project.backend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,7 +11,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.HttpServerErrorException.NotImplemented;
 import org.springframework.beans.factory.annotation.*;
 
 import com.project.backend.service.UserManagementService;
@@ -18,11 +21,15 @@ import com.project.backend.model.User;
 import com.project.backend.dto.UserStatsDTO;
 import com.project.backend.model.Role;
 import com.project.backend.dto.UserCreationDTO;
+import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.UserRoleUpdateDTO;
 import com.project.backend.dto.RoleCreationDTO;
 
+import java.lang.StackWalker.Option;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -119,6 +126,27 @@ public class UserManagementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured");
         }
     }
+
+
+    // TODO: implement get user info
+    /**
+     * This API is for looking at details of a specific user
+     * @param id
+     * @return
+     */
+    @GetMapping("/user/getInfo")
+    public ResponseEntity<?> getUserInfo(@RequestParam Long id){
+        try {
+            Optional<User> user = userManagementService.getUser(id);
+            return ResponseEntity.ok(user);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured: " + e.getMessage());
+        }
+
+    }
+
 
 
 

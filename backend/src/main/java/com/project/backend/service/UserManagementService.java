@@ -3,6 +3,7 @@ package com.project.backend.service;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import com.project.backend.model.User;
@@ -10,6 +11,7 @@ import com.project.backend.model.Role;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.RoleRepository;
 import com.project.backend.dto.UserCreationDTO;
+import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.RoleCreationDTO;
 
 @Service
@@ -21,6 +23,17 @@ public class UserManagementService {
     public UserManagementService(UserRepository userRepository, RoleRepository roleRepository){
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+    }
+
+
+    /**
+     * This function is for attaining the information of a specific user
+     * @param id the User ID
+     * @return the user with the ID sent in the DTO
+     */
+    public Optional<User> getUser(Long id){
+        Optional<User> user = userRepository.findById(id);
+        return user;
     }
 
     public User createUser(UserCreationDTO userDTO){
@@ -128,6 +141,10 @@ public class UserManagementService {
         }
         return role;
     }
+
+
+
+
 
     /**
      * updates the Role of a user
