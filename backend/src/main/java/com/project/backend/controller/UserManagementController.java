@@ -128,7 +128,6 @@ public class UserManagementController {
     }
 
 
-    // TODO: implement get user info
     /**
      * This API is for looking at details of a specific user
      * @param id

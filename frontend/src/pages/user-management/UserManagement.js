@@ -37,8 +37,10 @@ import {
   faCircle
 } from '@fortawesome/free-solid-svg-icons';
 import './UserManagement.css';
+
 import AddUserModal from '../../components/modals/AddUserModal';
 import AddRoleModal from '../../components/modals/AddRoleModal';
+import UserInfoModal from '../../components/modals/UserInfoModal';
 
 /**
  * 用戶管理組件
@@ -213,6 +215,12 @@ const UserManagement = () => {
    * for adding new roles
    */
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+
+  /**
+   * for seeing detailed user info
+   */
+  const [showUserInfoModal, setShowUserInfoModal] = useState(false);
+  const [selectedUserForInfo, setSelectedUserForInfo] = useState(null);
   
 
 
@@ -376,6 +384,11 @@ const UserManagement = () => {
   const handleRoleAddedSuccess = () => {
     fetchAllRoles();
     fetchUserStats();
+  }
+
+  const handleShowUserInfo = (user) => {
+    setSelectedUserForInfo(user);
+    setShowUserInfoModal(true);
   }
 
   
@@ -576,7 +589,7 @@ const UserManagement = () => {
                               <div className="action-icon" title="編輯使用者">
                                 <FontAwesomeIcon icon={faPencil} />
                               </div>
-                              <div className="action-icon" title="查看詳情">
+                              <div className="action-icon" title="查看詳情" onClick={() => (handleShowUserInfo(user))}>
                                 <FontAwesomeIcon icon={faEye} />
                               </div>
                               <div className="action-icon text-danger" title="停用帳號">
@@ -744,6 +757,20 @@ const UserManagement = () => {
         onRoleAddedSuccess={handleRoleAddedSuccess}
       />
       
+      {/* render UserInfoModal */}
+      {
+        selectedUserForInfo && (
+          <UserInfoModal
+            show={showUserInfoModal}
+            onClose={() => {
+              setShowUserInfoModal(false);
+              setSelectedUserForInfo(null);
+            }}
+            user={selectedUserForInfo}
+            API_BASE_URL={API_BASE_URL}
+          />
+        )
+      }
       
       {/* error part */}
       {errorRolesForForm && !loadingRolesForForm && (
