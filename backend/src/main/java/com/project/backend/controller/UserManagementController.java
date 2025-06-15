@@ -22,6 +22,7 @@ import com.project.backend.dto.UserStatsDTO;
 import com.project.backend.model.Role;
 import com.project.backend.dto.UserCreationDTO;
 import com.project.backend.dto.UserDTO;
+import com.project.backend.dto.UserDetailDTO;
 import com.project.backend.dto.UserRoleUpdateDTO;
 import com.project.backend.dto.RoleCreationDTO;
 
@@ -128,6 +129,7 @@ public class UserManagementController {
     }
 
 
+    // TODO: project membership
     /**
      * This API is for looking at details of a specific user
      * @param id
@@ -136,8 +138,14 @@ public class UserManagementController {
     @GetMapping("/user/getInfo")
     public ResponseEntity<?> getUserInfo(@RequestParam Long id){
         try {
-            Optional<User> user = userManagementService.getUser(id);
-            return ResponseEntity.ok(user);
+            Optional<UserDetailDTO> userDetailDTOOptional = userManagementService.getUser(id);
+            if (userDetailDTOOptional.isPresent()) {
+                return ResponseEntity.ok(userDetailDTOOptional.get());
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {

@@ -21,7 +21,7 @@
  * ```
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -221,6 +221,9 @@ const UserManagement = () => {
    */
   const [showUserInfoModal, setShowUserInfoModal] = useState(false);
   const [selectedUserForInfo, setSelectedUserForInfo] = useState(null);
+  const [detailedUser, setDetailedUser] = useState(null);
+  const [isLoadingUserDetails, setIsLoadingUserDetails] = useState(false);
+  const [errorUserDetails, setErrorUserDetails] = useState(null);
   
 
 
@@ -386,9 +389,22 @@ const UserManagement = () => {
     fetchUserStats();
   }
 
-  const handleShowUserInfo = (user) => {
-    setSelectedUserForInfo(user);
+  const handleShowUserInfo = async (userFromList) => {
+    setSelectedUserForInfo(userFromList);
     setShowUserInfoModal(true);
+    setIsLoadingUserDetails(true);
+    setDetailedUser(null);
+    setErrorUserDetails(null);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user-management/user/getInfo?id=${userFromList.id}`);
+      setDetailedUser(response.data);
+    } catch(err) {
+      console.error("Error fetching user details: ", err);
+      setErrorUserDetails('無法獲取使用者詳細資料: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsLoadingUserDetails(false);
+    }
   }
 
   
@@ -765,9 +781,12 @@ const UserManagement = () => {
             onClose={() => {
               setShowUserInfoModal(false);
               setSelectedUserForInfo(null);
+              setDetailedUser(null);
+              setErrorUserDetails(null);
             }}
-            user={selectedUserForInfo}
-            API_BASE_URL={API_BASE_URL}
+            user={detailedUser}
+            isLoading={isLoadingUserDetails}
+            error={errorUserDetails}
           />
         )
       }

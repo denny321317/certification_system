@@ -1,5 +1,5 @@
 import React from 'react';
-import './UserInfoModal.css'; // We'll create this CSS file next
+import './UserInfoModal.css'; 
 
 const UserInfoModal = ({ show, onClose, user }) => {
   if (!show || !user) {
@@ -25,18 +25,18 @@ const UserInfoModal = ({ show, onClose, user }) => {
           {renderDetail('電子郵件 (Email)', user.email)}
           {renderDetail('角色 (Role)', user.role?.name || user.role)}
           {renderDetail('部門 (Department)', user.department)}
-          {renderDetail('狀態 (Status)', user.status)}
+          {renderDetail('狀態 (Status)', user.online ? '在線 (Online)' : '離線 (Offline)')}
           {renderDetail('上次登入 (Last Login)', user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A')}
           {renderDetail('密碼重設權杖 (Password Reset Token)', user.passwordResetToken)}
 
           <hr className="my-3" />
           <h6>參與的專案 (Projects Involved):</h6>
-          {user.projects && user.projects.length > 0 ? (
+          {user.projectMemberships && user.projectMemberships.length > 0 ? (
             <ul className="list-group">
-              {user.projects.map(project => (
-                <li key={project.id || project.name} className="list-group-item d-flex justify-content-between align-items-center">
-                  {project.name}
-                  <span className="badge bg-secondary rounded-pill">{project.userRoleInProject || '未指定角色'}</span>
+              {user.projectMemberships.map(membership => (
+                <li key={membership.projectTeamId || membership.project?.id} className="list-group-item d-flex justify-content-between align-items-center">
+                  {membership.project?.name || "專案名稱未提供"}
+                  <span className="badge bg-secondary rounded-pill">{membership.roleInProject || '未指定角色'}</span>
                 </li>
               ))}
             </ul>

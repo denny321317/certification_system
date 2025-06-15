@@ -22,4 +22,8 @@ public class ProjectTeam {
     private User user;
 
     private String role; // 團隊成員在此專案的職責
+
+    public String getRoleInProject() {
+        return role;
+    }
 } 

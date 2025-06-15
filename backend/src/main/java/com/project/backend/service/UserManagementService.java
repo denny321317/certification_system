@@ -4,15 +4,29 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.project.backend.model.User;
+import com.project.backend.model.Project;
 import com.project.backend.model.Role;
 import com.project.backend.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.project.backend.repository.RoleRepository;
+
+
 import com.project.backend.dto.UserCreationDTO;
 import com.project.backend.dto.UserDTO;
+import com.project.backend.dto.UserDetailDTO;
+import com.project.backend.dto.ProjectTeamDTO;
+import com.project.backend.dto.ProjectUserManagementDTO;
 import com.project.backend.dto.RoleCreationDTO;
+import com.project.backend.dto.RoleDTO;
+
 
 @Service
 public class UserManagementService {
@@ -26,14 +40,54 @@ public class UserManagementService {
     }
 
 
+    // TODO: reimplement this function with returning DTO
     /**
      * This function is for attaining the information of a specific user
      * @param id the User ID
-     * @return the user with the ID sent in the DTO
+     * @return the user with the ID 
      */
-    public Optional<User> getUser(Long id){
-        Optional<User> user = userRepository.findById(id);
-        return user;
+    public Optional<UserDetailDTO> getUser(Long id){
+        Optional<User> userOptional = userRepository.findByIdWithProjectMembership(id);
+        
+        if (userOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        User user = userOptional.get();
+
+        RoleDTO roleDTO = null;
+        if (user.getRole() != null) {
+            roleDTO = new RoleDTO(user.getRole().getId(), user.getRole().getName());
+        }
+
+        // mapping ProjectTeam to ProjectTeamDTO
+        List<ProjectTeamDTO> projectTeamDTOs = user.getProjectMemberships().stream()
+            .map(projectTeam -> {
+                Project project = projectTeam.getProject();
+                ProjectUserManagementDTO projectDTO = null;
+                if (project != null) {
+                    projectDTO = new ProjectUserManagementDTO(
+                        project.getId(), 
+                        project.getName(), 
+                        project.getStatus());
+                }
+                return new ProjectTeamDTO(projectTeam.getId(), projectDTO, projectTeam.getRoleInProject());
+            })
+            .collect(Collectors.toList());
+
+        UserDetailDTO userDetailDTO = new UserDetailDTO(
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            roleDTO,
+            user.getDepartment(),
+            user.getLastTimeLogin(),
+            user.isOnline(),
+            projectTeamDTOs
+        );
+
+        return Optional.of(userDetailDTO);
+
     }
 
     public User createUser(UserCreationDTO userDTO){
