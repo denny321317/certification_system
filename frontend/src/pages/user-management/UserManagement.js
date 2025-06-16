@@ -30,6 +30,7 @@ import {
   faPencil,
   faEye,
   faLock,
+  faLockOpen,
   faPerson,
   faShield,
   faBriefcase,
@@ -43,6 +44,7 @@ import AddRoleModal from '../../components/modals/AddRoleModal';
 import UserInfoModal from '../../components/modals/UserInfoModal';
 import EditUserInfoModal from '../../components/modals/EditUserInfoModal';
 import ChangeRoleNameModal from '../../components/modals/ChangeRoleNameModal';
+import SuspendUserModal from '../../components/modals/SuspendUserModal';
 
 /**
  * 用戶管理組件
@@ -247,6 +249,14 @@ const UserManagement = () => {
   const [roleToRename, setRoleToRename] = useState(null);
   const [changeRoleNameError, setChangeRoleNameError] = useState('');
 
+  /**
+   * for suspending/unsuspending user
+   */
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [userToSuspendOrReactivate, setUserToSuspendOrReactivate] = useState(null);
+  const [isProcessingSuspend, setIsProcessingSuspend] = useState(false);
+  const [suspendError, setSuspendError] = useState('');
+
   
 
 
@@ -411,6 +421,10 @@ const UserManagement = () => {
       
   }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
 
+  /*
+    Handlers 
+   */
+
   const handleUserAddedSuccess = () => {
     fetchUsers();
     fetchUserStats();
@@ -504,6 +518,52 @@ const UserManagement = () => {
       console.error(`Error updating role name from ${currentName} to ${newName}: `, err);
     }
   };
+
+  /**
+   * for suspending and unsuspending user 
+   */
+
+  const handleOpenSuspendModal = (user) => {
+    setUserToSuspendOrReactivate(user);
+    setSuspendError('');
+    setShowSuspendModal(true);
+  };
+
+  const confirmSuspendUser = async (userId) => {
+    setIsProcessingSuspend(true);
+    setSuspendError('');
+    try {
+      await axios.put(`${API_BASE_URL}/user-management/user/${userId}/suspend`);
+      fetchUsers();
+      setShowSuspendModal(false);
+      setUserToSuspendOrReactivate(null);
+      alert('該使用者帳號已停用');
+    } catch (err) {
+      setSuspendError(err.response?.data?.message || err.message || '停用帳號失敗');
+      console.error("Error suspending user: ", err);
+    } finally {
+      setIsProcessingSuspend(false);
+    }
+  };
+
+  const confirmReactivateUser = async (userId) => {
+    setIsProcessingSuspend(true);
+    setSuspendError('');
+    try {
+      await axios.put(`${API_BASE_URL}/user-management/user/${userId}/unsuspend`);
+      fetchUsers();
+      setShowSuspendModal(false);
+      setUserToSuspendOrReactivate(null);
+      alert("該使用者帳號已重新啟用")
+    } catch (err) {
+      setSuspendError(err.response?.data?.message || err.message || '重新啟用帳號失敗。');
+      console.error("Error reactivating user:", err);
+    } finally {
+      setIsProcessingSuspend(false);
+    }
+  }
+
+
 
   
 
@@ -682,7 +742,7 @@ const UserManagement = () => {
                       </tr>
                     ) : (
                       filteredUsers.map(user => (
-                        <tr key={user.id}>
+                        <tr key={user.id} className={user.suspended ? 'user-suspended-row' : ''}>
                           <td>
                             <div className="d-flex align-items-center">
                               <div className="user-card-avatar me-2">
@@ -696,8 +756,8 @@ const UserManagement = () => {
                           </td>
                           <td>{renderRoleBadge(user.role)}</td>
                           <td>{user.department}</td>
-                          <td>{renderStatusBadge(user.status || 'unknown')}</td>
-                          <td>{user.lastTimeLogin || 'N/A'}</td>
+                          <td>{renderStatusBadge(user.suspended ? 'suspended' : (user.online ? 'active' : 'inactive'))}</td>
+                          <td>{user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div className="action-icon" title="編輯使用者" onClick={() => handleOpenEditModal(user)}>
@@ -706,8 +766,12 @@ const UserManagement = () => {
                               <div className="action-icon" title="查看詳情" onClick={() => (handleShowUserInfo(user))}>
                                 <FontAwesomeIcon icon={faEye} />
                               </div>
-                              <div className="action-icon text-danger" title="停用帳號">
-                                <FontAwesomeIcon icon={faLock} />
+                              <div 
+                                className={`action-icon ${user.suspended ? 'text-success' : 'text-danger'}`}
+                                onClick={() => handleOpenSuspendModal(user)}
+                                title={user.suspended ? "重新啟用帳號" : "停用帳號"}
+                              >
+                                <FontAwesomeIcon icon={user.suspended ? faLockOpen : faLock} />
                               </div>
                             </div>
                           </td>
@@ -925,7 +989,24 @@ const UserManagement = () => {
           />
         )
       }
-      
+
+      {/* render SuspendUserModal */}
+      {showSuspendModal && userToSuspendOrReactivate && (
+        <SuspendUserModal
+          show={showSuspendModal}
+          onClose={() => {
+            setShowSuspendModal(false);
+            setUserToSuspendOrReactivate(null);
+            setSuspendError('');
+          }}
+          user={userToSuspendOrReactivate}
+          onConfirmSuspend={confirmSuspendUser}
+          onConfirmReactivate={confirmReactivateUser} // Pass the reactivate handler
+          isProcessing={isProcessingSuspend}
+          error={suspendError}
+        />
+      )}
+
       {/* error part */}
       {errorRolesForForm && !loadingRolesForForm && (
         <div className='alert alert-warning- mt-3'>
