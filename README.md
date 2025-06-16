@@ -36,6 +36,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ### User Management
 - [x] 新增角色
 - [x] 更改角色名稱
+- [ ] 刪除角色
+  - 確保五大基本角色不會被刪或被更改角色名稱
 - [x] 詳細查看使用者內容
 - [x] 修改使用者內容
 - [x] 停用帳號
