@@ -20,10 +20,12 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final OperationHistoryService operationHistoryService;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository) {
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.operationHistoryService = operationHistoryService;
     }
 
     @Transactional(readOnly = true)
@@ -51,12 +53,28 @@ public class ProjectService {
             throw new IllegalArgumentException("Project with id " + id + " does not exist.");
         }
         projectRepository.deleteById(id);
+        
+        // Record history
+        // TODO: Replace "admin" with actual logged-in user and get project name before deletion
+        String operator = "admin";
+        String details = String.format("刪除了專案 (ID: %d)", id);
+        operationHistoryService.recordHistory(id, operator, "DELETE_PROJECT", details);
     }
 
     @Transactional
     public ShowProjectDTO updateProject(Long id, Project updatedProject) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Project with id " + id + " does not exist."));
+
+        // Logic to track changes
+        StringBuilder changes = new StringBuilder();
+        if (!project.getName().equals(updatedProject.getName())) {
+            changes.append(String.format("名稱從 '%s' 變更為 '%s'. ", project.getName(), updatedProject.getName()));
+        }
+        if (!project.getStatus().equals(updatedProject.getStatus())) {
+            changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", project.getStatus(), updatedProject.getStatus()));
+        }
+        // Add more fields to track as needed...
 
         project.setName(updatedProject.getName());
         project.setStatus(updatedProject.getStatus());
@@ -84,6 +102,14 @@ public class ProjectService {
             }
         }
         projectRepository.save(project);
+
+        // Record history if there are changes
+        if (changes.length() > 0) {
+            // TODO: Replace "admin" with actual logged-in user
+            String operator = "admin";
+            operationHistoryService.recordHistory(id, operator, "UPDATE_PROJECT", changes.toString());
+        }
+
         return toShowProjectDTO(project);
     }
 

@@ -21,6 +21,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
+    private final OperationHistoryService operationHistoryService;
 
     @Transactional(readOnly = true)
     public ReviewFeedbackDTO getReviewFeedback(Long projectId, String reviewType) {
@@ -62,6 +63,15 @@ public class ReviewService {
         }
 
         Review savedReview = reviewRepository.save(review);
+        
+        // Record history
+        String operator = submitFeedbackDTO.getReviewerName();
+        String details = String.format("%s 提交了 '%s' 的審核意見，決定為 '%s'。",
+                submitFeedbackDTO.getReviewerDepartment(),
+                submitFeedbackDTO.getReviewType(),
+                submitFeedbackDTO.getDecision());
+        operationHistoryService.recordHistory(projectId, operator, "SUBMIT_REVIEW", details);
+
         return convertToReviewDTO(savedReview);
     }
 

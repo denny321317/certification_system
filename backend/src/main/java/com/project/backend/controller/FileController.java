@@ -12,6 +12,7 @@ import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.service.AuthService;
+import com.project.backend.service.OperationHistoryService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -35,6 +36,9 @@ public class FileController {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private OperationHistoryService operationHistoryService;
 
     public FileController() throws IOException {
         Files.createDirectories(fileStorageLocation);
@@ -83,6 +87,12 @@ public class FileController {
             fileEntity.setProject(project); // 關聯專案
 
             fileRepository.save(fileEntity);
+
+            // Record history
+            // TODO: Replace "admin" with actual logged-in user
+            String operator = "admin"; 
+            String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
+            operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
 
             Map<String, Object> response = new HashMap<>();
             response.put("id", fileEntity.getId());
@@ -141,6 +151,13 @@ public class FileController {
         try {
             Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
             fileRepository.delete(file);
+
+            // Record history
+            // TODO: Replace "admin" with actual logged-in user
+            String operator = "admin";
+            String details = String.format("刪除了文件 '%s'", file.getOriginalFilename());
+            operationHistoryService.recordHistory(file.getProject().getId(), operator, "DELETE_DOCUMENT", details);
+
             return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -185,12 +202,20 @@ public class FileController {
 
     //新增類別資料夾
     @PostMapping("/create-category")
-    public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category) {
+    public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category, @RequestParam(value = "projectId", required = false) Long projectId) {
         try {
             // 建立 uploads/category 子資料夾
             Path categoryPath = fileStorageLocation.resolve(category).normalize();
             if (!Files.exists(categoryPath)) {
                 Files.createDirectories(categoryPath);
+            }
+
+            // Record history - projectId might be null if it's a general category
+            if (projectId != null) {
+                // TODO: Replace "admin" with actual logged-in user
+                String operator = "admin";
+                String details = String.format("新增了文件類別 '%s'", category);
+                operationHistoryService.recordHistory(projectId, operator, "CREATE_CATEGORY", details);
             }
 
             return ResponseEntity.ok(Map.of("success", true, "message", "類別資料夾已建立"));
@@ -202,31 +227,48 @@ public class FileController {
 
     //刪除類別資料夾
     @DeleteMapping("/delete-category")
-    public ResponseEntity<?> deleteCategory(@RequestParam("category") String category) {
+    public ResponseEntity<?> deleteCategory(@RequestParam("category") String category, @RequestParam(value = "projectId", required = true) Long projectId) {
         try {
-            // 1. 刪除資料夾下所有檔案（如有記錄）
-            List<FileEntity> filesToDelete = fileRepository.findByCategory(category);
+            // 1. 查找此類別下的所有檔案實體
+            List<FileEntity> filesToDelete = fileRepository.findByCategoryAndProjectId(category, projectId);
+
+            // 2. 從檔案系統刪除實體檔案
             for (FileEntity file : filesToDelete) {
-                Path path = Paths.get("uploads", category, file.getFilename());
-                Files.deleteIfExists(path);
+                try {
+                     Path path = fileStorageLocation.resolve(file.getFilename());
+                     Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    // Log error but continue trying to delete other files and records
+                    System.err.println("Failed to delete file from filesystem: " + file.getFilename() + " - " + e.getMessage());
+                }
             }
 
-            // 2. 刪除資料夾本身
-            Path categoryFolder = Paths.get("uploads", category);
-            if (Files.exists(categoryFolder)) {
-                Files.delete(categoryFolder); // 若非空資料夾會拋出 DirectoryNotEmptyException
-            }
-
-            // 3. 刪除資料庫紀錄
+            // 3. 從資料庫刪除檔案紀錄
             fileRepository.deleteAll(filesToDelete);
+            
+            // 4. 刪除類別資料夾 (如果為空)
+            Path categoryFolder = fileStorageLocation.resolve(category);
+            if (Files.exists(categoryFolder) && isDirEmpty(categoryFolder)) {
+                 Files.delete(categoryFolder);
+            }
+
+            // Record history
+            // TODO: Replace "admin" with actual logged-in user
+            String operator = "admin";
+            String details = String.format("刪除了文件類別 '%s' 及其包含的 %d 個文件", category, filesToDelete.size());
+            operationHistoryService.recordHistory(projectId, operator, "DELETE_CATEGORY", details);
+
 
             return ResponseEntity.ok(Map.of("success", true, "message", "類別與檔案刪除成功"));
-        } catch (DirectoryNotEmptyException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("success", false, "error", "資料夾非空，請先刪除所有檔案"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "error", "刪除失敗：" + e.getMessage()));
+        }
+    }
+
+    private boolean isDirEmpty(final Path directory) throws IOException {
+        try(DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
+            return !dirStream.iterator().hasNext();
         }
     }
 

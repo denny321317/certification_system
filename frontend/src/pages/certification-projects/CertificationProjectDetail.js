@@ -200,10 +200,34 @@ const CertificationProjectDetail = () => {
     includeHistory: true
   });
 
+  /**
+   * 操作歷史狀態
+   * @type {[Array, Function]} [操作歷史列表, 設置操作歷史列表的函數]
+   */
+  const [history, setHistory] = useState([]);
+
   // 當文件篩選條件變更時，重置頁碼為1
   useEffect(() => {
     setCurrentDocPage(1);
   }, [activeDocCategory, docSearchQuery, docSortBy, docSortDesc]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (activeTab === 'history' && projectId) {
+        try {
+          const response = await fetch(`http://localhost:8000/api/history/project/${projectId}`);
+          if (!response.ok) throw new Error('載入操作歷史失敗');
+          const data = await response.json();
+          setHistory(data);
+        } catch (err) {
+          console.error('抓取操作歷史錯誤:', err);
+          setHistory([]); //發生錯誤時清空
+        }
+      }
+    };
+
+    fetchHistory();
+  }, [activeTab, projectId]);
 
   /**
    * 處理文件頁碼變更
@@ -1482,34 +1506,29 @@ const CertificationProjectDetail = () => {
           <div className="project-history">
             <h5>操作歷史</h5>
             <div className="history-timeline">
-              <div className="history-item">
-                <div className="history-date">2023-09-15 14:30</div>
-                <div className="history-content">
-                  <div className="history-title">陳專員 上傳了文件</div>
-                  <div className="history-details">上傳了「SMETA自我評估更新版.xlsx」文件</div>
+              {history.length > 0 ? (
+                history.map(item => (
+                  <div className="history-item" key={item.id}>
+                    <div className="history-date">
+                      {new Date(item.operationTime).toLocaleString('zh-TW', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
+                    <div className="history-content">
+                      <div className="history-title">{item.operator} {item.operationType.replace(/_/g, ' ').toLowerCase()}</div>
+                      <div className="history-details">{item.details}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="no-history">
+                  <p>暫無操作歷史記錄</p>
                 </div>
-              </div>
-              <div className="history-item">
-                <div className="history-date">2023-09-14 10:15</div>
-                <div className="history-content">
-                  <div className="history-title">王經理 更新了項目進度</div>
-                  <div className="history-details">進度從 65% 更新至 75%</div>
-                </div>
-              </div>
-              <div className="history-item">
-                <div className="history-date">2023-09-12 09:40</div>
-                <div className="history-content">
-                  <div className="history-title">林工程師 上傳了文件</div>
-                  <div className="history-details">上傳了「環境管理程序.docx」文件</div>
-                </div>
-              </div>
-              <div className="history-item">
-                <div className="history-date">2023-09-10 16:20</div>
-                <div className="history-content">
-                  <div className="history-title">系統 更新了項目階段</div>
-                  <div className="history-details">項目階段從「自我評估」更新為「文件準備」</div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         );
