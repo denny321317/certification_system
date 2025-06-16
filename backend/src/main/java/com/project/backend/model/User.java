@@ -56,6 +56,9 @@ public class User {
     @Column(nullable = false)
     private String department = "default department";
 
+    @Column(nullable = false)
+    private boolean suspended = false;
+
     // default constructor for JPA
 
     public User(String name, Role role, String email, String department){

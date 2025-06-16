@@ -174,6 +174,39 @@ public class UserManagementController {
     }
 
 
+    /**
+     * This API is for suspending a user 
+     * @param userId The ID of the user to suspend
+     * @return The updated User object with suspended status, or an error response.
+     */
+    @PutMapping("/user/{userId}/suspend")
+    public ResponseEntity<?> suspendUserAccount(@PathVariable Long userId) {
+        try {
+            User suspendedUser = userManagementService.suspendUser(userId);
+            return ResponseEntity.ok(suspendedUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occured while suspending the user account: " + e.getMessage());
+        }
+    }
+
+
+    @PutMapping("/user/{userId}/unsuspend") 
+    public ResponseEntity<?> unsuspendUserAccount(@PathVariable Long userId) {
+        try {
+            User unsuspendedUser = userManagementService.unsuspendUser(userId);
+            return ResponseEntity.ok(unsuspendedUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("An unexpected error occured while unsuspending the user account: " + e.getMessage());  
+        }
+    }
+
+
 
 
     /**

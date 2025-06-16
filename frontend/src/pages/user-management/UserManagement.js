@@ -263,6 +263,7 @@ const UserManagement = () => {
 
 
 
+
   /*
     Functions
    */
@@ -547,22 +548,22 @@ const UserManagement = () => {
     const roleName = typeof role === 'object' && role !== null ? role.name : role;
     
     switch (roleName) {
-      case 'Admin':
+      case '系統管理員':
         badgeClass = 'role-badge admin';
         icon = faShield;
         text = '系統管理員';
         break;
-      case 'Manager':
+      case '部門經理':
         badgeClass = 'role-badge manager';
         icon = faBriefcase;
         text = '部門經理';
         break;
-      case 'Auditor':
+      case '認證審核員':
         badgeClass = 'role-badge auditor';
         icon = faClipboardCheck;
         text = '認證審核員';
         break;
-      case 'User':
+      case '一般使用者':
         badgeClass = 'role-badge user';
         icon = faPerson;
         text = '一般使用者';
@@ -570,7 +571,7 @@ const UserManagement = () => {
       default:
         badgeClass = 'role-badge';
         icon = faPerson;
-        text = '訪客';
+        text = roleName;
     }
     
     return (

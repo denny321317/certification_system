@@ -20,6 +20,11 @@ const UserInfoModal = ({ show, onClose, user }) => {
           <button type="button" className="btn-close-user-info" onClick={onClose}></button>
         </div>
         <div className="modal-body-user-info">
+          {user.suspended && (
+            <div className='alert alert-danger' role='alert'>
+              <strong>注意: </strong> 此使用者帳戶已被停用。
+            </div>
+          )}
           {renderDetail('User ID', user.id)}
           {renderDetail('姓名 (Name)', user.name)}
           {renderDetail('電子郵件 (Email)', user.email)}

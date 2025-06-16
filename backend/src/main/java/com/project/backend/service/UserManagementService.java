@@ -85,7 +85,8 @@ public class UserManagementService {
             user.getDepartment(),
             user.getLastTimeLogin(),
             user.isOnline(),
-            projectTeamDTOs
+            projectTeamDTOs,
+            user.isSuspended()
         );
 
         return Optional.of(userDetailDTO);
@@ -148,6 +149,44 @@ public class UserManagementService {
         User user = new User(roleName, role, email, deparment);
         return userRepository.save(user);
     }
+
+
+    /**
+     * This method is used to suspend a user
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public User suspendUser(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User with ID: " + userId + " not found"));
+        
+        if (user.isSuspended()){
+            throw new IllegalArgumentException("User with ID: "+ userId + " is already suspended");
+        }
+
+        user.setSuspended(true);
+        return userRepository.save(user);
+    }
+
+    /**
+     * This method is used to unsuspend a user who was previously suspended
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public User unsuspendUser(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User with ID: " + userId + " not found"));
+
+        if (!user.isSuspended()) {
+            throw new IllegalArgumentException("User with ID: " + userId + " is not suspended");
+        }
+
+        user.setSuspended(false);
+        return userRepository.save(user);
+    }
+
 
     public List<User> getAllUsers(){
         return userRepository.findAll();
