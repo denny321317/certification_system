@@ -188,6 +188,31 @@ public class UserManagementService {
         return roleRepository.save(newRole);
     }
 
+
+    
+    /**
+     * This method is for changing the name of an existing role
+     * @param currentRoleName
+     * @param newRoleNameFromDTO
+     * @return
+     */
+    @Transactional
+    public Role updateRoleName(String currentRoleName, String newRoleNameFromDTO) {
+        if (newRoleNameFromDTO == null || newRoleNameFromDTO.trim().isEmpty()){
+            throw new IllegalArgumentException("New role name cannot be empty");
+        }
+        
+        Role roleToUpdate = roleRepository.findByName(currentRoleName).get();
+        if (roleToUpdate == null) {
+            throw new IllegalArgumentException("Role '" + currentRoleName + "' not found.");
+        }
+
+        roleToUpdate.setName(newRoleNameFromDTO);
+
+        return roleRepository.save(roleToUpdate);
+
+    }
+
     /**
      * Updates the authorizations for a given role.
      * The authorizations array must correspond to the predefined order of permissions in the Role entity:
@@ -278,6 +303,8 @@ public class UserManagementService {
         // return userRepository.countByIsOnlineTrue();
         return 0; // Placeholder - implement actual online user tracking
     }
+
+
 
 
     

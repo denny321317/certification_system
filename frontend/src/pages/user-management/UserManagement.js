@@ -239,6 +239,7 @@ const UserManagement = () => {
 
   // API base URL
   const API_BASE_URL = 'http://localhost:3000/api';
+  
   const ROLE_NAME_MAP ={
     Admin: '系統管理員',
     Manager: '部門經理',
@@ -706,7 +707,7 @@ const UserManagement = () => {
                   </div>
                   {Object.entries(userStats.usersByRole || {}).map(([role, count]) => (
                     <div className='d-flex justify-content-between mb-3' key={role}>
-                      <div>{ROLE_NAME_MAP[role] || '測試加入新角色'}</div>
+                      <div>{role}</div>
                       <div className='fw-bold'>{count}</div>
                     </div>
                   ))}
@@ -733,7 +734,7 @@ const UserManagement = () => {
               >
                 {rolesForForm.map(role => (
                   <option key={role.name} value={role.name}>
-                    {ROLE_NAME_MAP[role.name] || role.name}
+                    {role.name}
                   </option>
                 ))}
               </select>
@@ -791,6 +792,13 @@ const UserManagement = () => {
               >
                 儲存權限設置
               </button>
+              <button
+                className='btn btn-primary w-100 mt-3'
+
+              >
+                更改角色名稱
+              </button>
+
               <button
                 className='btn btn-primary w-100 mt-3'
                 onClick={() => setShowAddRoleModal(true)}

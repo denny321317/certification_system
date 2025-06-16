@@ -26,6 +26,7 @@ import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.UserDetailDTO;
 import com.project.backend.dto.UserRoleUpdateDTO;
 import com.project.backend.dto.RoleCreationDTO;
+import com.project.backend.dto.RoleRenameDTO;
 
 import java.lang.StackWalker.Option;
 import java.util.List;
@@ -115,6 +116,23 @@ public class UserManagementController {
         catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured");
         }
+    }
+
+    
+    @PutMapping("/role/{currentRoleName}/name")
+    public ResponseEntity<?> updateRoleName(
+        @PathVariable String currentRoleName,
+        @Valid @RequestBody RoleRenameDTO roleRenameDTO
+    ) {
+        try {
+            Role updatedRole = userManagementService.updateRoleName(currentRoleName, roleRenameDTO.getNewName());
+            return ResponseEntity.ok(updatedRole);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured updating the role name: " + e.getMessage());
+        }
+
     }
 
     @GetMapping("/role/{roleName}/getRole")
