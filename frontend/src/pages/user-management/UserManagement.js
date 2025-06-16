@@ -42,6 +42,7 @@ import AddUserModal from '../../components/modals/AddUserModal';
 import AddRoleModal from '../../components/modals/AddRoleModal';
 import UserInfoModal from '../../components/modals/UserInfoModal';
 import EditUserInfoModal from '../../components/modals/EditUserInfoModal';
+import ChangeRoleNameModal from '../../components/modals/ChangeRoleNameModal';
 
 /**
  * 用戶管理組件
@@ -185,6 +186,11 @@ const UserManagement = () => {
   ];
   */
 
+
+  /*
+    States
+  */ 
+
   const [users, setUsers] = useState([]); // init empty array
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [errorUsers, setErrorUsers] = useState(null);
@@ -234,6 +240,13 @@ const UserManagement = () => {
   const [isLoadingEditUserDetail, setIsLoadingEditUserDetail] = useState(false);
   const [errorEditUserDetail, setErrorEditUserDetail] = useState(null);
 
+  /**
+   * for updating role name
+   */
+  const [showChangeRoleNameModal, setShowChangeRoleNameModal] = useState(false);
+  const [roleToRename, setRoleToRename] = useState(null);
+  const [changeRoleNameError, setChangeRoleNameError] = useState('');
+
   
 
 
@@ -247,6 +260,13 @@ const UserManagement = () => {
     User: '一般使用者',
     Guest: '訪客'
   }
+
+
+
+  /*
+    Functions
+   */
+
   /** 
    * 原本沒有的新 Function
    * 用來從後段 API 獲取資料
@@ -454,6 +474,35 @@ const UserManagement = () => {
       alert('儲存使用者資訊失敗: ' + (error.response?.data?.message || error.message));
     }
   }
+
+  const handleOpenChangeRoleNameModal = (roleName) => {
+    setRoleToRename(roleName);
+    setChangeRoleNameError('');
+    setShowChangeRoleNameModal(true);
+  }
+
+  const handleChangeRoleName = async (currentName, newName) => {
+    setChangeRoleNameError('');
+    try {
+      await axios.put(`${API_BASE_URL}/user-management/role/${currentName}/name`, { newName: newName });
+
+      // on success
+      setShowChangeRoleNameModal(false);
+      setRoleToRename(null);
+
+      fetchAllRoles();
+      fetchUserStats();
+      if (selectedRole === currentName) {
+        setSelectedRole(newName);
+      }
+
+      alert('成功更改角色名稱')
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.response?.data || err.message || '更新角色名稱失敗。';
+      setChangeRoleNameError(errorMessage);
+      console.error(`Error updating role name from ${currentName} to ${newName}: `, err);
+    }
+  };
 
   
 
@@ -794,7 +843,8 @@ const UserManagement = () => {
               </button>
               <button
                 className='btn btn-primary w-100 mt-3'
-
+                onClick={() => handleOpenChangeRoleNameModal(selectedRole)}
+                disabled={!selectedRole || loadingRoleAuth}
               >
                 更改角色名稱
               </button>
@@ -856,6 +906,24 @@ const UserManagement = () => {
           onSave={handleSaveUserChanges}
         />
       )}
+
+      {/* render ChangeRoleNameModal */}
+      {
+        showChangeRoleNameModal && roleToRename && (
+          <ChangeRoleNameModal
+            show={showChangeRoleNameModal}
+            onClose={() => {
+              setShowChangeRoleNameModal(false);
+              setRoleToRename(null);
+              setChangeRoleNameError('');
+            }}
+            currentRoleName={roleToRename}
+            onSave={handleChangeRoleName}
+            error={changeRoleNameError}
+
+          />
+        )
+      }
       
       {/* error part */}
       {errorRolesForForm && !loadingRolesForForm && (
