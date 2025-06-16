@@ -125,90 +125,51 @@ const ReviewFeedback = ({ projectId, projectName }) => {
    */
   const [adjustmentIssues, setAdjustmentIssues] = useState([]);
 
-  // 模擬從API獲取審核數據
+  // 從API獲取審核數據
   useEffect(() => {
-    // 模擬API延遲
-    const timer = setTimeout(() => {
-      // 模擬的內部審核數據
-      const internalReviewData = {
-        status: 'in-progress',
-        progress: 65,
-        reviewSteps: [
-          { name: '初步審核', status: 'completed' },
-          { name: '部門主管審核', status: 'completed' },
-          { name: '法規符合性審核', status: 'in-progress' },
-          { name: '高層決策審核', status: 'pending' }
-        ],
-        reviews: [
-          {
-            id: 1,
-            reviewer: '林工程師',
-            reviewerDepartment: '環境部門',
-            date: '2023-09-08',
-            status: 'approved',
-            comment: '環境管理文件已符合ISO 14001要求，建議進行部分細節優化，如廢棄物管理流程可再詳細說明。',
-            issues: [
-              { title: '廢棄物分類標示不清', severity: 'medium', status: 'open', deadline: '2023-09-30', deadlineTime: '15:30' },
-              { title: '節能措施文件更新', severity: 'low', status: 'closed', deadline: '2023-09-20', deadlineTime: '17:00' }
-            ]
-          },
-          {
-            id: 2,
-            reviewer: '張協理',
-            reviewerDepartment: '人資部門',
-            date: '2023-09-12',
-            status: 'approved',
-            comment: '勞工權益政策符合SMETA標準，但工時記錄系統需要優化，確保可以準確追蹤加班時數。',
-            issues: [
-              { title: '加班時數追蹤系統不完善', severity: 'high', status: 'open', deadline: '2023-10-15', deadlineTime: '14:00' },
-              { title: '員工申訴機制缺乏匿名選項', severity: 'medium', status: 'open', deadline: '2023-10-10', deadlineTime: '16:30' }
-            ]
-          }
-        ]
-      };
-      
-      // 模擬的外部審核數據
-      const externalReviewData = {
-        status: 'pending',
-        progress: 0,
-        reviewSteps: [
-          { name: '文件預審', status: 'pending' },
-          { name: '現場審核', status: 'pending' },
-          { name: '不符合項改善', status: 'pending' },
-          { name: '認證決定', status: 'pending' }
-        ],
-        reviews: []
-      };
-      
-      // 根據當前標籤設置審核數據
-      setReviewData(activeTab === 'internal' ? internalReviewData : externalReviewData);
-      setLoading(false);
-      
-      // 設置待調整問題清單
-      let allIssues = [];
-      
-      if (activeTab === 'internal') {
-        internalReviewData.reviews.forEach(review => {
-          if (review.issues && review.issues.length > 0) {
-            review.issues.forEach(issue => {
-              if (issue.status === 'open') {
-                allIssues.push({
-                  ...issue,
-                  reviewer: review.reviewer,
-                  reviewerDepartment: review.reviewerDepartment,
-                  reviewDate: review.date,
-                  completed: false
-                });
-              }
+    const fetchReviewData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:8000/api/projects/${projectId}/reviews?type=${activeTab}`);
+        if (!response.ok) {
+          throw new Error('無法獲取審核數據');
+        }
+        const data = await response.json();
+        setReviewData(data);
+
+        // 設置待調整問題清單
+        let allIssues = [];
+        if (data && data.reviews) {
+            data.reviews.forEach(review => {
+                if (review.issues && review.issues.length > 0) {
+                    review.issues.forEach(issue => {
+                        if (issue.status === 'open') {
+                            allIssues.push({
+                                ...issue,
+                                reviewer: review.reviewer,
+                                reviewerDepartment: review.reviewerDepartment,
+                                reviewDate: review.date,
+                                completed: false
+                            });
+                        }
+                    });
+                }
             });
-          }
-        });
+        }
+        setAdjustmentIssues(allIssues);
+
+      } catch (error) {
+        console.error("獲取審核數據失敗:", error);
+        // 可以設置錯誤狀態來顯示錯誤訊息
+        setReviewData({ reviews: [] }); // 發生錯誤時，清空舊資料避免顯示錯誤資訊
+      } finally {
+        setLoading(false);
       }
-      
-      setAdjustmentIssues(allIssues);
-    }, 800);
-    
-    return () => clearTimeout(timer);
+    };
+
+    if (projectId) {
+      fetchReviewData();
+    }
   }, [activeTab, projectId]);
 
   /**
@@ -253,70 +214,70 @@ const ReviewFeedback = ({ projectId, projectName }) => {
   };
 
   /**
-   * 提交新的審核意見
+   * 提交審核反饋
    */
-  const handleSubmitFeedback = () => {
-    if (newFeedback.trim() === '' || !reviewDecision) return;
+  const handleSubmitFeedback = async () => {
+    if (!reviewDecision || newFeedback.trim() === '') {
+      alert('請選擇審核決定並填寫審核意見。');
+      return;
+    }
     
     setSubmitting(true);
-    
-    // 模擬API提交
-    setTimeout(() => {
-      // 創建新的審核記錄
-      const newReview = {
-        id: Math.floor(Math.random() * 1000),
-        reviewer: '當前用戶', // 實際應用中應從用戶會話獲取
-        reviewerDepartment: '品質部門', // 實際應用中應從用戶會話獲取
-        date: new Date().toISOString().split('T')[0],
-        status: reviewDecision,
-        comment: newFeedback,
-        issues: newIssues
-      };
-      
-      // 更新審核數據
-      const updatedReviewData = { ...reviewData };
-      updatedReviewData.reviews = [newReview, ...updatedReviewData.reviews];
-      
-      if (reviewDecision === 'approved') {
-        // 如果核准，更新下一步驟為進行中
-        const pendingStepIndex = updatedReviewData.reviewSteps.findIndex(step => step.status === 'pending');
-        if (pendingStepIndex > 0) {
-          updatedReviewData.reviewSteps[pendingStepIndex].status = 'in-progress';
-          
-          // 將當前進行中的步驟設為已完成
-          const inProgressStepIndex = updatedReviewData.reviewSteps.findIndex(step => step.status === 'in-progress');
-          if (inProgressStepIndex >= 0) {
-            updatedReviewData.reviewSteps[inProgressStepIndex].status = 'completed';
-          }
-        }
-        
-        // 更新整體進度
-        const completedSteps = updatedReviewData.reviewSteps.filter(step => step.status === 'completed').length;
-        const totalSteps = updatedReviewData.reviewSteps.length;
-        updatedReviewData.progress = Math.round((completedSteps / totalSteps) * 100);
-      }
-      
-      setReviewData(updatedReviewData);
-      setNewFeedback('');
-      setReviewDecision('');
-      setNewIssues([]);
-      setSubmitting(false);
-      
-      // 更新待調整問題清單
-      const newAdjustmentIssues = [...adjustmentIssues];
-      newIssues.forEach(issue => {
-        if (issue.status === 'open') {
-          newAdjustmentIssues.push({
-            ...issue,
-            reviewer: '當前用戶',
-            reviewerDepartment: '品質部門',
-            reviewDate: new Date().toISOString().split('T')[0],
-            completed: false
-          });
-        }
+
+    const feedbackData = {
+      // 這邊先暫時寫死審核員資訊，未來應從用戶登入資訊獲取
+      reviewerName: '王經理', 
+      reviewerDepartment: '管理部',
+      reviewType: activeTab,
+      decision: reviewDecision,
+      comment: newFeedback,
+      issues: newIssues.map(issue => ({
+        title: issue.title,
+        severity: issue.severity,
+        status: 'open',
+        deadline: issue.deadline && issue.deadlineTime 
+            ? `${issue.deadline}T${issue.deadlineTime}:00` 
+            : null
+      }))
+    };
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${projectId}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData),
       });
-      setAdjustmentIssues(newAdjustmentIssues);
-    }, 1000);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '提交審核失敗');
+      }
+
+      const newReview = await response.json();
+
+      // 提交成功後，樂觀更新前端狀態
+      setReviewData(prevData => {
+          const updatedReviews = prevData && prevData.reviews ? [...prevData.reviews, newReview] : [newReview];
+          return {
+            ...prevData,
+            reviews: updatedReviews
+          }
+      });
+
+      // 清空表單
+      setNewFeedback('');
+      setNewIssues([]);
+      setReviewDecision('');
+      alert('審核意見提交成功！');
+
+    } catch (error) {
+      console.error('提交審核失敗:', error);
+      alert(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /**
