@@ -36,6 +36,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 ### User Management
 - [x] 和 Authentication merge 好
 - [x] 新增角色
+- [x] 更改角色名稱
 - [x] 詳細查看使用者內容
 - [x] 修改使用者內容
 - [ ] 停用帳號
