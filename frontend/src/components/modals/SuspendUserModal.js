@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 // You can create a specific CSS file if needed, or reuse existing modal styles
 // import './SuspendUserModal.css'; 
 
-const SuspendUserModal = ({ show, onClose, user, onConfirmSuspend, onConfirmReactivate, isProcessing, error }) => {
+const SuspendUserModal = ({ 
+  show, 
+  onClose, 
+  user, 
+  onConfirmSuspend, 
+  onConfirmReactivate,
+  onConfirmDelete, 
+  isProcessing, 
+  error 
+}) => {
   
   useEffect(() => {
     // Reset any local state if needed when modal visibility or user changes
@@ -28,6 +37,16 @@ const SuspendUserModal = ({ show, onClose, user, onConfirmSuspend, onConfirmReac
     // }
   };
 
+  const handleDelte = () => {
+    if (window.confirm(
+      `您確定要永久刪除使用者 "${user.name}" 的帳號嗎？\n\n` +
+      `警告：此操作無法復原！\n` +
+      `使用者帳戶及其所有相關的專案成員身份將被永久移除。`
+    )) {
+      onConfirmDelete(user.id);
+    }
+  }
+
   return (
     <div className="modal-backdrop"> {/* Use existing backdrop style or create new */}
       <div className="modal-content"> {/* Use existing content style or create new */}
@@ -47,7 +66,11 @@ const SuspendUserModal = ({ show, onClose, user, onConfirmSuspend, onConfirmReac
           {user.suspended ? (
             <>
               <p>此使用者帳戶目前為 <strong>已停用</strong> 狀態。</p>
-              <p>您確定要重新啟用此帳號嗎？</p>
+              <p>您可以選擇重新啟用此帳號，或永久刪除此帳號。</p>
+              <div className="alert alert-warning mt-3">
+                <strong>請注意：</strong> 刪除帳號為永久性操作且無法復原。
+                所有相關的專案成員身份也將被移除。
+              </div>
             </>
           ) : (
             <>
@@ -66,14 +89,24 @@ const SuspendUserModal = ({ show, onClose, user, onConfirmSuspend, onConfirmReac
             取消
           </button>
           {user.suspended ? (
-            <button 
-              type="button" 
-              className="btn btn-success" // Green button for reactivate
-              onClick={handleReactivate}
-              disabled={isProcessing}
-            >
-              {isProcessing ? '處理中...' : '重新啟用帳號'}
-            </button>
+            <>
+              <button 
+                type="button" 
+                className="btn btn-success" // Green button for reactivate
+                onClick={handleReactivate}
+                disabled={isProcessing}
+              >
+                {isProcessing ? '處理中...' : '重新啟用帳號'}
+              </button>
+              <button
+                type='button'
+                className="btn btn-danger"
+                onClick={handleDelte}
+                disabled={isProcessing}
+              >
+                {isProcessing ? '刪除中...' : '刪除使用者帳號'} 
+              </button>
+            </>
           ) : (
             <button 
               type="button" 

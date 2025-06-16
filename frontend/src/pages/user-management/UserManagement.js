@@ -563,6 +563,31 @@ const UserManagement = () => {
     }
   }
 
+  /**
+   * for deleting user
+   */
+  const confirmDeleteUser = async (userId) => {
+    setIsProcessingSuspend(true);
+    setSuspendError('');
+    try {
+      await axios.delete(`${API_BASE_URL}/user-management/user/${userId}`);
+
+      // on success
+      fetchUsers();
+      setShowSuspendModal(false);
+      setUserToSuspendOrReactivate(null);
+      alert('使用這帳號已成功刪除');
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.response?.data || err.message || '刪除帳號失敗。';
+      setSuspendError(errorMessage);
+      console.error("Error deleting user: ", err);
+    } finally {
+      setIsProcessingSuspend(false);
+    }
+  };
+
+
+
 
 
   
@@ -1002,6 +1027,7 @@ const UserManagement = () => {
           user={userToSuspendOrReactivate}
           onConfirmSuspend={confirmSuspendUser}
           onConfirmReactivate={confirmReactivateUser} // Pass the reactivate handler
+          onConfirmDelete={confirmDeleteUser}
           isProcessing={isProcessingSuspend}
           error={suspendError}
         />
