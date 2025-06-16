@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -192,7 +193,11 @@ public class UserManagementController {
         }
     }
 
-
+    /**
+     * Unsuspend/Reactivate a user account that was previously suspended
+     * @param userId The ID of the user whose account is going to be reactivated
+     * @return The updated User object unsuspended, or an error response
+     */
     @PutMapping("/user/{userId}/unsuspend") 
     public ResponseEntity<?> unsuspendUserAccount(@PathVariable Long userId) {
         try {
@@ -205,6 +210,23 @@ public class UserManagementController {
             .body("An unexpected error occured while unsuspending the user account: " + e.getMessage());  
         }
     }
+
+
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<?> deleteUserAccount(@PathVariable Long userId) {
+        try {
+            userManagementService.deleteUser(userId);
+            return ResponseEntity.ok().body("User account with ID: " + userId + "deleted successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while deleting the user account: " + e.getMessage());
+        }
+    }
+
+
+
 
 
 

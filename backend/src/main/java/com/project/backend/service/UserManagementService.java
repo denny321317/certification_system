@@ -140,6 +140,7 @@ public class UserManagementService {
     /**
      * the old version of createUser not using DTO
      */
+    @Deprecated
     public User createUser(String name, String email, String roleName, String deparment){
         Role role = roleRepository.findByName(roleName).get();
         if (role == null){
@@ -185,6 +186,27 @@ public class UserManagementService {
 
         user.setSuspended(false);
         return userRepository.save(user);
+    }
+
+
+    /**
+     * Delete a user account from the database.
+     * A user can only be deleted if their account is suspended.
+     * @param userId The ID of the user to delete
+     * @throws IllegalArgumentException if the user is not suspended.
+     */
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User with ID: " + userId + " not found"));
+        
+        if (!user.isSuspended()) {
+            throw new IllegalArgumentException("User needs to be first suspended before being deleted");
+        }
+
+
+
+        userRepository.delete(user);
     }
 
 
