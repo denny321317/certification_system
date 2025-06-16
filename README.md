@@ -39,8 +39,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - [x] 更改角色名稱
 - [x] 詳細查看使用者內容
 - [x] 修改使用者內容
-- [ ] 停用帳號
-  - [ ] 恢復帳號
+- [x] 停用帳號
+  - [x] 恢復帳號
   - [ ] 刪除帳號
 
 ### Supply Chain Management
