@@ -39,6 +39,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 
 ## TODO
+- [ ] 以部門區分使用者
 - [ ] 和其他 Branches 整合，尤其是 Auth 和 Project Management
 - [ ] 修改 Code 使 User 的身份、角色和 Project Membership 真的反映到系統上
 
