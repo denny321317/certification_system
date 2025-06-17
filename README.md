@@ -26,7 +26,6 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   - 新增使用者 
 
 
-## TODO
 ### User Management
 - [x] 新增角色
 - [x] 更改角色名稱
@@ -42,15 +41,9 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 
 
-
-
-
-
-
-
-
-% ### Supply Chain Management %
-% - [ ] 整體 %
+## TODO
+### Supply Chain Management 
+ - [ ] 整體 
 
 
 
