@@ -257,7 +257,11 @@ const UserManagement = () => {
   const [isProcessingSuspend, setIsProcessingSuspend] = useState(false);
   const [suspendError, setSuspendError] = useState('');
 
-  
+  /**
+   * for deleting a role
+   */
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
+  const [deleteRoleError, setDeleteRoleError] = useState('');
 
 
   // API base URL
@@ -585,6 +589,69 @@ const UserManagement = () => {
       setIsProcessingSuspend(false);
     }
   };
+
+  /**
+   * for deleting a role
+   */
+  const handleDeleteRole = async () => {
+    if (!selectedRole) {
+      alert("請先選擇一個角色");
+      return;
+    }
+
+    const roleToDelete = rolesForForm.find(role => role.name === selectedRole);
+
+    if (!roleToDelete || typeof roleToDelete.id === 'undefined') {
+      alert(`無法找到角色 ${selectedRole} 的 ID`);
+      console.error("Role object or ID not found for selectedRole: ", selectedRole, rolesForForm);
+      return;
+    }
+
+    // double check
+    if (window.confirm(`您確定要永久刪除角色 "${selectedRole}" 嗎？\n\n警告：此操作無法復原！\n如果仍有使用者屬於此角色，他們的角色會被轉成一般使用者。`)) {
+      setIsDeletingRole(true);
+      setDeleteRoleError('');
+      try {
+        await axios.delete(`${API_BASE_URL}/user-management/role/${roleToDelete.id}`);
+        alert(`角色 "${selectedRole}" 已成功刪除。`);
+        
+        // Refresh roles list
+        await fetchAllRoles(); // This will also update rolesForForm
+        
+        // Refresh user stats as user counts per role might change
+        await fetchUserStats();
+
+        // If the deleted role was the currently selected one,
+        // reset selectedRole to the first available role or empty
+        if (rolesForForm.length > 0 && rolesForForm[0].name !== selectedRole) {
+            // Check if the new rolesForForm still contains the old selectedRole.
+            // If not, or if it's different, update selectedRole.
+             const newSelectedRole = rolesForForm.find(r => r.name === selectedRole) ? selectedRole : (rolesForForm.length > 0 ? rolesForForm[0].name : '');
+             setSelectedRole(newSelectedRole);
+        } else if (rolesForForm.length === 0) {
+            setSelectedRole('');
+            setRoleAuthorizations(Array(16).fill(false)); // Clear authorizations
+        }
+        // If rolesForForm has items and the first one IS the selectedRole, it means the list was refreshed
+        // and the selectedRole might still be valid if it wasn't the one deleted.
+        // The fetchAllRoles should ideally set the new selectedRole if the old one is gone.
+        // Let's refine the logic for resetting selectedRole after fetchAllRoles completes.
+        // The useEffect for selectedRole should handle fetching new auths.
+        await fetchUsers();
+        
+
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || err.response?.data || err.message || '刪除角色失敗。';
+        setDeleteRoleError(errorMessage);
+        alert(`刪除角色 "${selectedRole}" 失敗：${errorMessage}`);
+        console.error(`Error deleting role ${selectedRole} (ID: ${roleToDelete.id}):`, err);
+      } finally {
+        setIsDeletingRole(false);
+      }
+    }
+  }
+
+
 
 
 
@@ -942,11 +1009,18 @@ const UserManagement = () => {
               <button
                 className='btn btn-primary w-100 mt-3'
                 onClick={() => setShowAddRoleModal(true)}
-                // TODO: implement AddRole
               >
                 新增角色
               </button>
-              
+              {deleteRoleError && <div className="text-danger mt-2 small">{deleteRoleError}</div>}
+              <button
+                className='btn btn-danger w-100 mt-3'
+                onClick={handleDeleteRole}
+                disabled={!selectedRole || loadingRoleAuth || isDeletingRole || rolesForForm.find(r => r.name === selectedRole)?.id <= 5} // Disable if no role selected, loading, deleting, or protected role
+                title={rolesForForm.find(r => r.name === selectedRole)?.id <= 5 ? "系統預設角色無法刪除" : "刪除選定的角色"}
+              >
+                {isDeletingRole ? '刪除中...' : '刪除角色'}
+              </button>
             </div>
           </div>
         </div>

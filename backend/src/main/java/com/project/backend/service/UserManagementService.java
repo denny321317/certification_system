@@ -317,10 +317,8 @@ public class UserManagementService {
     }
 
     public Role getRole(String roleName){
-        Role role = roleRepository.findByName(roleName).get();
-        if (role == null){
-            throw new IllegalArgumentException("Role not found: " + roleName);
-        }
+        Role role = roleRepository.findByName(roleName)
+            .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
         return role;
     }
 
@@ -334,6 +332,19 @@ public class UserManagementService {
         // protected Roles
         if (PROTECTED_ROLE_IDS.contains(roleToBeDeleted.getId())) {
             throw new IllegalArgumentException("This role is a protected role. It cannot be deleted");
+        }
+
+        // changing the role of users affected to 一般使用者
+        Role defaultRole = roleRepository.findByName("一般使用者").get();
+
+        List<User> usersToReassign = userRepository.findByRole(roleToBeDeleted);
+
+        if (!usersToReassign.isEmpty()) {
+            for (User user : usersToReassign) {
+                user.setRole(defaultRole);
+            }
+            userRepository.saveAll(usersToReassign);
+            userRepository.flush();
         }
 
         roleRepository.delete(roleToBeDeleted);
