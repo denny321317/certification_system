@@ -1818,7 +1818,7 @@ const CertificationProjectDetail = () => {
   // 4. 處理新增成員
   const handleAddMember = async (e) => {
     e.preventDefault();
-    if (!selectedUserId || !selectedRole) {
+    if (!selectedUserId) {
       setAddMemberError('請選擇用戶並填寫職責');
       return;
     }
