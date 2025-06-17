@@ -119,7 +119,13 @@ public class UserManagementController {
         }
     }
 
-    
+    /**
+     * Update the name of a Role.
+     * Attention: Roles with IDs 1~5 are protected roles. They may not be deleted nor can their names be changed.
+     * @param currentRoleName
+     * @param roleRenameDTO
+     * @return
+     */
     @PutMapping("/role/{currentRoleName}/name")
     public ResponseEntity<?> updateRoleName(
         @PathVariable String currentRoleName,
@@ -134,6 +140,20 @@ public class UserManagementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured updating the role name: " + e.getMessage());
         }
 
+    }
+
+
+    @DeleteMapping("/role/{roleId}") 
+    public ResponseEntity<?> deleteRole(@PathVariable Long roleId) {
+        try {
+            userManagementService.deleteRole(roleId);
+            return ResponseEntity.ok().body("Role with ID: " + roleId + " is successfully deleted");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An unexpected error occurred while deleting the user account: " + e.getMessage());
+        }
     }
 
     @GetMapping("/role/{roleName}/getRole")
@@ -224,6 +244,8 @@ public class UserManagementController {
                 .body("An unexpected error occurred while deleting the user account: " + e.getMessage());
         }
     }
+
+
 
 
 

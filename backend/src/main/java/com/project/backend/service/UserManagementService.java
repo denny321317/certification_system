@@ -35,6 +35,7 @@ public class UserManagementService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    public static final List<Long> PROTECTED_ROLE_IDS = List.of(1L, 2L, 3L, 4L, 5L);
 
     public UserManagementService(UserRepository userRepository, RoleRepository roleRepository){
         this.userRepository = userRepository;
@@ -259,6 +260,13 @@ public class UserManagementService {
      */
     @Transactional
     public Role updateRoleName(String currentRoleName, String newRoleNameFromDTO) {
+
+        // The original five roles are protected from name changing
+        if (PROTECTED_ROLE_IDS.contains(roleRepository.findByName(currentRoleName).get().getId())) {
+            throw new IllegalArgumentException("The Role you are trying to update is a protected role. It is not allowed to be updated");
+        }
+        
+        
         if (newRoleNameFromDTO == null || newRoleNameFromDTO.trim().isEmpty()){
             throw new IllegalArgumentException("New role name cannot be empty");
         }
@@ -315,6 +323,22 @@ public class UserManagementService {
         }
         return role;
     }
+
+
+    @Transactional
+    public void deleteRole(Long roleId) {
+        
+        Role roleToBeDeleted = roleRepository.findById(roleId)
+            .orElseThrow(() -> new IllegalArgumentException("Role with ID: "+ roleId + " not found"));
+        
+        // protected Roles
+        if (PROTECTED_ROLE_IDS.contains(roleToBeDeleted.getId())) {
+            throw new IllegalArgumentException("This role is a protected role. It cannot be deleted");
+        }
+
+        roleRepository.delete(roleToBeDeleted);
+    }
+
 
 
 
