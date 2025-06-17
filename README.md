@@ -23,21 +23,15 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   - 使用者統計
   - 角色與權限
   - 透過名字搜索使用者
-- 可使用但是有 Bug
   - 新增使用者 
-    - (背景莫名其妙全黑)
-- 尚未實作
-  - 新增角色
-  - 編輯使用者
-  - 查看使用者詳情
-  - 停用帳號
+
 
 ## TODO
 ### User Management
 - [x] 新增角色
 - [x] 更改角色名稱
-- [ ] 刪除角色
-  - 確保五大基本角色不會被刪或被更改角色名稱
+- [x] 刪除角色
+  - 五大基本角色不會被刪或被更改角色名稱
 - [x] 詳細查看使用者內容
 - [x] 修改使用者內容
 - [x] 停用帳號
@@ -45,8 +39,18 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
   - [x] 刪除帳號
     - 帳號只有在被停用時才可以被刪除
 
-### Supply Chain Management
-- [ ] 整體
+
+
+
+
+
+
+
+
+
+
+% ### Supply Chain Management %
+% - [ ] 整體 %
 
 
 
