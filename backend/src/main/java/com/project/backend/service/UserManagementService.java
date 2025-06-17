@@ -240,7 +240,7 @@ public class UserManagementService {
      */
     public Role createRole(RoleCreationDTO roleDTO){
         // check if the role already exist
-        if (roleRepository.findByName(roleDTO.getRoleName()) != null) {
+        if (roleRepository.findByName(roleDTO.getRoleName()).isPresent()) {
             throw new IllegalArgumentException("Role already exists: " + roleDTO.getRoleName());
         }
         
