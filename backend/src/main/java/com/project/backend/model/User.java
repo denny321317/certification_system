@@ -35,6 +35,6 @@ public class User {
     @Column(name = "password_reset_token")
     private String passwordResetToken;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private java.util.List<ProjectTeam> projectMemberships;
 }

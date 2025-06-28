@@ -13,12 +13,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('currentUser');
-
-    if (token && storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
+    // To ensure the login screen is always displayed on a fresh start,
+    // we will no longer automatically log in from localStorage.
+    // The user must log in to create a new session.
     setLoading(false);
   }, []);
 
