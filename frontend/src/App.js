@@ -25,6 +25,7 @@ import DocumentManagement from './pages/document-management/DocumentManagement';
 import NotFound from './pages/not-found/NotFound';
 import Login from './pages/auth/Login';
 import PrivateRoute from './components/common/PrivateRoute';
+import Register from './pages/auth/Register';
 
 // 上下文提供者
 import { AuthProvider } from './contexts/AuthContext';
@@ -39,6 +40,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           <Route path="/" element={<PrivateRoute><MainLayout /></PrivateRoute>}>
             <Route index element={<Dashboard />} />

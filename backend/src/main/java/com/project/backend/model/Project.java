@@ -49,17 +49,11 @@ public class Project {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "project_user",
-        joinColumns = @JoinColumn(name = "project_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    private List<User> users;
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ProjectTeam> teamMembers;
 
     // 這裡用 OneToMany 關聯檔案
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "project_id")  // file 表裡要有 project_id 外鍵
     private List<FileEntity> documents;
 

@@ -2024,3 +2024,17 @@ textarea.form-control {
   cursor: pointer;
   font-size: 0.85rem;
 }
+
+.member-responsibility-bar {
+  background-color: #e9ecef;
+  color: #212529;
+  padding: 10px 16px;
+  text-align: left;
+  border-top: 1px solid #dee2e6;
+}
+
+.member-responsibility-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #212529;
+}

@@ -16,7 +16,7 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -92,15 +92,21 @@ const CreateCertificationProject = () => {
 
   /**
    * 負責人選項
-   * @type {Array<{id: string, name: string, title: string}>}
+   * @type {Array<{id: number, name: string, position: string}>}
    */
-  const managerOptions = [
-    { id: 'manager1', name: '王經理', title: '品質部經理' },
-    { id: 'manager2', name: '李總監', title: '品管總監' },
-    { id: 'manager3', name: '張經理', title: '生產部經理' },
-    { id: 'manager4', name: '林經理', title: '人資部經理' },
-    { id: 'manager5', name: '陳副理', title: '環安衛副理' }
-  ];
+  const [users, setUsers] = useState([]);
+
+    // 取得 user list
+    useEffect(() => {
+      fetch('http://localhost:8000/api/users/all')
+        .then(res => res.json())
+        .then(data => setUsers(data))
+        .catch(err => {
+          // 可以加個錯誤提示
+          console.error('取得用戶列表失敗', err);
+        });
+    }, []);  
+
 
   /**
    * 處理表單輸入變更
@@ -156,10 +162,11 @@ const CreateCertificationProject = () => {
         new Date(formData.externalReviewDate) < new Date(formData.startDate)) {
       errors.externalReviewDate = '外部審核日期不能早於開始日期';
     }
-    
+    /*
     if (!formData.manager) {
       errors.manager = '請選擇專案負責人';
     }
+    */
     
     if (!formData.agency) {
       errors.agency = '請選擇認證機構';
@@ -400,7 +407,7 @@ const CreateCertificationProject = () => {
             
             <div className="form-group">
               <label htmlFor="manager">
-                專案負責人 <span className="required">*</span>
+                專案負責人
               </label>
               <div className="input-with-icon">
                 <FontAwesomeIcon icon={faUser} className="input-icon" />
@@ -409,12 +416,12 @@ const CreateCertificationProject = () => {
                   name="manager"
                   value={formData.manager}
                   onChange={handleInputChange}
-                  className={`form-control ${formErrors.manager ? 'is-invalid' : ''}`}
+                  className="form-control"
                 >
                   <option value="">選擇專案負責人</option>
-                  {managerOptions.map(manager => (
-                    <option key={manager.id} value={manager.name}>
-                      {manager.name} ({manager.title})
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.position || '無職稱'})
                     </option>
                   ))}
                 </select>

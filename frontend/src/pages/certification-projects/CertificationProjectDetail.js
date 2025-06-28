@@ -205,6 +205,30 @@ const CertificationProjectDetail = () => {
    * @type {[Array, Function]} [操作歷史列表, 設置操作歷史列表的函數]
    */
   const [history, setHistory] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [userList, setUserList] = useState([]);
+
+  // 取得團隊成員
+  const fetchTeamMembers = async () => {
+    try {
+        const res = await fetch(`http://localhost:8000/api/projects/${projectId}/team`);
+        if (!res.ok) throw new Error('Failed to fetch team members');
+        const data = await res.json();
+        setTeamMembers(Array.isArray(data) ? data : []);
+    } catch (error) {
+        console.error("Error fetching team members:", error);
+        setTeamMembers([]);
+    }
+  };
+  
+  useEffect(() => { 
+      if (projectId) {
+          fetchTeamMembers(); 
+      }
+  }, [projectId]);
+
+  // 計算可選用戶（排除已在團隊中的 user）
+  const availableUsers = userList.filter(u => !teamMembers.some(tm => String(tm.id) === String(u.id)));
 
   // 當文件篩選條件變更時，重置頁碼為1
   useEffect(() => {
@@ -260,6 +284,7 @@ const CertificationProjectDetail = () => {
     if (projectId) {
       fetchProjectDetail();
     }
+
   }, [projectId]);
 
   /**
@@ -1455,42 +1480,104 @@ const CertificationProjectDetail = () => {
           <div className="project-team">
             <div className="team-header">
               <h5>團隊成員</h5>
-              <button className="btn btn-primary btn-sm">
+              <button className="btn btn-primary btn-sm" onClick={handleShowAddMemberModal}>
                 <FontAwesomeIcon icon={faUsers} className="me-2" />
                 添加成員
               </button>
             </div>
-            
             <div className="team-members-extended">
-              {projectDetail.team.map((member, index) => (
-                <div className="team-member-card" key={index}>
-                  <div className="member-card-header">
-                    <div className="member-avatar-large">
-                      {member.name.charAt(0)}
+              {teamMembers.length === 0 ? (
+                <div>尚無團隊成員，請新增。</div>
+              ) : teamMembers.map((member, index) => {
+                // 取得該 user 的 position
+                const user = userList.find(u => String(u.id) === String(member.id));
+                const position = user && user.position ? user.position : '無職稱';
+                return (
+                  <div className="team-member-card" key={index}>
+                    <div className="member-card-header">
+                      <div className="member-avatar-large">{member.name.charAt(0)}</div>
+                      <div className="member-main-info">
+                        <div className="member-name-large">{member.name}</div>
+                        <div className="member-role-badge">{position}</div>
+                        <div className="member-email-large">{member.email}</div>
+                        <div className="member-permission">
+                          <span className="badge bg-secondary me-2">
+                            {member.permission === 'edit' ? '可編輯' : '僅檢視'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="member-actions">
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => handleShowPermissionModal(index)}>
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+                        <button className="btn btn-sm btn-outline-danger ms-2" title="移除成員" onClick={() => handleRemoveMember(member.id)}>
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="member-main-info">
-                      <div className="member-name-large">{member.name}</div>
-                      <div className="member-role-badge">{member.role}</div>
-                      <div className="member-email-large">{member.email}</div>
-                    </div>
-                    <div className="member-actions">
-                      <button className="btn btn-sm btn-outline-secondary">
-                        <FontAwesomeIcon icon={faEdit} />
-                      </button>
+                    <div className="member-responsibilities">
+                      <h6>職責與任務</h6>
+                      <ul className="responsibilities-list">
+                        {member.duties && member.duties.length > 0 ? (
+                          member.duties.map(duty => <li key={duty}>{duty}</li>)
+                        ) : (
+                          <li>無</li>
+                        )}
+                      </ul>
                     </div>
                   </div>
-                  <div className="member-responsibilities">
-                    <h6>職責與任務</h6>
-                    <ul className="responsibilities-list">
-                      <li>項目計劃制定和審核</li>
-                      <li>團隊協調和資源分配</li>
-                      <li>與認證機構溝通</li>
-                      <li>進度監控和風險管理</li>
-                    </ul>
+                );
+              })}
+            </div>
+            {/* 新增成員彈窗（只能選現有用戶） */}
+            {showAddMemberModal && (
+              <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                <div className="modal-dialog">
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h5 className="modal-title">添加團隊成員</h5>
+                      <button type="button" className="btn-close" onClick={handleCloseAddMemberModal}></button>
+                    </div>
+                    <form onSubmit={handleAddMember}>
+                      <div className="modal-body">
+                        {addMemberError && <div className="alert alert-danger py-2">{addMemberError}</div>}
+                        <div className="mb-3">
+                          <label className="form-label">選擇用戶</label>
+                          <select className="form-select" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} required>
+                            <option value="">請選擇</option>
+                            {availableUsers.map(u => (
+                              <option key={u.id} value={u.id}>{u.name}（{u.position || '無職稱'}）</option>
+                            ))}
+                          </select>
+                        </div>
+                        {/* 移除職責欄位 */}
+                        <div className="mb-3">
+                          <label className="form-label">權限</label>
+                          <select className="form-select" value={selectedPermission} onChange={e => setSelectedPermission(e.target.value)} required>
+                            <option value="view">僅檢視</option>
+                            <option value="edit">可編輯</option>
+                          </select>
+                        </div>
+                        <div className="mb-3">
+                          <label className="form-label">多重職責（可多選）</label>
+                          <input
+                            className="form-control"
+                            value={selectedDuties.join(',')}
+                            onChange={e => setSelectedDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                            placeholder="以逗號分隔多個職責"
+                          />
+                          <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
+                        </div>
+                      </div>
+                      <div className="modal-footer">
+                        <button type="button" className="btn btn-secondary" onClick={handleCloseAddMemberModal}>取消</button>
+                        <button type="submit" className="btn btn-primary" disabled={!selectedUserId}>新增</button>
+                      </div>
+                    </form>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         );
       
@@ -1688,6 +1775,144 @@ const CertificationProjectDetail = () => {
     }
   };
 
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [selectedMemberIndex, setSelectedMemberIndex] = useState(null);
+
+  // 1. 新增狀態：編輯 duties
+  const [editDuties, setEditDuties] = useState([]);
+
+  const handleShowPermissionModal = (index) => {
+    setSelectedMemberIndex(index);
+    // duties 初始值
+    setEditDuties(projectDetail.team[index].duties || []);
+    setShowPermissionModal(true);
+  };
+  const handleClosePermissionModal = () => {
+    setShowPermissionModal(false);
+    setSelectedMemberIndex(null);
+    setEditDuties([]);
+  };
+  const handlePermissionChange = (e) => {
+    const newPermission = e.target.value;
+    setProjectDetail(prev => {
+      const newTeam = [...prev.team];
+      newTeam[selectedMemberIndex] = {
+        ...newTeam[selectedMemberIndex],
+        permission: newPermission
+      };
+      return { ...prev, team: newTeam };
+    });
+  };
+
+  // 1. 新增狀態
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [addMemberError, setAddMemberError] = useState('');
+  const [selectedPermission, setSelectedPermission] = useState('view');
+  const [selectedDuties, setSelectedDuties] = useState([]); // 多重職責
+
+  // 2. 處理開關彈窗
+  const handleShowAddMemberModal = () => {
+    setSelectedUserId('');
+    setSelectedRole('');
+    setSelectedPermission('view');
+    setSelectedDuties([]);
+    setAddMemberError('');
+    setShowAddMemberModal(true);
+  };
+  const handleCloseAddMemberModal = () => {
+    setShowAddMemberModal(false);
+    setSelectedUserId('');
+    setSelectedRole('');
+    setSelectedPermission('view');
+    setSelectedDuties([]);
+    setAddMemberError('');
+  };
+
+
+  // 4. 處理新增成員
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    if (!selectedUserId || !selectedRole) {
+      setAddMemberError('請選擇用戶並填寫職責');
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:8000/api/projects/${projectId}/add-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUserId,
+          role: selectedRole,
+          permission: selectedPermission,
+          duties: selectedDuties
+        })
+      });
+      if (!res.ok) throw new Error('新增失敗');
+      setShowAddMemberModal(false);
+      setSelectedUserId('');
+      setSelectedRole('');
+      setSelectedPermission('view');
+      setSelectedDuties([]);
+      setAddMemberError('');
+      fetchTeamMembers();
+    } catch (err) {
+      setAddMemberError('新增成員失敗，請稍後再試');
+    }
+  };
+
+  // 取得所有用戶（供添加成員用）
+  useEffect(() => {
+    fetch('http://localhost:8000/api/users/all')
+      .then(res => res.json())
+      .then(data => {
+        setUserList(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setUserList([]));
+  }, []);
+
+  const handleRemoveMember = async (userId) => {
+    if (!window.confirm('確定要移除此成員？')) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/projects/${projectId}/remove-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (!res.ok) throw new Error('移除失敗');
+      fetchTeamMembers();
+    } catch (err) {
+      alert('移除成員失敗，請稍後再試');
+    }
+  };
+
+  const handleEditDutiesChange = (e) => {
+    setEditDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+  };
+
+  const handleUpdateMember = async () => {
+    const member = projectDetail.team[selectedMemberIndex];
+    try {
+      const res = await fetch(`http://localhost:8000/api/projects/${projectId}/add-member`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: member.id,
+          role: '', // role 已廢棄
+          permission: member.permission,
+          duties: editDuties
+        })
+      });
+      if (!res.ok) throw new Error('更新失敗');
+      fetchTeamMembers();
+      setShowPermissionModal(false);
+      setSelectedMemberIndex(null);
+      setEditDuties([]);
+    } catch (err) {
+      alert('更新成員失敗，請稍後再試');
+    }
+  };
 
   return (
     <div className="certification-project-detail">
@@ -2086,6 +2311,89 @@ const CertificationProjectDetail = () => {
                   <FontAwesomeIcon icon={faFileExport} /> 匯出報告
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPermissionModal && selectedMemberIndex !== null && (
+        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">編輯權限與職責</h5>
+                <button type="button" className="btn-close" onClick={handleClosePermissionModal}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">選擇權限</label>
+                  <select className="form-select" value={projectDetail.team[selectedMemberIndex].permission} onChange={handlePermissionChange}>
+                    <option value="view">僅檢視</option>
+                    <option value="edit">可編輯</option>
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">多重職責（可多選）</label>
+                  <input
+                    className="form-control"
+                    value={editDuties.join(',')}
+                    onChange={handleEditDutiesChange}
+                    placeholder="以逗號分隔多個職責"
+                  />
+                  <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={handleClosePermissionModal}>關閉</button>
+                <button type="button" className="btn btn-primary" onClick={handleUpdateMember}>儲存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAddMemberModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">添加團隊成員</h5>
+                <button type="button" className="btn-close" onClick={handleCloseAddMemberModal}></button>
+              </div>
+              <form onSubmit={handleAddMember}>
+                <div className="modal-body">
+                  {addMemberError && <div className="alert alert-danger py-2">{addMemberError}</div>}
+                  <div className="mb-3">
+                    <label className="form-label">選擇用戶</label>
+                    <select className="form-select" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} required>
+                      <option value="">請選擇</option>
+                      {availableUsers.map(u => (
+                        <option key={u.id} value={u.id}>{u.name}（{u.position || '無職稱'}）</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* 移除職責欄位 */}
+                  <div className="mb-3">
+                    <label className="form-label">權限</label>
+                    <select className="form-select" value={selectedPermission} onChange={e => setSelectedPermission(e.target.value)} required>
+                      <option value="view">僅檢視</option>
+                      <option value="edit">可編輯</option>
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">多重職責（可多選）</label>
+                    <input
+                      className="form-control"
+                      value={selectedDuties.join(',')}
+                      onChange={e => setSelectedDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                      placeholder="以逗號分隔多個職責"
+                    />
+                    <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={handleCloseAddMemberModal}>取消</button>
+                  <button type="submit" className="btn btn-primary" disabled={!selectedUserId}>新增</button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
