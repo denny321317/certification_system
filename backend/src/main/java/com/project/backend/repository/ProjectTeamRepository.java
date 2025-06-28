@@ -1,17 +1,14 @@
 package com.project.backend.repository;
 
 import com.project.backend.model.ProjectTeam;
+import com.project.backend.model.ProjectTeamId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
-public interface ProjectTeamRepository extends JpaRepository<ProjectTeam, Long> {
-    List<ProjectTeam> findByProjectId(Long projectId);
-    List<ProjectTeam> findByUserId(Long userId);
-    void deleteByProjectIdAndUserId(Long projectId, Long userId);
-    ProjectTeam findByProjectIdAndUserId(Long projectId, Long userId);
+public interface ProjectTeamRepository extends JpaRepository<ProjectTeam, ProjectTeamId> {
     
-    @Query("SELECT pt FROM ProjectTeam pt LEFT JOIN FETCH pt.duties WHERE pt.project.id = :projectId")
-    List<ProjectTeam> findByProjectIdWithDuties(@Param("projectId") Long projectId);
+    @Query("SELECT pt FROM ProjectTeam pt LEFT JOIN FETCH pt.user LEFT JOIN FETCH pt.project WHERE pt.id.project = :projectId")
+    List<ProjectTeam> findByProjectIdWithDetails(@Param("projectId") Long projectId);
 } 

@@ -3,6 +3,8 @@ package com.project.backend.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/projects")
 @CrossOrigin(origins = "http://localhost:3000")
 public class ProjectController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -63,7 +67,15 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public ProjectDetailDTO getProjectDetail(@PathVariable Long id) {
-        return projectService.getProjectDetailById(id);
+        logger.info("Attempting to fetch project detail for ID: {}", id);
+        try {
+            ProjectDetailDTO projectDetail = projectService.getProjectDetailById(id);
+            logger.info("Successfully fetched project detail for ID: {}", id);
+            return projectDetail;
+        } catch (Exception e) {
+            logger.error("Error fetching project detail for ID: {}. Error: {}", id, e.getMessage(), e);
+            throw e;
+        }
     }
 
     @GetMapping("/{projectId}/team")

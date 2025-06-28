@@ -9,6 +9,7 @@ import com.project.backend.model.Project;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
 import com.project.backend.model.ProjectTeam;
+import com.project.backend.model.ProjectTeamId;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.ProjectTeamRepository;
@@ -146,10 +147,12 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<TeamMemberDTO> getTeamMembers(Long projectId) {
-        List<ProjectTeam> team = projectTeamRepository.findByProjectIdWithDuties(projectId);
+        List<ProjectTeam> team = projectTeamRepository.findByProjectIdWithDetails(projectId);
         Project project = projectRepository.findById(projectId).orElse(null);
         Long managerId = project != null ? project.getManagerId() : null;
-        return team.stream().map(pt -> new TeamMemberDTO(
+        return team.stream()
+                .filter(pt -> pt.getUser() != null)
+                .map(pt -> new TeamMemberDTO(
                 pt.getUser().getId(),
                 pt.getUser().getName(),
                 pt.getRole(),
@@ -167,16 +170,12 @@ public class ProjectService {
             .orElseThrow(() -> new IllegalArgumentException("Project not found"));
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        ProjectTeam existing = projectTeamRepository.findByProjectIdAndUserId(projectId, userId);
-        if (existing == null) {
-            ProjectTeam pt = new ProjectTeam();
-            pt.setProject(project);
-            pt.setUser(user);
-            pt.setRole(role);
-            pt.setPermission(permission);
-            pt.setDuties(duties);
-            projectTeamRepository.save(pt);
-        }
+
+        ProjectTeamId id = new ProjectTeamId(projectId, userId);
+        ProjectTeam pt = new ProjectTeam(id, project, user, role, permission, duties);
+        
+        projectTeamRepository.save(pt);
+
         return getTeamMembers(projectId);
     }
 
@@ -187,7 +186,10 @@ public class ProjectService {
         if (project.getManagerId() != null && project.getManagerId().equals(userId)) {
             throw new IllegalArgumentException("不能移除專案負責人");
         }
-        projectTeamRepository.deleteByProjectIdAndUserId(projectId, userId);
+        
+        ProjectTeamId id = new ProjectTeamId(projectId, userId);
+        projectTeamRepository.deleteById(id);
+
         return getTeamMembers(projectId);
     }
 
