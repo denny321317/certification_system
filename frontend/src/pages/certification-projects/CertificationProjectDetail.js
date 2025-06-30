@@ -1890,6 +1890,11 @@ const CertificationProjectDetail = () => {
         })
       });
       if (!res.ok) throw new Error('新增失敗');
+
+      // 這裡用回傳的 team 更新狀態，避免需要refresh才能編輯member
+      const updatedTeam = await res.json();
+      setProjectDetail(prev => ({ ...prev, team: updatedTeam }));
+
       setShowAddMemberModal(false);
       setSelectedUserId('');
       setSelectedRole('');
