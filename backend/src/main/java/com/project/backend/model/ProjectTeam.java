@@ -28,4 +28,7 @@ public class ProjectTeam {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "project_team_duties", joinColumns = @JoinColumn(name = "project_team_id"))
     private java.util.List<String> duties; // 多個職責
+    public String getRoleInProject() {
+        return role;
+    }
 } 

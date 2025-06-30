@@ -10,24 +10,25 @@
  */
 
 import React, { useState, useContext } from 'react';
-import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faHome, faFileAlt, faFileContract, faCertificate, 
   faChartBar, faUsers, faUserCog, faCog, faSearch,
-  faBell, faUser
+  faBell, faSignOutAlt, faUser
 } from '@fortawesome/free-solid-svg-icons';
 import { AuthContext } from '../../contexts/AuthContext';
 import './MainLayout.css';
 
 /**
  * 主要佈局組件
- * 使用React Router的Outlet來渲染子路由
+ * @param {Object} props - 組件屬性
+ * @param {ReactNode} props.children - 子組件，將被渲染在主內容區域
  */
-const MainLayout = () => {
+const MainLayout = ({ children }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, logout } = useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
 
   /**
@@ -35,7 +36,7 @@ const MainLayout = () => {
    * @type {Array<{path: string, icon: IconDefinition, label: string}>}
    */
   const menuItems = [
-    { path: '/', icon: faHome, label: '儀表板' },
+    { path: '/dashboard', icon: faHome, label: '儀表板' },
     { path: '/document-management', icon: faFileAlt, label: '文件管理' },
     { path: '/template-center', icon: faFileContract, label: '模板中心' },
     { path: '/certification-projects', icon: faCertificate, label: '認證專案' },
@@ -51,9 +52,17 @@ const MainLayout = () => {
    * @returns {boolean} 是否為當前活動項目
    */
   const isActive = (path) => {
-    if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
-    return false;
+    if (path === '/dashboard' && pathname === '/') return true;
+    return pathname.startsWith(path);
+  };
+
+  /**
+   * 處理用戶登出
+   * 清除認證信息並導航到登入頁面
+   */
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   /**
@@ -123,7 +132,7 @@ const MainLayout = () => {
               <span className="notification-badge">3</span>
             </div>
 
-            {/* 用戶資訊 */}
+            {/* 用戶菜單 */}
             <div className="user-menu">
               <div className="user-avatar">
                 <FontAwesomeIcon icon={faUser} />
@@ -132,13 +141,22 @@ const MainLayout = () => {
                 <span className="user-name">{currentUser?.name || '用戶名稱'}</span>
                 <span className="user-role">{currentUser?.role || '系統管理員'}</span>
               </div>
+              <div className="user-dropdown">
+                <div className="dropdown-item">
+                  <FontAwesomeIcon icon={faUser} /> 個人設置
+                </div>
+                <div className="dropdown-divider"></div>
+                <div className="dropdown-item" onClick={handleLogout}>
+                  <FontAwesomeIcon icon={faSignOutAlt} /> 登出
+                </div>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* 主要內容區域 - 使用Outlet渲染子路由 */}
+        {/* 主要內容區域 */}
         <main className="content-container">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>

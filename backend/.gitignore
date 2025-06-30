@@ -33,3 +33,5 @@ build/
 .vscode/
 
 
+### contain Passwords ###
+/src/main/resources/application.properties

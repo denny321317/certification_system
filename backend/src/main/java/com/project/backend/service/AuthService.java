@@ -1,6 +1,8 @@
 package com.project.backend.service;
 
 import com.project.backend.model.User;
+import com.project.backend.model.Role;
+import com.project.backend.repository.RoleRepository;
 import com.project.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+    private RoleRepository roleRepository; // 新增，用於解決 register() 中的 setRole() 衝突
 
     public Optional<User> login(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
@@ -22,10 +25,11 @@ public class AuthService {
 
     public User register(String name, String email, String password, String department, String position) {
         User user = new User();
+        Role role = roleRepository.findByName("User").get();
         user.setName(name);
         user.setEmail(email);
         user.setPassword(password); // 👉（正式版建議要加密處理）
-        user.setRole("一般用戶");
+        user.setRole(role);   // 改成以一個 Role Object 作為參數
         user.setAvatar(null);
         user.setDepartment(department);
         user.setPosition(position);

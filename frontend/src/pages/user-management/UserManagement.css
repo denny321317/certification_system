@@ -168,6 +168,23 @@
   color: #64748b;
 }
 
+/* 處理停用帳號 */
+.user-suspended-row {
+  background-color: #fee2e2 !important; /* A light red color (Tailwind's red-100) */
+  /* You can adjust the color as needed, e.g., #ffebee, rgba(255, 0, 0, 0.1) */
+}
+
+/* Optional: Style for hover on suspended rows if you want it different from normal hover */
+.user-suspended-row:hover {
+  background-color: #fecaca !important; /* A slightly darker light red (Tailwind's red-200) */
+}
+
+/* Ensure your normal table row hover doesn't override this too strongly if you use !important */
+.table-hover > tbody > tr:hover > * {
+  /* If you have a very specific hover color for all rows, 
+     you might need to adjust its specificity or the suspended row hover. */
+}
+
 /* 操作圖標 */
 .action-icon {
   display: inline-flex;
