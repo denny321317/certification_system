@@ -1819,27 +1819,6 @@ const CertificationProjectDetail = () => {
     setEditDutiesInput('');
   };
 
-  // 編輯彈窗中職責輸入框變更事件
-  const handleEditDutiesInputChange = (e) => {
-    const input = e.target.value;
-    setEditDutiesInput(input);
-    setEditDuties(input.split(',').map(s => s.trim()).filter(Boolean));
-  };
-
-  // 編輯彈窗中權限改變事件
-  const handlePermissionChange = (e) => {
-    const newPermission = e.target.value;
-    setProjectDetail(prev => {
-      if (selectedMemberIndex === null) return prev;
-      const newTeam = [...prev.team];
-      newTeam[selectedMemberIndex] = {
-        ...newTeam[selectedMemberIndex],
-        permission: newPermission
-      };
-      return { ...prev, team: newTeam };
-    });
-  };
-
   // 打開新增成員彈窗，清空新增狀態
   const handleShowAddMemberModal = () => {
     setSelectedUserId('');
@@ -1862,16 +1841,7 @@ const CertificationProjectDetail = () => {
     setAddMemberError('');
   };
 
-  // 新增成員中職責輸入框變更事件
-  const handleDutiesInputChange = (e) => {
-    const input = e.target.value;
-    setDutiesInput(input);
-    setSelectedDuties(input.split(',').map(s => s.trim()).filter(Boolean));
-  };
-
-
-
-  // 4. 處理新增成員
+  //處理新增成員
   const handleAddMember = async (e) => {
     e.preventDefault();
     if (!selectedUserId) {
@@ -1932,13 +1902,6 @@ const CertificationProjectDetail = () => {
     }
   };
 
-  const handleEditDutiesChange = (e) => {
-    const input = e.target.value;
-    setEditDutiesInput(input);
-    setEditDuties(
-      input.split(',').map(s => s.trim()).filter(Boolean)
-    );
-  };
 
   const handleUpdateMember = async () => {
     const member = projectDetail.team[selectedMemberIndex];
