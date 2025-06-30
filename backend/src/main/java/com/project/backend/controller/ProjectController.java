@@ -97,4 +97,13 @@ public class ProjectController {
         Long userId = Long.valueOf(body.get("userId").toString());
         return projectService.removeTeamMember(projectId, userId);
     }
+
+    @PostMapping("/{projectId}/update-member")
+    public List<TeamMemberDTO> updateMemberDuties(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
+        Long userId = Long.valueOf(body.get("userId").toString());
+        List<String> duties = (List<String>) body.get("duties");
+        return projectService.updateMemberDuties(projectId, userId, duties);
+    }
+
+    
 }

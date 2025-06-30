@@ -192,6 +192,22 @@ public class ProjectService {
         projectTeamRepository.deleteByProjectIdAndUserId(projectId, userId);
         return getTeamMembers(projectId);
     }
+    
+
+    @Transactional
+    public List<TeamMemberDTO> updateMemberDuties(Long projectId, Long userId, List<String> duties) {
+        ProjectTeam member = projectTeamRepository.findByProjectIdAndUserId(projectId, userId);
+        if (member == null) {
+            throw new IllegalArgumentException("Team member not found");
+        }
+
+        member.setDuties(duties);
+        projectTeamRepository.save(member);
+
+        return getTeamMembers(projectId);
+    }
+
+
 
     @Transactional(readOnly = true)
     public ProjectDetailDTO getProjectDetailById(Long id) {
