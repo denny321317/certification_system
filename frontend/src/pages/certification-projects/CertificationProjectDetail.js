@@ -1780,11 +1780,15 @@ const CertificationProjectDetail = () => {
 
   // 1. 新增狀態：編輯 duties
   const [editDuties, setEditDuties] = useState([]);
+  const [dutiesInput, setDutiesInput] = useState('');
+
 
   const handleShowPermissionModal = (index) => {
+    const duties = projectDetail.team[index].duties || [];
     setSelectedMemberIndex(index);
     // duties 初始值
-    setEditDuties(projectDetail.team[index].duties || []);
+    setEditDuties(duties);
+    setDutiesInput(duties.join(', '));
     setShowPermissionModal(true);
   };
   const handleClosePermissionModal = () => {
@@ -1818,6 +1822,7 @@ const CertificationProjectDetail = () => {
     setSelectedRole('');
     setSelectedPermission('view');
     setSelectedDuties([]);
+    setDutiesInput('');
     setAddMemberError('');
     setShowAddMemberModal(true);
   };
@@ -1834,7 +1839,7 @@ const CertificationProjectDetail = () => {
   // 4. 處理新增成員
   const handleAddMember = async (e) => {
     e.preventDefault();
-    if (!selectedUserId || !selectedRole) {
+    if (!selectedUserId) {
       setAddMemberError('請選擇用戶並填寫職責');
       return;
     }
@@ -1888,7 +1893,7 @@ const CertificationProjectDetail = () => {
   };
 
   const handleEditDutiesChange = (e) => {
-    setEditDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean));
+    setEditDuties(e.target.value.split('.').map(s => s.trim()).filter(Boolean));
   };
 
   const handleUpdateMember = async () => {
@@ -2382,8 +2387,14 @@ const CertificationProjectDetail = () => {
                     <label className="form-label">多重職責（可多選）</label>
                     <input
                       className="form-control"
-                      value={selectedDuties.join(',')}
-                      onChange={e => setSelectedDuties(e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                      value={dutiesInput}
+                      onChange={e => {
+                        const input = e.target.value;
+                        setDutiesInput(input);
+                        setSelectedDuties(
+                          input.split(',').map(s => s.trim()).filter(Boolean)
+                        );
+                      }}
                       placeholder="以逗號分隔多個職責"
                     />
                     <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
