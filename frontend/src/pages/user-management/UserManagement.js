@@ -50,7 +50,7 @@ import SuspendUserModal from '../../components/modals/SuspendUserModal';
  * 用戶管理組件
  * @returns {JSX.Element} 用戶管理界面
  */
-const UserManagement = () => {
+const UserManagement = ({ canWrite }) => {
   /**
    * 當前選中的標籤狀態
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -790,7 +790,7 @@ const UserManagement = () => {
           <button 
             className="btn upload-btn"
             onClick={() => setShowAddUserModal(true)}
-            disabled={loadingRolesForForm || !!errorRolesForForm}
+            disabled={loadingRolesForForm || !!errorRolesForForm || !canWrite}
           >
             <FontAwesomeIcon icon={faPlus} className="me-2" />新增使用者
           </button>
@@ -852,14 +852,18 @@ const UserManagement = () => {
                           <td>{user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
-                              <div className="action-icon" title="編輯使用者" onClick={() => handleOpenEditModal(user)}>
+                              <div 
+                                className={`action-icon${!canWrite ? ' icon-disabled' : ''}`}
+                                title="編輯使用者" 
+                                onClick={() => handleOpenEditModal(user)}
+                              >
                                 <FontAwesomeIcon icon={faPencil} />
                               </div>
                               <div className="action-icon" title="查看詳情" onClick={() => (handleShowUserInfo(user))}>
                                 <FontAwesomeIcon icon={faEye} />
                               </div>
                               <div 
-                                className={`action-icon ${user.suspended ? 'text-success' : 'text-danger'}`}
+                                className={`action-icon${!canWrite ? ' icon-disabled' : ''} ${user.suspended ? 'text-success' : 'text-danger'}`}
                                 onClick={() => handleOpenSuspendModal(user)}
                                 title={user.suspended ? "重新啟用帳號" : "停用帳號"}
                               >
@@ -994,14 +998,14 @@ const UserManagement = () => {
                     alert('儲存失敗: ' + (err.response?.data?.message || err.message));
                   }
                 }} 
-                disabled={loadingRoleAuth}
+                disabled={loadingRoleAuth || !canWrite}
               >
                 儲存權限設置
               </button>
               <button
                 className='btn btn-primary w-100 mt-3'
                 onClick={() => handleOpenChangeRoleNameModal(selectedRole)}
-                disabled={!selectedRole || loadingRoleAuth}
+                disabled={!selectedRole || loadingRoleAuth || !canWrite}
               >
                 更改角色名稱
               </button>
@@ -1009,6 +1013,7 @@ const UserManagement = () => {
               <button
                 className='btn btn-primary w-100 mt-3'
                 onClick={() => setShowAddRoleModal(true)}
+                disabled={ !canWrite }
               >
                 新增角色
               </button>
@@ -1016,7 +1021,7 @@ const UserManagement = () => {
               <button
                 className='btn btn-danger w-100 mt-3'
                 onClick={handleDeleteRole}
-                disabled={!selectedRole || loadingRoleAuth || isDeletingRole || rolesForForm.find(r => r.name === selectedRole)?.id <= 5} // Disable if no role selected, loading, deleting, or protected role
+                disabled={!selectedRole || loadingRoleAuth || isDeletingRole || rolesForForm.find(r => r.name === selectedRole)?.id <= 5 || !canWrite} // Disable if no role selected, loading, deleting, or protected role
                 title={rolesForForm.find(r => r.name === selectedRole)?.id <= 5 ? "系統預設角色無法刪除" : "刪除選定的角色"}
               >
                 {isDeletingRole ? '刪除中...' : '刪除角色'}

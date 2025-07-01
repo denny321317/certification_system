@@ -36,14 +36,14 @@ const MainLayout = ({ children }) => {
    * @type {Array<{path: string, icon: IconDefinition, label: string}>}
    */
   const menuItems = [
-    { path: '/dashboard', icon: faHome, label: '儀表板', permissionKey: 'allowReadDashboard' },
-    { path: '/document-management', icon: faFileAlt, label: '文件管理', permissionKey: 'allowReadDocumentManagment' },
-    { path: '/template-center', icon: faFileContract, label: '模板中心', permissionKey: 'allowReadTemplateCenter' },
-    { path: '/certification-projects', icon: faCertificate, label: '認證專案', permissionKey: 'allowReadCertificationProjects' },
-    { path: '/reports-analysis', icon: faChartBar, label: '報表分析', permissionKey: 'allowReadReportManagment' },
-    { path: '/supplier-management', icon: faUsers, label: '供應商管理', permissionKey: 'allowReadSupplierManagement' },
-    { path: '/user-management', icon: faUserCog, label: '用戶管理', permissionKey: 'allowReadUserManagment' },
-    { path: '/system-settings', icon: faCog, label: '系統設置', permissionKey: 'allowReadSystemSettings' },
+    { path: '/dashboard', icon: faHome, label: '儀表板', permissionKey: 'allowReadDashboard', writeKey: 'allowWriteDashboard' },
+    { path: '/document-management', icon: faFileAlt, label: '文件管理', permissionKey: 'allowReadDocumentManagment', writeKey: 'allowWriteDocumentManagment' },
+    { path: '/template-center', icon: faFileContract, label: '模板中心', permissionKey: 'allowReadTemplateCenter', writeKey: 'allowWriteTemplateCenter' },
+    { path: '/certification-projects', icon: faCertificate, label: '認證專案', permissionKey: 'allowReadCertificationProjects', writeKey: 'allowWriteCertificationProjects' },
+    { path: '/reports-analysis', icon: faChartBar, label: '報表分析', permissionKey: 'allowReadReportManagment', writeKey: 'allowWriteReportManagment' },
+    { path: '/supplier-management', icon: faUsers, label: '供應商管理', permissionKey: 'allowReadSupplierManagement', writeKey: 'allowWriteSupplierManagement' },
+    { path: '/user-management', icon: faUserCog, label: '用戶管理', permissionKey: 'allowReadUserManagment', writeKey: 'allowWriteUserManagment' },
+    { path: '/system-settings', icon: faCog, label: '系統設置', permissionKey: 'allowReadSystemSettings', writeKey: 'allowWriteSystemSettings' },
   ];
 
   /**
@@ -55,6 +55,9 @@ const MainLayout = ({ children }) => {
       return currentUser.roleDTO[item.permissionKey];
     }
   );
+
+  const currentMenuItem = menuItems.find(item => pathname.startsWith(item.path));
+  const canWrite = currentMenuItem && currentUser?.roleDTO ? currentUser.roleDTO[currentMenuItem.writeKey] : false;
 
   /**
    * 檢查導航項目是否為當前活動項目
@@ -166,7 +169,7 @@ const MainLayout = ({ children }) => {
 
         {/* 主要內容區域 */}
         <main className="content-container">
-          {children}
+          {React.cloneElement(children, { canWrite })}
         </main>
       </div>
     </div>
