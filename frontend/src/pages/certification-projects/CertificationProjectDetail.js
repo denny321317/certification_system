@@ -1480,7 +1480,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
           <div className="project-team">
             <div className="team-header">
               <h5>團隊成員</h5>
-              <button className="btn btn-primary btn-sm" onClick={handleShowAddMemberModal}>
+              <button className="btn btn-primary btn-sm" onClick={handleShowAddMemberModal} disabled={ !canWrite }>
                 <FontAwesomeIcon icon={faUsers} className="me-2" />
                 添加成員
               </button>
@@ -1507,10 +1507,10 @@ const CertificationProjectDetail = ({ canWrite }) => {
                         </div>
                       </div>
                       <div className="member-actions">
-                        <button className="btn btn-sm btn-outline-secondary" onClick={() => handleShowPermissionModal(member.id)}>
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => handleShowPermissionModal(member.id)} disabled={ !canWrite }>
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
-                        <button className="btn btn-sm btn-outline-danger ms-2" title="移除成員" onClick={() => handleRemoveMember(member.id)}>
+                        <button className="btn btn-sm btn-outline-danger ms-2" title="移除成員" onClick={() => handleRemoveMember(member.id)} disabled={ !canWrite }>
                           <FontAwesomeIcon icon={faTrash} />
                         </button>
                       </div>
