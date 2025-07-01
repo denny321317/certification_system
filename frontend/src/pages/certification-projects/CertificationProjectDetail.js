@@ -39,7 +39,7 @@ import axios from "axios";
  * 認證項目詳情頁面
  * @returns {JSX.Element} 認證項目詳情頁面
  */
-const CertificationProjectDetail = () => {
+const CertificationProjectDetail = ({ canWrite }) => {
   // 從URL獲取項目ID
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -1636,6 +1636,7 @@ const CertificationProjectDetail = () => {
                   <button 
                     className="btn btn-primary"
                     onClick={handleShowEditProjectModal}
+                    disabled={ !canWrite }
                   >
                     <FontAwesomeIcon icon={faEdit} className="me-2" />
                     修改專案資訊
@@ -1670,6 +1671,7 @@ const CertificationProjectDetail = () => {
                   <button 
                     className="btn btn-danger"
                     onClick={handleShowDeleteConfirmModal}
+                    disabled={ !canWrite }
                   >
                     <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
                     刪除專案
