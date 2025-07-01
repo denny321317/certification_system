@@ -33,7 +33,7 @@ public class AuthController {
         if (user.isPresent()) {
             response.put("success", true);
             response.put("token", "mock_token"); // 👉 實際應該產生 JWT
-            response.put("user", user.get());
+            response.put("user", authService.toUserDTO(user.get()));
         } else {
             response.put("success", false);
             response.put("error", "帳號或密碼錯誤");
@@ -47,7 +47,7 @@ public class AuthController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         response.put("token", "mock_token");
-        response.put("user", newUser);
+        response.put("user", authService.toUserDTO(newUser));
         return response;
     }
 
