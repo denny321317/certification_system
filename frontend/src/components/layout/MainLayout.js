@@ -139,7 +139,7 @@ const MainLayout = ({ children }) => {
               </div>
               <div className="user-info">
                 <span className="user-name">{currentUser?.name || '用戶名稱'}</span>
-                <span className="user-role">{currentUser?.role || '系統管理員'}</span>
+                <span className="user-role">{currentUser?.role.name || '系統管理員'}</span>
               </div>
               <div className="user-dropdown">
                 <div className="dropdown-item">

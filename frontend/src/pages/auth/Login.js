@@ -32,7 +32,7 @@ const Login = () => {
       const result = await login(email, password);
       
       if (result.success) {
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         setError(result.error);
       }
