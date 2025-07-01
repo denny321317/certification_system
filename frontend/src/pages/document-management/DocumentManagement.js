@@ -36,7 +36,7 @@ import './DocumentManagement.css';
  * 文件管理組件
  * @returns {JSX.Element} 文件管理介面
  */
-const DocumentManagement = () => {
+const DocumentManagement = ({ canWrite }) => {
   /**
    * 文件搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -230,7 +230,7 @@ const DocumentManagement = () => {
             <FontAwesomeIcon icon={faFilter} className="me-2" />
             篩選
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" disabled={ !canWrite }>
             <FontAwesomeIcon icon={faUpload} className="me-2" />
             上傳文件
           </button>
@@ -408,7 +408,7 @@ const DocumentManagement = () => {
                           <FontAwesomeIcon icon={faDownload} className="me-2" />
                           下載
                         </button>
-                        <button className="dropdown-item" onClick={() => handleEdit(file)}>
+                        <button className="dropdown-item" onClick={() => handleEdit(file)} disabled={ !canWrite }>
                           <FontAwesomeIcon icon={faPencilAlt} className="me-2" />
                           編輯
                         </button>
@@ -417,7 +417,7 @@ const DocumentManagement = () => {
                           分享
                         </button>
                         <div className="dropdown-divider"></div>
-                        <button className="dropdown-item text-danger" onClick={() => handleDelete(file)}>
+                        <button className="dropdown-item text-danger" onClick={() => handleDelete(file)} disabled={ !canWrite }>
                           <FontAwesomeIcon icon={faTrash} className="me-2" />
                           刪除
                         </button>

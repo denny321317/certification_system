@@ -34,7 +34,7 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tool
  * 儀表板組件
  * @returns {JSX.Element} 儀表板介面
  */
-const Dashboard = () => {
+const Dashboard = ({ canWrite }) => {
   const { currentUser } = useContext(AuthContext);
 
   /**
