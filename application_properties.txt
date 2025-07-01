@@ -19,7 +19,7 @@ spring.jpa.open-in-view=false
 
 #很重要
 #port要和前端保持一致
-server.port=8080
+server.port=8000
 
 #這一行配置是否在控制台打印 SQL 語句。設置為 true 時，Hibernate 會在控制台輸出執行的 SQL 語句 
 spring.jpa.show-sql=true 
