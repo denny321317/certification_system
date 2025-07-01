@@ -418,6 +418,7 @@ const CertificationProjects = ({ canWrite }) => {
             <div 
               className={`settings-tab ${settingsTab === 'edit' ? 'active' : ''}`}
               onClick={() => setSettingsTab('edit')}
+              disabled={ !canWrite }
             >
               <FontAwesomeIcon icon={faEdit} className="me-2" />
               編輯專案
@@ -432,6 +433,7 @@ const CertificationProjects = ({ canWrite }) => {
             <div 
               className={`settings-tab delete-tab ${settingsTab === 'delete' ? 'active' : ''}`}
               onClick={() => setSettingsTab('delete')}
+              disabled={ !canWrite }
             >
               <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
               刪除專案
@@ -686,7 +688,7 @@ const CertificationProjects = ({ canWrite }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="btn btn-primary" disabled={ !canWrite }>
+          <button className="btn btn-primary" disabled={ !canWrite } onClick={ handleCreateProject }>
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             新增認證專案
           </button>
@@ -772,7 +774,7 @@ const CertificationProjects = ({ canWrite }) => {
               
               {project.id === 1 && (
                 <div className="timeline">
-                  {project.timeline.map((item, index) => (
+                  {Array.isArray(project.timeline) && project.timeline.map((item, index) => (
                     <div className="timeline-item" key={index}>
                       <div className={`timeline-dot ${item.status}`}>
                         {getTimelineIcon(item.status)}

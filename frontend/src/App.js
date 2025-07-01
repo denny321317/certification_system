@@ -22,6 +22,8 @@ import Dashboard from './pages/dashboard/Dashboard';
 import DocumentManagement from './pages/document-management/DocumentManagement';
 import TemplateCenter from './pages/template-center/TemplateCenter';
 import CertificationProjects from './pages/certification-projects/CertificationProjects';
+import CertificationProjectDetail from './pages/certification-projects/CertificationProjectDetail';
+import CreateCertificationProject from './pages/certification-projects/CreateCertificationProject';
 import ReportsAnalysis from './pages/reports-analysis/ReportsAnalysis';
 import SupplierManagement from './pages/supplier-management/SupplierManagement';
 import NotFound from './pages/not-found/NotFound';
@@ -110,6 +112,29 @@ function App() {
                 </MainLayout>
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path='/certification-projects/create'
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CreateCertificationProject />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+
+          />
+          <Route
+            path='/certification-projects/:projectId'
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CertificationProjectDetail />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          
+          
           />
           {/* 報表分析模組 */}
           <Route 
