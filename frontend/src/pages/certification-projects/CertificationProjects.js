@@ -26,7 +26,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faPlus, faCog, faEye, 
   faPlayCircle, faCheckCircle, faCalendar, 
-  faCheck, faHourglassHalf, faMinus, faClock
+  faCheck, faHourglassHalf, faMinus, faClock,
+  faUpload, faClipboardCheck, faExclamationTriangle, 
+  faTimes, faEdit, faFileExport, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjects.css';
 
@@ -66,11 +68,25 @@ const getStatusBadge = (status) => {
   }
 };
 
+const getTimelineIcon = (status) => {
+  switch (status) {
+    case 'completed':
+      return <FontAwesomeIcon icon={faCheckCircle} className="text-success" />;
+    case 'current':
+      return <FontAwesomeIcon icon={faHourglassHalf} className="text-primary" />;
+    case 'pending':
+      return <FontAwesomeIcon icon={faMinus} className="text-muted" />;
+    default:
+      return null;
+  }
+};
+
+
 /**
  * 認證項目管理組件
  * @returns {JSX.Element} 認證項目管理介面
  */
-const CertificationProjects = () => {
+const CertificationProjects = ({ canWrite }) => {
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -128,6 +144,11 @@ const CertificationProjects = () => {
 
   // 新增 teamMembers 狀態
   const [teamMembers, setTeamMembers] = useState([]);
+
+  // 新增 settingsModal 狀態
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [currentProject, setCurrentProject] = useState(null);
+  const [settingsTab, setSettingsTab] = useState('edit');
 
   // 1. 從後端拉資料
   useEffect(() => {
@@ -251,6 +272,8 @@ const CertificationProjects = () => {
     }
   }, [showSettingsModal, currentProject]);
   
+  const navigate = useNavigate();
+
   /**
    * 處理查看項目詳情
    * @param {number} projectId - 項目ID
@@ -663,7 +686,7 @@ const CertificationProjects = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" disabled={ !canWrite }>
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             新增認證專案
           </button>

@@ -37,7 +37,7 @@ import java.util.Optional;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/user-management")
+@RequestMapping("api/user-management")
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserManagementController {
     
