@@ -28,15 +28,26 @@ public class AuthController {
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest request) {
-        Optional<User> user = authService.login(request.getEmail(), request.getPassword());
+
         Map<String, Object> response = new HashMap<>();
-        if (user.isPresent()) {
-            response.put("success", true);
-            response.put("token", "mock_token"); // 👉 實際應該產生 JWT
-            response.put("user", authService.toUserDTO(user.get()));
-        } else {
-            response.put("success", false);
-            response.put("error", "帳號或密碼錯誤");
+        try {
+            Optional<User> user = authService.login(request.getEmail(), request.getPassword());
+            if (user.isPresent()) {
+                response.put("success", true);
+                response.put("token", "mock_token");
+                response.put("user", authService.toUserDTO(user.get()));
+            } else {
+                response.put("success", false);
+                response.put("error", "帳號或密碼錯誤");
+            }
+        } catch (IllegalStateException e) {
+            if ("suspended".equals(e.getMessage())) {
+                response.put("success", false);
+                response.put("error", "您的帳號已被停用，請聯絡管理員。");
+            } else {
+                response.put("success", false);
+                response.put("error", "未知錯誤");
+            }
         }
         return response;
     }

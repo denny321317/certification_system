@@ -15,6 +15,7 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
     private RoleRepository roleRepository; // 新增，用於解決 register() 中的 setRole() 衝突
 
     /**
@@ -39,15 +40,23 @@ public class AuthService {
 
     public Optional<User> login(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
-            return user;
+        if (user.isPresent()) {
+            User u = user.get();
+            if (!u.getPassword().equals(password)) {
+                return Optional.empty();
+            }
+
+            if (Boolean.TRUE.equals(u.isSuspended())) {
+                throw new IllegalStateException("suspended");
+            }
+            return Optional.of(u);
         }
         return Optional.empty();
     }
 
     public User register(String name, String email, String password, String department, String position) {
         User user = new User();
-        Role role = roleRepository.findByName("User").get();
+        Role role = roleRepository.findByName("一般使用者").get();
         user.setName(name);
         user.setEmail(email);
         user.setPassword(password); // 👉（正式版建議要加密處理）
@@ -55,6 +64,7 @@ public class AuthService {
         user.setAvatar(null);
         user.setDepartment(department);
         user.setPosition(position);
+        user.setLastTimeLogin(java.time.LocalDateTime.now());
         return userRepository.save(user);
     }
 

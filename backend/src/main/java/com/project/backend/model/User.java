@@ -46,7 +46,7 @@ public class User {
     @Column(nullable = false)
     private boolean online = false;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime lastTimeLogin;
 
     @Column(nullable = false)
@@ -137,6 +137,10 @@ public class User {
     
     public void setLastTimeLogin(LocalDateTime lastTimeLogin) {
         this.lastTimeLogin = lastTimeLogin;
+    }
+
+    public boolean isSuspended() {
+        return suspended;
     }
 
 
