@@ -47,8 +47,8 @@ public class UserManagementController {
     
 
     @GetMapping("/allUsers")
-    public ResponseEntity<List<User>> getAllUsers(){
-        List<User> users = userManagementService.getAllUsers();
+    public ResponseEntity<List<UserDetailDTO>> getAllUsers(){
+        List<UserDetailDTO> users = userManagementService.getAllUsersAsDTO();
         return ResponseEntity.ok(users);
     }
 

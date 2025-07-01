@@ -13,6 +13,10 @@ public class UserDetailDTO {
     private boolean online;
     private List<ProjectTeamDTO> projectMemberships;
     private boolean suspended;
+    private String position;
+
+    // default Constructor
+    public UserDetailDTO() {};
 
     public UserDetailDTO(
         Long id,
@@ -23,7 +27,8 @@ public class UserDetailDTO {
         LocalDateTime lastTimeLogin,
         boolean online,
         List<ProjectTeamDTO> projectMemberships,
-        boolean suspended
+        boolean suspended,
+        String position
     ) {
         this.id = id;
         this.name = name;
@@ -34,6 +39,7 @@ public class UserDetailDTO {
         this.online = online;
         this.projectMemberships = projectMemberships;
         this.suspended = suspended;
+        this.position = position;
     }
 
     // Getters and Setters for all fields
@@ -55,5 +61,7 @@ public class UserDetailDTO {
     public void setProjectMemberships(List<ProjectTeamDTO> projectMemberships) { this.projectMemberships = projectMemberships; }
     public boolean getSuspended(){ return suspended; }
     public void setSuspended(boolean suspended) { this.suspended = suspended; }
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
 
 }

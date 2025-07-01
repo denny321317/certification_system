@@ -50,6 +50,7 @@ public class Project {
     private String description;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private java.util.List<ProjectTeam> teamMembers;
 
     // 這裡用 OneToMany 關聯檔案

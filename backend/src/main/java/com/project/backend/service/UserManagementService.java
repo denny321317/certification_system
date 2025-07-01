@@ -87,7 +87,8 @@ public class UserManagementService {
             user.getLastTimeLogin(),
             user.isOnline(),
             projectTeamDTOs,
-            user.isSuspended()
+            user.isSuspended(),
+            user.getPosition()
         );
 
         return Optional.of(userDetailDTO);
@@ -210,9 +211,32 @@ public class UserManagementService {
         userRepository.delete(user);
     }
 
+    private UserDetailDTO convertToDTO(User user) {
+        UserDetailDTO dto = new UserDetailDTO();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        dto.setEmail(user.getEmail());
+        dto.setDepartment(user.getDepartment());
+        dto.setPosition(user.getPosition());
+        dto.setSuspended(user.isSuspended());
+        if (user.getRole() != null) {
+            Role role = user.getRole();
+            RoleDTO roleDTO = new RoleDTO(role.getId(), role.getName());
+            dto.setRole(roleDTO);
+        }
+        // Add any other fields you need in the frontend
+        // IMPORTANT: Do NOT add lazy-loaded collections like projectTeams
+        return dto;
+    }
 
     public List<User> getAllUsers(){
         return userRepository.findAll();
+    }
+
+    public List<UserDetailDTO> getAllUsersAsDTO() {
+        return userRepository.findAll().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
     public List<Role> getAllRoles() {
