@@ -34,7 +34,7 @@ import './TemplateCenter.css';
  * 模板中心組件
  * @returns {JSX.Element} 模板中心介面
  */
-const TemplateCenter = () => {
+const TemplateCenter = ({ canWrite }) => {
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -544,6 +544,7 @@ const TemplateCenter = () => {
           <button 
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
+            disabled={ !canWrite }
           >
             <FontAwesomeIcon icon={faPlus} className="me-2" />
             建立新模板
@@ -577,8 +578,8 @@ const TemplateCenter = () => {
                   <div>{cert.displayName}</div>
                 </div>
                 <div className="ms-2">
-                  <button className="btn btn-sm btn-link p-0 me-1" title="編輯" onClick={e => { e.stopPropagation(); handleShowEditModal(cert); }}><FontAwesomeIcon icon={faEdit} /></button>
-                  <button className="btn btn-sm btn-link text-danger p-0" title="刪除" onClick={e => { e.stopPropagation(); handleShowDeleteModal(cert.id); }}><FontAwesomeIcon icon={faTrash} /></button>
+                  <button className="btn btn-sm btn-link p-0 me-1" title="編輯" onClick={e => { e.stopPropagation(); handleShowEditModal(cert); }} disabled={ !canWrite }><FontAwesomeIcon icon={faEdit} /></button>
+                  <button className="btn btn-sm btn-link text-danger p-0" title="刪除" onClick={e => { e.stopPropagation(); handleShowDeleteModal(cert.id); }} disabled={ !canWrite }><FontAwesomeIcon icon={faTrash} /></button>
                 </div>
               </div>
             ))}
