@@ -42,7 +42,7 @@ import './SupplierManagement.css';
  * 供應商管理組件
  * @returns {JSX.Element} 供應商管理介面
  */
-const SupplierManagement = () => {
+const SupplierManagement = ({ canWrite }) => {
   /**
    * 當前選中的標籤狀態
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -295,7 +295,10 @@ const SupplierManagement = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="btn upload-btn">
+          <button 
+            className="btn upload-btn"
+            disabled={ !canWrite }
+          >
             <FontAwesomeIcon icon={faPlus} className="me-2" />新增供應商
           </button>
         </div>
@@ -427,7 +430,7 @@ const SupplierManagement = () => {
                       <button className="btn btn-sm btn-outline-secondary">
                         <FontAwesomeIcon icon={faEye} />
                       </button>
-                      <button className="btn btn-sm btn-outline-primary">
+                      <button className={`btn btn-sm btn-outline-primary${ !canWrite ? 'icon-disabled' : ''}`}>
                         <FontAwesomeIcon icon={faPencil} />
                       </button>
                     </div>

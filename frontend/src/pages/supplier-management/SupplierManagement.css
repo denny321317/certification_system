@@ -28,6 +28,13 @@
   color: #64748b;
 }
 
+.icon-disabled {
+  color: #ccc !important;
+  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* 新增按鈕 */
 .upload-btn {
   background-color: var(--primary-color);
