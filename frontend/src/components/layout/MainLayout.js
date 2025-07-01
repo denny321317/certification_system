@@ -36,15 +36,25 @@ const MainLayout = ({ children }) => {
    * @type {Array<{path: string, icon: IconDefinition, label: string}>}
    */
   const menuItems = [
-    { path: '/dashboard', icon: faHome, label: '儀表板' },
-    { path: '/document-management', icon: faFileAlt, label: '文件管理' },
-    { path: '/template-center', icon: faFileContract, label: '模板中心' },
-    { path: '/certification-projects', icon: faCertificate, label: '認證專案' },
-    { path: '/reports-analysis', icon: faChartBar, label: '報表分析' },
-    { path: '/supplier-management', icon: faUsers, label: '供應商管理' },
-    { path: '/user-management', icon: faUserCog, label: '用戶管理' },
-    { path: '/system-settings', icon: faCog, label: '系統設置' },
+    { path: '/dashboard', icon: faHome, label: '儀表板', permissionKey: 'allowReadDashboard' },
+    { path: '/document-management', icon: faFileAlt, label: '文件管理', permissionKey: 'allowReadDocumentManagment' },
+    { path: '/template-center', icon: faFileContract, label: '模板中心', permissionKey: 'allowReadTemplateCenter' },
+    { path: '/certification-projects', icon: faCertificate, label: '認證專案', permissionKey: 'allowReadCertificationProjects' },
+    { path: '/reports-analysis', icon: faChartBar, label: '報表分析', permissionKey: 'allowReadReportManagment' },
+    { path: '/supplier-management', icon: faUsers, label: '供應商管理', permissionKey: 'allowReadSupplierManagement' },
+    { path: '/user-management', icon: faUserCog, label: '用戶管理', permissionKey: 'allowReadUserManagment' },
+    { path: '/system-settings', icon: faCog, label: '系統設置', permissionKey: 'allowReadSystemSettings' },
   ];
+
+  /**
+   * 配合用戶管理權限設定
+   */
+  const filteredMenuItems = menuItems.filter(
+    item => {
+      if (!currentUser?.roleDTO) return false;
+      return currentUser.roleDTO[item.permissionKey];
+    }
+  );
 
   /**
    * 檢查導航項目是否為當前活動項目
@@ -90,7 +100,7 @@ const MainLayout = ({ children }) => {
 
         {/* 主導航菜單 */}
         <nav className="menu">
-          {menuItems.map((item) => (
+          {filteredMenuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}

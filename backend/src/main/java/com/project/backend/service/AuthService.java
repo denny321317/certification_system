@@ -32,10 +32,33 @@ public class AuthService {
         dto.setPosition(user.getPosition());
         if (user.getRole() != null) {
             Role role = user.getRole();
-            RoleDTO roleDTO = new RoleDTO(role.getId(), role.getName());
+            RoleDTO roleDTO = toRoleDTO(role);
             dto.setRoleDTO(roleDTO);
         }
         return dto;
+    }
+
+    public RoleDTO toRoleDTO(Role role) {
+        return new RoleDTO(
+            role.getId(),
+            role.getName(),
+            role.isAllowReadSystemSettings(),
+            role.isAllowWriteSystemSettings(),
+            role.isAllowReadUserManagment(),
+            role.isAllowWriteUserManagment(),
+            role.isAllowReadDocumentManagment(),
+            role.isAllowWriteDocumentManagment(),
+            role.isAllowReadTemplateCenter(),
+            role.isAllowWriteTemplateCenter(),
+            role.isAllowReadCertificationProjects(),
+            role.isAllowWriteCertificationProjects(),
+            role.isAllowReadReportManagment(),
+            role.isAllowWriteReportManagment(),
+            role.isAllowReadSupplierManagement(),
+            role.isAllowWriteSupplierManagement(),
+            role.isAllowReadDashboard(),
+            role.isAllowWriteDashboard()
+        );        
     }
 
     public Optional<User> login(String email, String password) {
