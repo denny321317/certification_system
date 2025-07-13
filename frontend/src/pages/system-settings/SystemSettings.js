@@ -25,6 +25,7 @@
 
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
   faGear, faShieldHalved, faBell, faCloudArrowUp, 
   faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash
@@ -55,6 +56,15 @@ const SystemSettings = () => {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
+
+    /**
+   * 處理用戶登出
+   * 清除認證信息並導航到登入頁面
+   */
+    const handleLogout = () => {
+      logout();
+      navigate('/login');
+    };
 
   return (
     <div className="system-settings-container">
