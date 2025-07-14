@@ -110,4 +110,13 @@ public class ReviewService {
         issue.setDeadline(dto.getDeadline());
         return issue;
     }
+
+    @Transactional(readOnly = true)
+    public List<ReviewDTO> getReviewsByProjectId(Long projectId) {
+        List<Review> reviews = reviewRepository.findByProjectId(projectId);
+        return reviews.stream()
+                .map(this::convertToReviewDTO)
+                .collect(Collectors.toList());
+    }
+
 } 

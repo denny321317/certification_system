@@ -82,6 +82,26 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Apache POI核心 -->
+		<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi</artifactId>
+				<version>5.2.3</version>  <!-- 請視需求使用最新版本 -->
+		</dependency>
+
+		<!-- 支援XLSX格式的POI -->
+		<dependency>
+				<groupId>org.apache.poi</groupId>
+				<artifactId>poi-ooxml</artifactId>
+				<version>5.2.3</version>
+		</dependency>
+
+		<!-- 支援POI對應的XML解析 -->
+		<dependency>
+				<groupId>org.apache.xmlbeans</groupId>
+				<artifactId>xmlbeans</artifactId>
+				<version>5.1.1</version>
+		</dependency>
 
 	</dependencies>
 
