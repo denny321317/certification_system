@@ -196,7 +196,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
     includeBasicInfo: true,
     includeTeamInfo: true,
     includeDocuments: true,
-    includeReviews: true
+    includeReviews: true,
+    notes: ''
   });
 
   /**
@@ -992,7 +993,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
       includeBasicInfo: exportSettings.includeBasicInfo,
       includeTeamInfo: exportSettings.includeTeamInfo,
       includeDocuments: exportSettings.includeDocuments,
-      includeReviews: exportSettings.includeReviews
+      includeReviews: exportSettings.includeReviews,
+      notes: exportSettings.notes
     };
     console.log('即將匯出，payload:', payload);
 
@@ -2316,6 +2318,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
                   className="form-control"
                   rows="3"
                   placeholder="在報告中添加的備註或說明..."
+                  value={exportSettings.notes}
+                  onChange={handleExportSettingChange}
                 ></textarea>
               </div>
               

@@ -125,6 +125,7 @@ public class ProjectController {
             settings.setIncludeTeamInfo(request.isIncludeTeamInfo());
             settings.setIncludeDocuments(request.isIncludeDocuments());
             settings.setIncludeReviews(request.isIncludeReviews());
+            settings.setNotes(request.getNotes());
             // 其他欄位如果有也一起設定，這裡先留空
 
             byte[] excel = ProjectExcelGenerator.generateProjectExcel(project, reviews, settings);
