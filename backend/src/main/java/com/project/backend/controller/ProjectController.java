@@ -6,6 +6,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,12 +22,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.project.backend.dto.ShowProjectDTO;
+import com.project.backend.dto.ExportSettingsDTO;
 import com.project.backend.dto.ProjectDetailDTO;
+import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.model.Project;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.ProjectService;
+import com.project.backend.service.ReviewService;
+import com.project.backend.utils.ProjectExcelGenerator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,10 +46,12 @@ public class ProjectController {
     private ProjectRepository projectRepository;
 
     private final ProjectService projectService;
+    private final ReviewService reviewService;
 
     @Autowired
-    public ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService, ReviewService reviewService) {
         this.projectService = projectService;
+        this.reviewService = reviewService;
     }
 
     @PostMapping("/CreateProject")
@@ -103,6 +113,31 @@ public class ProjectController {
         Long userId = Long.valueOf(body.get("userId").toString());
         List<String> duties = (List<String>) body.get("duties");
         return projectService.updateMemberDuties(projectId, userId, duties);
+    }
+    @PostMapping("/{projectId}/export")
+    public ResponseEntity<byte[]> exportProjectExcel(@RequestBody ExportSettingsDTO request) {
+        try {
+            ProjectDetailDTO project = projectService.getProjectDetailById(request.getProjectId());
+            List<ReviewDTO> reviews = reviewService.getReviewsByProjectId(request.getProjectId());
+
+            ExportSettingsDTO settings = new ExportSettingsDTO();
+            settings.setIncludeBasicInfo(request.isIncludeBasicInfo());
+            settings.setIncludeTeamInfo(request.isIncludeTeamInfo());
+            settings.setIncludeDocuments(request.isIncludeDocuments());
+            settings.setIncludeReviews(request.isIncludeReviews());
+            settings.setNotes(request.getNotes());
+            // 其他欄位如果有也一起設定，這裡先留空
+
+            byte[] excel = ProjectExcelGenerator.generateProjectExcel(project, reviews, settings);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=project.xlsx")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(excel);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     
