@@ -192,12 +192,11 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * @type {[Object, Function]} [匯出報告設置, 設置匯出報告設置的函數]
    */
   const [exportSettings, setExportSettings] = useState({
-    format: 'pdf',
+    format: 'excel',
     includeBasicInfo: true,
     includeTeamInfo: true,
     includeDocuments: true,
-    includeReviews: true,
-    includeHistory: true
+    includeReviews: true
   });
 
   /**
@@ -988,13 +987,43 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * 處理匯出報告
    */
   const handleExportReport = () => {
-    // 在實際應用中，這裡應該有API調用來匯出報告
-    console.log('匯出報告設置:', exportSettings);
-    
-    // 模擬匯出報告
-    alert(`報告已匯出為${exportSettings.format.toUpperCase()}格式`);
-    setShowExportReportModal(false);
+    const payload = {
+      projectId: projectId, // 你要傳的專案ID，請自己定義或從狀態取得
+      includeBasicInfo: exportSettings.includeBasicInfo,
+      includeTeamInfo: exportSettings.includeTeamInfo,
+      includeDocuments: exportSettings.includeDocuments,
+      includeReviews: exportSettings.includeReviews
+    };
+    console.log('即將匯出，payload:', payload);
+
+
+    fetch('http://localhost:8000/api/projects/' + payload.projectId + '/export', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('匯出失敗');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `project_${payload.projectId}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        alert(`報告已匯出為${exportSettings.format.toUpperCase()}格式`);
+        setShowExportReportModal(false);
+      })
+      .catch((error) => {
+        console.error(error);
+        alert('匯出失敗，請稍後再試');
+      });
   };
+
 
   /**
    * 渲染頁面主要內容
@@ -2201,9 +2230,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
                       value={exportSettings.format}
                       onChange={handleExportSettingChange}
                     >
-                      <option value="pdf">PDF文件</option>
                       <option value="excel">Excel試算表</option>
-                      <option value="word">Word文件</option>
+                      <option value="pdf">待開發</option>
                     </select>
                   </div>
                 </div>
@@ -2216,8 +2244,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                       className="form-control"
                     >
                       <option value="zh-TW">繁體中文</option>
-                      <option value="en">英文</option>
-                      <option value="zh-CN">簡體中文</option>
+                      <option value="en">待開發</option>
                     </select>
                   </div>
                 </div>
@@ -2277,32 +2304,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     <label className="form-check-label" htmlFor="includeReviews">
                       審核記錄
                     </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeHistory"
-                      name="includeHistory"
-                      className="form-check-input"
-                      checked={exportSettings.includeHistory}
-                      onChange={handleExportSettingChange}
-                    />
-                    <label className="form-check-label" htmlFor="includeHistory">
-                      操作歷史
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeCharts"
-                      name="includeCharts"
-                      className="form-check-input"
-                      defaultChecked
-                    />
-                    <label className="form-check-label" htmlFor="includeCharts">
-                      圖表與分析
-                    </label>
-                  </div>
+                  </div> 
                 </div>
               </div>
               
