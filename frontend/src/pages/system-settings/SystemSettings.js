@@ -23,7 +23,7 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
@@ -31,6 +31,13 @@ import {
   faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import './SystemSettings.css';
+
+/**
+ * 來自其他 .js 檔
+ */
+import { AuthContext } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom';
+
 
 /**
  * 系統設置組件
@@ -57,14 +64,19 @@ const SystemSettings = () => {
     setCurrentPage(newPage);
   };
 
-    /**
-   * 處理用戶登出
-   * 清除認證信息並導航到登入頁面
-   */
-    const handleLogout = () => {
-      logout();
-      navigate('/login');
-    };
+
+
+  /**
+ * 處理用戶登出
+ * 清除認證信息並導航到登入頁面
+ */
+  const { logout } = useContext(AuthContext);
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className="system-settings-container">
