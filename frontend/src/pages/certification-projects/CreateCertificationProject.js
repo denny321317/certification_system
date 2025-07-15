@@ -46,7 +46,8 @@ const CreateCertificationProject = () => {
     externalReviewDate: '',
     manager: '',
     agency: '',
-    description: ''
+    description: '',
+    progress: 0  // 新增進度欄位
   });
   
   /**
@@ -376,6 +377,39 @@ const CreateCertificationProject = () => {
                     {formErrors.externalReviewDate}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="form-section">
+            <h5 className="section-title">專案進度設定</h5>
+            
+            <div className="form-group">
+              <label htmlFor="progress">初始完成度</label>
+              <div className="progress-input-container">
+                <input
+                  type="range"
+                  id="progress"
+                  name="progress"
+                  className="form-range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={formData.progress}
+                  onChange={handleInputChange}
+                />
+                <div className="progress-display">
+                  <span className="progress-value">{formData.progress}%</span>
+                  <div className="progress-bar-preview">
+                    <div 
+                      className="progress-fill-preview" 
+                      style={{ width: `${formData.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <div className="progress-help-text">
+                設定專案的初始完成度（通常新專案設為0%）
               </div>
             </div>
           </div>

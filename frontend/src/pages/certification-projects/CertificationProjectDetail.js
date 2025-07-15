@@ -26,7 +26,7 @@ import {
   faSearch, faFilter, faDownload, faTimes, faFolder, faFilePdf, 
   faFileWord, faFileExcel, faFileImage, faFile, faSortAmountDown, faSortAmountUp, faPlus,
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
-  faProjectDiagram, faFileExport, faInfoCircle, faSave, faTrash
+  faProjectDiagram, faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjectDetail.css';
 
@@ -172,6 +172,12 @@ const CertificationProjectDetail = () => {
   const [showExportReportModal, setShowExportReportModal] = useState(false);
   
   /**
+   * 編輯對話框當前標籤頁狀態
+   * @type {[string, Function]} [當前活動標籤頁, 設置活動標籤頁的函數]
+   */
+  const [editTabActive, setEditTabActive] = useState('basic');
+  
+  /**
    * 編輯項目信息表單數據
    * @type {[Object, Function]} [編輯項目信息表單數據, 設置編輯項目信息表單數據的函數]
    */
@@ -182,7 +188,8 @@ const CertificationProjectDetail = () => {
     endDate: '',
     manager: '',
     agency: '',
-    description: ''
+    description: '',
+    progress: 0  // 新增進度欄位
   });
 
   /**
@@ -782,7 +789,8 @@ const CertificationProjectDetail = () => {
         endDate: projectDetail.endDate,
         manager: projectDetail.manager,
         agency: projectDetail.agency,
-        description: projectDetail.description
+        description: projectDetail.description,
+        progress: projectDetail.progress
       });
       setShowEditProjectModal(true);
     }
@@ -1657,6 +1665,28 @@ const CertificationProjectDetail = () => {
     setShowAddMemberModal(false);
   };
 
+  const calculateProjectDuration = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays}天`;
+  };
+
+  const getProgressStatus = (progress) => {
+    if (progress < 25) return 'low';
+    if (progress < 50) return 'medium';
+    if (progress < 75) return 'high';
+    return 'completed';
+  };
+
+  const getProgressStatusText = (progress) => {
+    if (progress < 25) return '進度低';
+    if (progress < 50) return '進度中';
+    if (progress < 75) return '進度高';
+    return '已完成';
+  };
+
   return (
     <div className="certification-project-detail">
       {/* 項目頂部信息 */}
@@ -1731,125 +1761,310 @@ const CertificationProjectDetail = () => {
       {/* 編輯項目資訊對話框 */}
       {showEditProjectModal && (
         <div className="modal-overlay">
-          <div className="upload-modal">
-            <div className="upload-modal-header">
-              <h5>編輯專案資訊</h5>
+          <div className="edit-project-modal">
+            <div className="edit-modal-header">
+              <div className="modal-title-section">
+                <h5>編輯專案資訊</h5>
+                <p className="modal-subtitle">修改專案的基本資訊和設定</p>
+              </div>
               <button className="btn-close" onClick={handleCloseEditProjectModal}>
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
-            <form className="upload-form" onSubmit={handleUpdateProject}>
-              <div className="form-group">
-                <label htmlFor="projectName">專案名稱</label>
-                <input
-                  type="text"
-                  id="projectName"
-                  name="name"
-                  className="form-control"
-                  value={editProjectForm.name}
-                  onChange={handleEditProjectFormChange}
-                  required
-                />
+
+            {/* 標籤導航 */}
+            <div className="edit-modal-tabs">
+              <div 
+                className={`edit-tab ${editTabActive === 'basic' ? 'active' : ''}`}
+                onClick={() => setEditTabActive('basic')}
+              >
+                <FontAwesomeIcon icon={faInfoCircle} className="tab-icon" />
+                <span>基本資訊</span>
               </div>
-              
-              <div className="form-row">
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="projectStatus">專案狀態</label>
-                    <select
-                      id="projectStatus"
-                      name="status"
-                      className="form-control"
-                      value={editProjectForm.status}
-                      onChange={handleEditProjectFormChange}
-                      required
-                    >
-                      {statusOptions.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
+              <div 
+                className={`edit-tab ${editTabActive === 'schedule' ? 'active' : ''}`}
+                onClick={() => setEditTabActive('schedule')}
+              >
+                <FontAwesomeIcon icon={faCalendarAlt} className="tab-icon" />
+                <span>時程設定</span>
+              </div>
+              <div 
+                className={`edit-tab ${editTabActive === 'progress' ? 'active' : ''}`}
+                onClick={() => setEditTabActive('progress')}
+              >
+                <FontAwesomeIcon icon={faChartLine} className="tab-icon" />
+                <span>進度管理</span>
+              </div>
+            </div>
+
+            <form className="edit-form" onSubmit={handleUpdateProject}>
+              <div className="edit-form-content">
+                {/* 基本資訊標籤 */}
+                {editTabActive === 'basic' && (
+                  <div className="tab-content">
+                    <div className="form-section">
+                      <h6 className="section-title">
+                        <FontAwesomeIcon icon={faInfoCircle} className="section-icon" />
+                        專案基本資訊
+                      </h6>
+                      
+                      <div className="form-group">
+                        <label htmlFor="projectName" className="form-label">
+                          專案名稱 <span className="required">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="projectName"
+                          name="name"
+                          className="form-control modern"
+                          value={editProjectForm.name}
+                          onChange={handleEditProjectFormChange}
+                          placeholder="請輸入專案名稱"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-col">
+                          <div className="form-group">
+                            <label htmlFor="projectStatus" className="form-label">
+                              專案狀態 <span className="required">*</span>
+                            </label>
+                            <div className="select-wrapper">
+                              <select
+                                id="projectStatus"
+                                name="status"
+                                className="form-control modern"
+                                value={editProjectForm.status}
+                                onChange={handleEditProjectFormChange}
+                                required
+                              >
+                                {statusOptions.map(option => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                              <FontAwesomeIcon icon={faChevronDown} className="select-arrow" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="form-col">
+                          <div className="form-group">
+                            <label htmlFor="certificationAgency" className="form-label">
+                              認證機構 <span className="required">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              id="certificationAgency"
+                              name="agency"
+                              className="form-control modern"
+                              value={editProjectForm.agency}
+                              onChange={handleEditProjectFormChange}
+                              placeholder="請輸入認證機構名稱"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="projectManager" className="form-label">
+                          專案負責人 <span className="required">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="projectManager"
+                          name="manager"
+                          className="form-control modern"
+                          value={editProjectForm.manager}
+                          onChange={handleEditProjectFormChange}
+                          placeholder="請輸入負責人姓名"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="projectDescription" className="form-label">
+                          專案描述
+                        </label>
+                        <textarea
+                          id="projectDescription"
+                          name="description"
+                          className="form-control modern"
+                          rows="4"
+                          value={editProjectForm.description}
+                          onChange={handleEditProjectFormChange}
+                          placeholder="請描述專案的目標、範圍或特殊要求..."
+                        ></textarea>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="certificationAgency">認證機構</label>
-                    <input
-                      type="text"
-                      id="certificationAgency"
-                      name="agency"
-                      className="form-control"
-                      value={editProjectForm.agency}
-                      onChange={handleEditProjectFormChange}
-                      required
-                    />
+                )}
+
+                {/* 時程設定標籤 */}
+                {editTabActive === 'schedule' && (
+                  <div className="tab-content">
+                    <div className="form-section">
+                      <h6 className="section-title">
+                        <FontAwesomeIcon icon={faCalendarAlt} className="section-icon" />
+                        專案時程規劃
+                      </h6>
+                      
+                      <div className="form-row">
+                        <div className="form-col">
+                          <div className="form-group">
+                            <label htmlFor="startDate" className="form-label">
+                              開始日期 <span className="required">*</span>
+                            </label>
+                            <div className="date-input-wrapper">
+                              <input
+                                type="date"
+                                id="startDate"
+                                name="startDate"
+                                className="form-control modern"
+                                value={editProjectForm.startDate}
+                                onChange={handleEditProjectFormChange}
+                                required
+                              />
+                              <FontAwesomeIcon icon={faCalendarAlt} className="date-icon" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="form-col">
+                          <div className="form-group">
+                            <label htmlFor="endDate" className="form-label">
+                              預計結束日期 <span className="required">*</span>
+                            </label>
+                            <div className="date-input-wrapper">
+                              <input
+                                type="date"
+                                id="endDate"
+                                name="endDate"
+                                className="form-control modern"
+                                value={editProjectForm.endDate}
+                                onChange={handleEditProjectFormChange}
+                                required
+                              />
+                              <FontAwesomeIcon icon={faCalendarAlt} className="date-icon" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="schedule-summary">
+                        <div className="summary-card">
+                          <div className="summary-icon">
+                            <FontAwesomeIcon icon={faClock} />
+                          </div>
+                          <div className="summary-content">
+                            <h6>專案時長</h6>
+                            <p>{calculateProjectDuration(editProjectForm.startDate, editProjectForm.endDate)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="startDate">開始日期</label>
-                    <input
-                      type="date"
-                      id="startDate"
-                      name="startDate"
-                      className="form-control"
-                      value={editProjectForm.startDate}
-                      onChange={handleEditProjectFormChange}
-                      required
-                    />
+                )}
+
+                {/* 進度管理標籤 */}
+                {editTabActive === 'progress' && (
+                  <div className="tab-content">
+                    <div className="form-section">
+                      <h6 className="section-title">
+                        <FontAwesomeIcon icon={faChartLine} className="section-icon" />
+                        專案進度設定
+                      </h6>
+                      
+                      <div className="progress-section">
+                        <div className="progress-display-large">
+                          <div className="progress-circle">
+                            <svg className="progress-ring" width="120" height="120">
+                              <circle
+                                className="progress-ring-bg"
+                                stroke="#e9ecef"
+                                strokeWidth="8"
+                                fill="transparent"
+                                r="52"
+                                cx="60"
+                                cy="60"
+                              />
+                              <circle
+                                className="progress-ring-fill"
+                                stroke="#4a6cf7"
+                                strokeWidth="8"
+                                fill="transparent"
+                                r="52"
+                                cx="60"
+                                cy="60"
+                                strokeDasharray={`${2 * Math.PI * 52}`}
+                                strokeDashoffset={`${2 * Math.PI * 52 * (1 - editProjectForm.progress / 100)}`}
+                              />
+                            </svg>
+                            <div className="progress-text">
+                              <span className="progress-number">{editProjectForm.progress}%</span>
+                              <span className="progress-label">完成</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor="projectProgress" className="form-label">
+                            完成度調整
+                          </label>
+                          <div className="progress-slider-container">
+                            <input
+                              type="range"
+                              id="projectProgress"
+                              name="progress"
+                              className="form-range modern"
+                              min="0"
+                              max="100"
+                              step="5"
+                              value={editProjectForm.progress}
+                              onChange={handleEditProjectFormChange}
+                            />
+                            <div className="progress-markers">
+                              <span>0%</span>
+                              <span>25%</span>
+                              <span>50%</span>
+                              <span>75%</span>
+                              <span>100%</span>
+                            </div>
+                          </div>
+                          <div className="progress-help-text">
+                            <FontAwesomeIcon icon={faInfoCircle} className="help-icon" />
+                            拖動滑桿調整專案完成度，這將影響報表分析的統計結果
+                          </div>
+                        </div>
+
+                        <div className="progress-status-info">
+                          <div className="status-item">
+                            <span className="status-label">進度狀態：</span>
+                            <span className={`status-badge ${getProgressStatus(editProjectForm.progress)}`}>
+                              {getProgressStatusText(editProjectForm.progress)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
+              </div>
+
+              <div className="edit-form-actions">
+                <div className="action-buttons">
+                  <button type="button" className="btn btn-outline" onClick={handleCloseEditProjectModal}>
+                    <FontAwesomeIcon icon={faTimes} className="btn-icon" />
+                    取消
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    <FontAwesomeIcon icon={faSave} className="btn-icon" />
+                    儲存變更
+                  </button>
                 </div>
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="endDate">結束日期</label>
-                    <input
-                      type="date"
-                      id="endDate"
-                      name="endDate"
-                      className="form-control"
-                      value={editProjectForm.endDate}
-                      onChange={handleEditProjectFormChange}
-                      required
-                    />
-                  </div>
+                <div className="form-hint">
+                  <FontAwesomeIcon icon={faInfoCircle} className="hint-icon" />
+                  變更將立即生效並同步更新相關報表
                 </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="projectManager">專案負責人</label>
-                <input
-                  type="text"
-                  id="projectManager"
-                  name="manager"
-                  className="form-control"
-                  value={editProjectForm.manager}
-                  onChange={handleEditProjectFormChange}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="projectDescription">專案描述</label>
-                <textarea
-                  id="projectDescription"
-                  name="description"
-                  className="form-control"
-                  rows="4"
-                  value={editProjectForm.description}
-                  onChange={handleEditProjectFormChange}
-                  required
-                ></textarea>
-              </div>
-              
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={handleCloseEditProjectModal}>
-                  取消
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  <FontAwesomeIcon icon={faSave} /> 儲存變更
-                </button>
               </div>
             </form>
           </div>

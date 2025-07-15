@@ -541,6 +541,16 @@ const TemplateCenter = () => {
       <div className="header-actions">
         <h4>模板中心</h4>
         <div className="action-buttons">
+          <div className="search-container">
+            <FontAwesomeIcon icon={faSearch} className="search-icon" />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="搜尋模板"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <button 
             className="btn btn-primary"
             onClick={() => setShowCreateModal(true)}
@@ -554,17 +564,6 @@ const TemplateCenter = () => {
       <div className="row">
         {/* 左側認證類型選單 */}
         <div className="col-md-3">
-          <div className="search-container mb-4">
-            <FontAwesomeIcon icon={faSearch} className="search-icon" />
-            <input 
-              type="text" 
-              className="search-input" 
-              placeholder="搜尋模板"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
           <div className="category-list">
             {filteredCertTemplates.map(cert => (
               <div

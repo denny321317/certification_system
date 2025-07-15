@@ -1,57 +1,129 @@
 /* 認證專案頁面樣式 */
 .certification-projects-container {
-  padding: 20px;
-  height: 100%;
+  padding: 24px;
+  min-height: calc(100vh - var(--header-height));
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 頁面標題與操作按鈕 */
-.header-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+.certification-projects-container .header-actions {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.header-controls {
-  display: flex;
+.certification-projects-container .header-actions h4 {
+  margin: 0 !important;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: left !important;
+  flex-shrink: 0;
+}
+
+.certification-projects-container .header-controls {
+  display: flex !important;
   gap: 16px;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: auto !important;
 }
 
+/* 搜尋框 */
 .search-container {
   position: relative;
-  width: 220px;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: #6b7280;
+  font-size: 1.1rem;
 }
 
 .search-input {
-  width: 100%;
-  padding: 8px 10px 8px 35px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  font-size: 0.9rem;
+  width: 280px;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--primary-color);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: white;
 }
 
+/* 新增按鈕 */
 .btn {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .btn-outline {
@@ -62,16 +134,6 @@
 
 .btn-outline:hover {
   background: #f8f9fa;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-}
-
-.btn-primary:hover {
-  background: var(--primary-dark);
 }
 
 .btn-sm {
@@ -374,6 +436,26 @@
 }
 
 /* 響應式調整 */
+@media (min-width: 769px) {
+  .certification-projects-container .header-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-direction: row !important;
+  }
+  
+  .certification-projects-container .header-actions h4 {
+    text-align: left !important;
+    width: auto !important;
+  }
+  
+  .certification-projects-container .header-controls {
+    justify-content: flex-end !important;
+    width: auto !important;
+    margin-left: auto !important;
+  }
+}
+
 @media (max-width: 768px) {
   .header-actions {
     flex-direction: column;
@@ -654,4 +736,77 @@
     padding: 10px;
     font-size: 0.9rem;
   }
+} 
+
+/* 進度選擇器樣式 */
+.progress-input-container {
+  margin-top: 8px;
+}
+
+.form-range {
+  width: 100%;
+  height: 6px;
+  margin-bottom: 16px;
+  background: #e9ecef;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.progress-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  min-width: 50px;
+}
+
+.progress-bar-preview {
+  flex: 1;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.progress-fill-preview {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-help-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 4px;
 } 
