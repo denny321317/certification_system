@@ -3,6 +3,7 @@ package com.project.backend.repository;
 import com.project.backend.model.Supplier;
 import com.project.backend.model.Supplier.CertificateStatus;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +17,9 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long>{
     List<Supplier> findByType(String type);
     List<Supplier> findByCertificateStatus(CertificateStatus certificateStatus);
     List<Supplier> findByCountry(String country);
+    
+    @EntityGraph(attributePaths = "projects")
+    List<Supplier> findAll();
     
 
     
