@@ -219,6 +219,8 @@ public class UserManagementService {
         dto.setDepartment(user.getDepartment());
         dto.setPosition(user.getPosition());
         dto.setSuspended(user.isSuspended());
+        dto.setOnline(user.isOnline());
+        dto.setLastTimeLogin(user.getLastTimeLogin());
         if (user.getRole() != null) {
             Role role = user.getRole();
             RoleDTO roleDTO = new RoleDTO(role.getId(), role.getName());

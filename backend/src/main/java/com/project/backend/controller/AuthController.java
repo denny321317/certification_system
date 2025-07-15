@@ -1,5 +1,6 @@
 package com.project.backend.controller;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,13 @@ public class AuthController {
         try {
             Optional<User> user = authService.login(request.getEmail(), request.getPassword());
             if (user.isPresent()) {
+
+                // 將 user 的 online 改成 true
+                User loggedInUser = user.get();
+                loggedInUser.setOnline(true);
+                loggedInUser.setLastTimeLogin(LocalDateTime.now());
+                authService.saveUser(loggedInUser);
+
                 response.put("success", true);
                 response.put("token", "mock_token");
                 response.put("user", authService.toUserDTO(user.get()));
@@ -50,6 +58,20 @@ public class AuthController {
             }
         }
         return response;
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestBody Map<String, Object> request) {
+        String email = (String) request.get("email");
+        Optional<User> userOpt = authService.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setOnline(false);
+            authService.saveUser(user);
+            return ResponseEntity.ok(Map.of("success", true));
+        } else {
+            return ResponseEntity.status(404).body(Map.of("success", false, "error", "User not found"));
+        }
     }
 
     @PostMapping("/register")

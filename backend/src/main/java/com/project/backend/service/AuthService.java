@@ -126,6 +126,11 @@ public class AuthService {
         userRepository.save(user);
         return true;
     }
+
+    // 用來更改用戶的 online 狀態
+    public void saveUser(User user) {
+        userRepository.save(user);
+    }
     
     
 }

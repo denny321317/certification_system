@@ -49,11 +49,31 @@ public class SupplierController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured: " + e.getMessage());
         }
-        
-        
     }
 
 
+    /**
+     * Request Body Example: 
+     * {
+            "name": "頂尖電子有限公司",
+            "type": "原材料供應商",
+            "product": "塑膠製品",
+            "country": "TW",
+            "address": "新北市某路某號",
+            "telephone": "02-12345678",
+            "email": "contact@top-electronics.com",
+            "collabStart": "2023-01-15T00:00:00.000Z",
+            "certificateStatus": "CERTIFICATED",
+            "riskProfile": "LOW",
+            "projects":[
+                {
+                    "id":1
+                }
+            ] 
+        }
+     * @param supplierDTO
+     * @return
+     */
     @PostMapping("/createSupplier")
     public ResponseEntity<?> createSupplier(@RequestBody SupplierDTO supplierDTO) {
         try {

@@ -736,12 +736,12 @@ const UserManagement = ({ canWrite }) => {
   
   /**
    * 渲染狀態標籤
-   * @param {string} status - 用戶狀態
+   * @param {boolean} online - 用戶狀態
    * @returns {JSX.Element} 狀態標籤元素
    */
-  const renderStatusBadge = (status) => {
-    const badgeClass = status === 'active' ? 'status-badge active' : 'status-badge inactive';
-    const text = status === 'active' ? '在線' : '離線';
+  const renderStatusBadge = (online) => {
+    const badgeClass = online ? 'status-badge active' : 'status-badge inactive';
+    const text = online ? '在線' : '離線';
     
     return (
       <span className={badgeClass}>
@@ -848,7 +848,12 @@ const UserManagement = ({ canWrite }) => {
                           </td>
                           <td>{renderRoleBadge(user.role)}</td>
                           <td>{user.department}</td>
-                          <td>{renderStatusBadge(user.suspended ? 'suspended' : (user.online ? 'active' : 'inactive'))}</td>
+                          <td>
+                            {user.suspended
+                              ? <span className="status-badge suspended">停用</span>
+                              : renderStatusBadge(user.online)
+                            }
+                          </td>
                           <td>{user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">

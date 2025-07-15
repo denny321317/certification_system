@@ -50,7 +50,32 @@ export const AuthProvider = ({ children }) => {
   /**
    * 用戶登出
    */
-  const logout = () => {
+  const logout = async () => {
+
+    // get the Email of current User
+    const currentUserData = localStorage.getItem('currentUser');
+    let email = null;
+    if (currentUserData) {
+      try {
+        email = JSON.parse(currentUserData).email;
+      } catch (error) {
+        email = null
+      }
+    }
+
+    // call API
+    if (email) {
+      try {
+        await fetch('http://localhost:8000/api/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        })
+      } catch (error) {
+        
+      }
+    }
+
     localStorage.removeItem('token');
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
