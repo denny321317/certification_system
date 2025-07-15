@@ -59,5 +59,9 @@ public class Project {
     private List<FileEntity> documents;
 
 
+    @ManyToMany(mappedBy = "projects")
+    private List<Supplier> suppliers;
+
+
 }
 
