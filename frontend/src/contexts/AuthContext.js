@@ -13,9 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // To ensure the login screen is always displayed on a fresh start,
-    // we will no longer automatically log in from localStorage.
-    // The user must log in to create a new session.
+    const userData = localStorage.getItem('currentUser');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
     setLoading(false);
   }, []);
 
