@@ -12,7 +12,10 @@ import java.util.List;
 
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long>{
+    
+    @EntityGraph(attributePaths = "projects")
     Optional<Supplier> findById(Long id);
+    
     Optional<Supplier> findByEmail(String email);
     List<Supplier> findByType(String type);
     List<Supplier> findByCertificateStatus(CertificateStatus certificateStatus);

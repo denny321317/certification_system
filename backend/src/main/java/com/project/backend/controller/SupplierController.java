@@ -34,6 +34,26 @@ public class SupplierController {
         return ResponseEntity.ok(suppliers);
     }
 
+
+    @GetMapping("/getSupplierInfo/{id}")
+    public ResponseEntity<?> getSupplierInfo(@PathVariable Long id) {
+        try {
+            Optional<SupplierDTO> supplierOptional = supplierService.getSupplier(id);
+            if (supplierOptional.isPresent()) {
+                return ResponseEntity.ok(supplierOptional.get());
+            } else {
+                return ResponseEntity.notFound().build();
+            }    
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occured: " + e.getMessage());
+        }
+        
+        
+    }
+
+
     @PostMapping("/createSupplier")
     public ResponseEntity<?> createSupplier(@RequestBody SupplierDTO supplierDTO) {
         try {
@@ -60,6 +80,9 @@ public class SupplierController {
                 .body("An unexpected error occurred while deleting the supplier");
         }
     }
+
+
+
 
 
 

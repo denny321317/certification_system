@@ -3,6 +3,7 @@ package com.project.backend.service;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.project.backend.model.Supplier;
@@ -96,8 +97,19 @@ public class SupplierService {
         supplierRepository.delete(supplierToBeDeleted);
     }
 
+    public Optional<SupplierDTO> getSupplier(Long id) {
+        Optional<Supplier> supplierOptional = supplierRepository.findById(id);
 
+        if (supplierOptional.isEmpty()) {
+            return Optional.empty();
+        }
 
+        Supplier supplier = supplierOptional.get();
+
+        SupplierDTO supplierDTO = convertToDTO(supplier);
+
+        return Optional.of(supplierDTO);
+    }
 
     
 }
