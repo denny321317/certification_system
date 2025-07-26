@@ -17,16 +17,16 @@
  * ```
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faArrowLeft, faClock, faFileAlt, faUsers, faCheckCircle, 
   faExclamationTriangle, faEdit, faHistory, faComments, faUpload, faClipboardCheck,
-  faSearch, faFilter, faDownload, faTimes, faFolder, faFilePdf, 
+  faSearch, faDownload, faTimes, faFolder, faFilePdf, 
   faFileWord, faFileExcel, faFileImage, faFile, faSortAmountDown, faSortAmountUp, faPlus,
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
-  faProjectDiagram, faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
+  faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjectDetail.css';
 
@@ -215,8 +215,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [userList, setUserList] = useState([]);
 
-  // 取得團隊成員
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
     try {
         const res = await fetch(`http://localhost:8000/api/projects/${projectId}/team`);
         if (!res.ok) throw new Error('Failed to fetch team members');
@@ -226,13 +225,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
         console.error("Error fetching team members:", error);
         setTeamMembers([]);
     }
-  };
+  }, [projectId]);
   
   useEffect(() => { 
       if (projectId) {
           fetchTeamMembers(); 
       }
-  }, [projectId]);
+  }, [projectId, fetchTeamMembers]);
 
   // 計算可選用戶（排除已在團隊中的 user）
   const availableUsers = userList.filter(u => !teamMembers.some(tm => String(tm.id) === String(u.id)));
@@ -1722,7 +1721,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
         );
       
       default:
-        return <div>無效的頁籤</div>;
+        return null;
     }
   };
 

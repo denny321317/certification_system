@@ -25,8 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, faPlus, faCog, faEye, 
-  faPlayCircle, faCheckCircle, faCalendar, 
-  faCheck, faHourglassHalf, faMinus, faClock,
+  faCheckCircle, faHourglassHalf, faMinus, faClock,
   faUpload, faClipboardCheck, faExclamationTriangle, 
   faTimes, faEdit, faFileExport, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
@@ -167,90 +166,6 @@ const CertificationProjects = ({ canWrite }) => {
         console.error('Error fetching project data:', error);
       });
   }, []);
-  const certificationProjects = [
-    {
-      id: 1,
-      name: 'SMETA 4支柱認證',
-      status: 'in-progress',
-      startDate: '2023-07-15',
-      endDate: '2023-10-30',
-      manager: '王經理',
-      agency: 'SGS Taiwan',
-      progress: 75,
-      progressColor: 'primary',
-      timeline: [
-        {
-          stage: '準備階段',
-          status: 'completed',
-          date: '2023-08-15',
-          description: '完成團隊組建、資源分配和初步資料收集'
-        },
-        {
-          stage: '自我評估',
-          status: 'completed',
-          date: '2023-09-10',
-          description: '根據SMETA標準完成內部評估和差距分析'
-        },
-        {
-          stage: '文件準備',
-          status: 'current',
-          date: '進行中',
-          description: '收集和整理所有必要的證明文件',
-          tasks: [
-            { id: 1, name: '更新勞工權益政策文件', completed: true },
-            { id: 2, name: '完成健康安全管理程序書', completed: true },
-            { id: 3, name: '準備最近6個月的工時記錄', completed: false },
-            { id: 4, name: '更新環境管理計劃', completed: false }
-          ]
-        },
-        {
-          stage: '預備審核',
-          status: 'pending',
-          date: '預計 2023-10-15',
-          description: '內部團隊進行最終審核準備'
-        },
-        {
-          stage: '正式審核',
-          status: 'pending',
-          date: '預計 2023-10-25',
-          description: '外部審核機構現場審核'
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'ISO 14001 環境管理系統認證',
-      status: 'in-progress',
-      startDate: '2023-06-01',
-      endDate: '2023-09-25',
-      manager: '李總監',
-      agency: 'BSI Taiwan',
-      progress: 90,
-      progressColor: 'secondary'
-    },
-    {
-      id: 3,
-      name: 'ISO 9001 品質管理系統認證',
-      status: 'completed',
-      startDate: '2023-03-10',
-      endDate: '2023-08-15',
-      manager: '張經理',
-      agency: 'TÜV Rheinland',
-      progress: 100,
-      progressColor: 'success'
-    },
-    {
-      id: 4,
-      name: 'SA8000 社會責任認證',
-      status: 'planned',
-      startDate: '2023-11-01',
-      endDate: '2024-04-30',
-      manager: '尚未指派',
-      agency: '待定',
-      progress: 0,
-      progressColor: ''
-    }
-  ];
 
   // 2. 根據 activeTab 和 searchQuery 過濾
   useEffect(() => {
@@ -290,22 +205,6 @@ const CertificationProjects = ({ canWrite }) => {
   };
 
   /**
-   * 格式化日期顯示
-   * @param {string} dateString - 日期字串
-   * @returns {string} 格式化後的日期
-   */
-  const formatDate = (dateString) => {
-    if (!dateString) return '未設定';
-    
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  /**
    * 處理設定圖標點擊
    * @param {Object} project - 項目數據
    * @param {Event} e - 事件對象
@@ -325,6 +224,18 @@ const CertificationProjects = ({ canWrite }) => {
   const handleCloseSettings = () => {
     setShowSettingsModal(false);
     setCurrentProject(null);
+  };
+  
+  /**
+   * 處理設定彈窗中表單輸入變更
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>} e - 輸入事件
+   */
+  const handleProjectInputChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentProject(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
   /**
@@ -453,10 +364,7 @@ const CertificationProjects = ({ canWrite }) => {
                       id="name"
                       name="name"
                       value={currentProject.name}
-                      onChange={(e) => setCurrentProject({
-                        ...currentProject,
-                        [e.target.name]: e.target.value
-                      })}
+                      onChange={handleProjectInputChange}
                       className="form-control"
                     />
                   </div>
@@ -467,10 +375,7 @@ const CertificationProjects = ({ canWrite }) => {
                       id="status"
                       name="status"
                       value={currentProject.status}
-                      onChange={(e) => setCurrentProject({
-                        ...currentProject,
-                        [e.target.name]: e.target.value
-                      })}
+                      onChange={handleProjectInputChange}
                       className="form-control"
                     >
                       <option value="preparing">準備中</option>
@@ -486,10 +391,7 @@ const CertificationProjects = ({ canWrite }) => {
                       id="description"
                       name="description"
                       value={currentProject.description || ''}
-                      onChange={(e) => setCurrentProject({
-                        ...currentProject,
-                        [e.target.name]: e.target.value
-                      })}
+                      onChange={handleProjectInputChange}
                       className="form-control"
                       rows="3"
                     ></textarea>
@@ -536,10 +438,7 @@ const CertificationProjects = ({ canWrite }) => {
                         id="startDate"
                         name="startDate"
                         value={currentProject.startDate}
-                        onChange={(e) => setCurrentProject({
-                          ...currentProject,
-                          [e.target.name]: e.target.value
-                        })}
+                        onChange={handleProjectInputChange}
                         className="form-control"
                       />
                     </div>
@@ -551,10 +450,7 @@ const CertificationProjects = ({ canWrite }) => {
                         id="endDate"
                         name="endDate"
                         value={currentProject.endDate}
-                        onChange={(e) => setCurrentProject({
-                          ...currentProject,
-                          [e.target.name]: e.target.value
-                        })}
+                        onChange={handleProjectInputChange}
                         className="form-control"
                       />
                     </div>
@@ -568,10 +464,7 @@ const CertificationProjects = ({ canWrite }) => {
                         id="internalReviewDate"
                         name="internalReviewDate"
                         value={currentProject.internalReviewDate}
-                        onChange={(e) => setCurrentProject({
-                          ...currentProject,
-                          [e.target.name]: e.target.value
-                        })}
+                        onChange={handleProjectInputChange}
                         className="form-control"
                       />
                     </div>
@@ -583,10 +476,7 @@ const CertificationProjects = ({ canWrite }) => {
                         id="externalReviewDate"
                         name="externalReviewDate"
                         value={currentProject.externalReviewDate}
-                        onChange={(e) => setCurrentProject({
-                          ...currentProject,
-                          [e.target.name]: e.target.value
-                        })}
+                        onChange={handleProjectInputChange}
                         className="form-control"
                       />
                     </div>
@@ -605,10 +495,7 @@ const CertificationProjects = ({ canWrite }) => {
                         id="managerId"
                         name="managerId"
                         value={currentProject.managerId || ''}
-                        onChange={e => setCurrentProject({
-                          ...currentProject,
-                          managerId: e.target.value
-                        })}
+                        onChange={handleProjectInputChange}
                         className="form-control"
                         required
                       >
@@ -628,10 +515,7 @@ const CertificationProjects = ({ canWrite }) => {
                       id="agency"
                       name="agency"
                       value={currentProject.agency}
-                      onChange={(e) => setCurrentProject({
-                        ...currentProject,
-                        [e.target.name]: e.target.value
-                      })}
+                      onChange={handleProjectInputChange}
                       className="form-control"
                     />
                   </div>
@@ -747,7 +631,7 @@ const CertificationProjects = ({ canWrite }) => {
                 {getStatusBadge(project.status)}
               </div>
               <div className="project-actions">
-                <button className="btn btn-sm btn-outline">
+                <button className="btn btn-sm btn-outline" onClick={(e) => handleSettingsClick(project, e)}>
                   <FontAwesomeIcon icon={faCog} />
                 </button>
                 <button 
@@ -851,6 +735,7 @@ const CertificationProjects = ({ canWrite }) => {
           </div>
         ))}
       </div>
+      {renderSettingsModal()}
     </div>
   );
 };
