@@ -926,18 +926,44 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * 處理編輯項目表單提交
    * @param {Event} e - 事件對象
    */
-  const handleUpdateProject = (e) => {
+  const handleUpdateProject = async (e) => {
     e.preventDefault();
-    // 在實際應用中，這裡應該有API調用來更新項目資料
     
-    // 模擬更新項目資料
-    setProjectDetail({
-      ...projectDetail,
-      ...editProjectForm
-    });
-    
-    setShowEditProjectModal(false);
-    alert('項目資料已更新');
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/UpdateProject/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editProjectForm),
+      });
+
+      if (!response.ok) {
+        throw new Error('更新專案失敗');
+      }
+
+      const updatedProject = await response.json();
+
+      // 使用後端返回的最新資料更新前端狀態
+      setProjectDetail(prev => ({
+        ...prev,
+        ...updatedProject,
+        // 確保 team 和 documents 等不在這個 API 更新的資料被保留
+        team: prev.team,
+        documents: prev.documents,
+      }));
+      
+      setShowEditProjectModal(false);
+      alert('項目資料已更新');
+      
+      // 手動觸發一次 projectDetail 的重新獲取，確保資料同步
+      // (可以選擇性地做，如果上面的更新不夠全面的話)
+      // fetchProjectDetail();
+
+    } catch (error) {
+      console.error('更新專案錯誤:', error);
+      alert(error.message);
+    }
   };
 
   /**

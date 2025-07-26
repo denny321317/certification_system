@@ -81,8 +81,9 @@ public class ProjectService {
         project.setManagerId(updatedProject.getManagerId());
         project.setAgency(updatedProject.getAgency());
         project.setDescription(updatedProject.getDescription());
+        project.setProgress(updatedProject.getProgress()); // 直接更新進度
         // 根據 status 自動設定 progress/progressColor
-        updateProgressByStatus(project);
+        // updateProgressByStatus(project);
         // users, documents 不在此API更新
         projectRepository.save(project);
 
