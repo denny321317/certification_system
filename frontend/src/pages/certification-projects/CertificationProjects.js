@@ -494,6 +494,35 @@ const CertificationProjects = ({ canWrite }) => {
                       rows="3"
                     ></textarea>
                   </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="progress">專案完成度</label>
+                    <div className="progress-input-container">
+                      <input
+                        type="range"
+                        id="progress"
+                        name="progress"
+                        className="form-range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={currentProject.progress || 0}
+                        onChange={handleProjectInputChange}
+                      />
+                      <div className="progress-display">
+                        <span className="progress-value">{currentProject.progress || 0}%</span>
+                        <div className="progress-bar-preview">
+                          <div 
+                            className="progress-fill-preview" 
+                            style={{ width: `${currentProject.progress || 0}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="progress-help-text">
+                      拖動滑桿設定專案完成度
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="form-section">

@@ -1,12 +1,159 @@
 /* 報表分析頁面樣式 */
 .reports-analysis-container {
-  padding: 20px;
-  height: 100%;
+  padding: 24px;
+  min-height: calc(100vh - var(--header-height));
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  animation: fadeIn 0.8s ease-out;
 }
 
-/* 頁面標題與頂部操作 */
-.page-header {
-  margin-bottom: 20px;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 頁面標題與操作按鈕 */
+.reports-analysis-container .header-actions {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.reports-analysis-container .header-actions h4 {
+  margin: 0 !important;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: left !important;
+  flex-shrink: 0;
+}
+
+.reports-analysis-container .header-controls {
+  display: flex !important;
+  gap: 16px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto !important;
+}
+
+/* 按鈕樣式 */
+.btn {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-outline-primary {
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  color: #6366f1;
+}
+
+.btn-outline-primary:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+/* 緊湊篩選器控件樣式 */
+.filter-controls-compact {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: fit-content;
+}
+
+.filter-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.filter-group .form-select,
+.filter-group .form-control {
+  min-width: 120px;
+  font-size: 13px;
+}
+
+.date-range-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.date-range-wrapper .form-control {
+  min-width: 130px;
+  max-width: 140px;
+}
+
+.date-separator {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 0 2px;
 }
 
 /* 新的統計卡片樣式 */
@@ -311,6 +458,26 @@
 }
 
 /* 響應式調整 */
+@media (min-width: 769px) {
+  .reports-analysis-container .header-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-direction: row !important;
+  }
+  
+  .reports-analysis-container .header-actions h4 {
+    text-align: left !important;
+    width: auto !important;
+  }
+  
+  .reports-analysis-container .header-controls {
+    justify-content: flex-end !important;
+    width: auto !important;
+    margin-left: auto !important;
+  }
+}
+
 @media (max-width: 992px) {
   .stats-card {
     margin-bottom: 15px;
@@ -335,4 +502,627 @@
   .chart-container {
     height: 200px;
   }
+  
+  /* 篩選器響應式樣式 */
+  .filter-controls-compact {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+  
+  .filter-group {
+    flex: 1;
+    min-width: 140px;
+  }
+  
+  .date-range-wrapper {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+  }
+  
+  .date-range-wrapper .form-control {
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .date-separator {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .filter-controls-compact {
+    width: 100%;
+  }
+}
+
+/* 第三階段優化：新增樣式 */
+
+/* 全屏模式 */
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background: white;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* 工具欄控制 */
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 8px;
+  color: #64748b;
+  font-size: 14px;
+  z-index: 1;
+}
+
+.refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.export-controls .btn-group {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 高級篩選面板 */
+.advanced-filters-panel {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.advanced-filters-panel .filter-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* 表格控制工具 */
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(59, 130, 246, 0.02);
+  transform: scale(1.001);
+  transition: all 0.2s ease;
+}
+
+/* 空狀態樣式 */
+.text-center.py-4.text-muted {
+  padding: 2rem 1rem;
+}
+
+.text-center.py-4.text-muted .fa-clipboard-list {
+  opacity: 0.3;
+  margin-bottom: 0.5rem;
+}
+
+/* 徽章優化 */
+.badge.bg-secondary {
+  background-color: #64748b !important;
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.badge.bg-light.text-dark {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 統計卡片hover效果增強 */
+.stats-card-new:hover .stats-icon-new {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* 圖表容器優化 */
+.chart-container {
+  position: relative;
+  height: 300px;
+  margin-bottom: 20px;
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* 頁籤樣式增強 */
+.tabs .tab {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tabs .tab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--primary-color);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tabs .tab.active::after {
+  width: 100%;
+}
+
+.tabs .tab:hover::after {
+  width: 50%;
+}
+
+/* 按鈕組增強 */
+.btn-group .btn {
+  transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* 表格響應式優化 */
+.table-responsive {
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* 動畫效果 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.stats-card-new {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 進度條優化 */
+.percentage-bar {
+  background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.percentage-fill {
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: width 0.3s ease;
+}
+
+/* 響應式優化 */
+@media (max-width: 768px) {
+  .fullscreen {
+    padding: 10px;
+  }
+  
+  .toolbar-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .search-box input {
+    min-width: 100% !important;
+  }
+  
+  .table-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .sort-controls {
+    width: 100%;
+  }
+  
+  .sort-controls select {
+    flex: 1;
+  }
+  
+  .advanced-filters-panel .row > div {
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .export-controls .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .export-controls .btn {
+    border-radius: 4px !important;
+    margin-bottom: 4px;
+  }
+  
+  .chart-container {
+    height: 250px;
+    padding: 5px;
+  }
+}
+
+/* ========================= 趨勢分析專用樣式 ========================= */
+
+.trend-analysis-section {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* 趨勢控制面板 */
+.trend-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 圖表類型選擇器 */
+.chart-type-selector {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.chart-type-selector .btn {
+  border: none;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  background: white;
+  color: #6b7280;
+  border-right: 1px solid #e5e7eb;
+}
+
+.chart-type-selector .btn:last-child {
+  border-right: none;
+}
+
+.chart-type-selector .btn:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  color: var(--primary-color);
+}
+
+.chart-type-selector .btn.btn-primary {
+  background: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+/* 選擇框樣式 */
+.control-group .form-select {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+  min-height: 42px;
+}
+
+.control-group .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* 對比模式切換 */
+.comparison-toggle {
+  grid-column: span 3;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.comparison-toggle .form-check {
+  margin: 0;
+}
+
+.comparison-toggle .form-check-input {
+  width: 48px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: #e5e7eb;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.comparison-toggle .form-check-input:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.comparison-toggle .form-check-input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.comparison-toggle .form-check-label {
+  margin-left: 12px;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* 響應式調整 */
+@media (max-width: 1200px) {
+  .trend-controls-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .comparison-toggle {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .trend-controls-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .comparison-toggle {
+    grid-column: span 1;
+  }
+  
+  .chart-type-selector .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .chart-type-selector {
+    flex-direction: column;
+  }
+  
+  .chart-type-selector .btn {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+  }
+  
+  .chart-type-selector .btn:last-child {
+    border-bottom: none;
+  }
+}
+
+/* 趨勢統計卡片 */
+.trend-stats-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.trend-stats-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.trend-stats-card .card-body {
+  padding: 20px;
+}
+
+.trend-stats-card .card-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.trend-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.metric-change {
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.metric-change.positive {
+  color: var(--success);
+}
+
+.metric-change.negative {
+  color: var(--danger);
+}
+
+.trend-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+/* 對比選擇面板 */
+.comparison-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.comparison-checkboxes .form-check {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+.comparison-checkboxes .form-check:hover {
+  background: #e2e8f0;
+}
+
+.comparison-checkboxes .form-check-input:checked + .form-check-label {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* 圖表信息樣式 */
+.chart-info {
+  text-align: right;
+}
+
+.chart-info small {
+  font-size: 11px;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #64748b;
+}
+
+/* 趨勢分析響應式優化 */
+@media (max-width: 992px) {
+  .trend-stats-card .metric-value {
+    font-size: 20px;
+  }
+  
+  .trend-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .comparison-checkboxes {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .comparison-checkboxes .form-check {
+    width: 100%;
+  }
+  
+  .chart-container {
+    min-height: 300px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .trend-analysis-section .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .chart-info {
+    text-align: left;
+    width: 100%;
+  }
+}
+
+/* 圖表容器增強 */
+.trend-analysis-section .chart-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+}
+
+/* 卡片頭部優化 */
+.trend-analysis-section .card-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 12px 12px 0 0;
 } 

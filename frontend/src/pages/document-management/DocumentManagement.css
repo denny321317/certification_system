@@ -1,70 +1,140 @@
 /* 文件管理頁面樣式 */
 .document-management-container {
-  padding: 20px;
-  height: 100%;
+  padding: 24px;
+  min-height: calc(100vh - var(--header-height));
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 麵包屑導航 */
 .breadcrumb {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   font-size: 0.9rem;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .breadcrumb-item a {
-  color: var(--text-secondary);
+  color: #6b7280;
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb-item a:hover {
+  color: #6366f1;
 }
 
 .breadcrumb-item.active {
-  color: var(--text-primary);
-  font-weight: 500;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 /* 頁面標題與操作按鈕 */
-.header-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+.document-management-container .header-actions {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.action-buttons {
-  display: flex;
-  gap: 10px;
+.document-management-container .header-actions h4 {
+  margin: 0 !important;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: left !important;
+  flex-shrink: 0;
+}
+
+.document-management-container .action-buttons {
+  display: flex !important;
+  gap: 16px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto !important;
 }
 
 .btn {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn-outline {
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: white;
-  color: var(--text-primary);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  color: #6366f1;
 }
 
 .btn-outline:hover {
-  background: #f8f9fa;
+  background: rgba(99, 102, 241, 0.1);
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border: none;
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 8px 16px;
   font-size: 0.875rem;
 }
 
@@ -76,9 +146,9 @@
 /* 內容網格佈局 */
 .content-grid {
   display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 20px;
-  height: calc(100vh - 200px);
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  height: calc(100vh - 280px);
 }
 
 /* 文件夾樹結構 */
@@ -389,6 +459,26 @@
 }
 
 /* 響應式調整 */
+@media (min-width: 769px) {
+  .document-management-container .header-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-direction: row !important;
+  }
+  
+  .document-management-container .header-actions h4 {
+    text-align: left !important;
+    width: auto !important;
+  }
+  
+  .document-management-container .action-buttons {
+    justify-content: flex-end !important;
+    width: auto !important;
+    margin-left: auto !important;
+  }
+}
+
 @media (max-width: 768px) {
   .content-grid {
     grid-template-columns: 1fr;

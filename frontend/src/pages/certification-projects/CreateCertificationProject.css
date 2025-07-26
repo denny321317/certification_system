@@ -238,3 +238,76 @@ textarea.form-control {
     padding: 16px;
   }
 } 
+
+/* 進度選擇器樣式 */
+.progress-input-container {
+  margin-top: 8px;
+}
+
+.form-range {
+  width: 100%;
+  height: 6px;
+  margin-bottom: 16px;
+  background: #e9ecef;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.form-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.progress-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  min-width: 50px;
+}
+
+.progress-bar-preview {
+  flex: 1;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.progress-fill-preview {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-help-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 4px;
+} 
