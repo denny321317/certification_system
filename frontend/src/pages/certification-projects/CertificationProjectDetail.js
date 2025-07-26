@@ -2366,47 +2366,6 @@ const CertificationProjectDetail = ({ canWrite }) => {
                   變更將立即生效並同步更新相關報表
                 </div>
               </div>
-              
-              <div className="form-group">
-                <label htmlFor="managerId">專案負責人</label>
-                <select
-                  id="managerId"
-                  name="managerId"
-                  value={editProjectForm.managerId || ''}
-                  onChange={handleEditProjectFormChange}
-                  className="form-control"
-                  required
-                >
-                  <option value="">請選擇負責人</option>
-                  {(projectDetail.team || []).map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="projectDescription">專案描述</label>
-                <textarea
-                  id="projectDescription"
-                  name="description"
-                  className="form-control"
-                  rows="4"
-                  value={editProjectForm.description}
-                  onChange={handleEditProjectFormChange}
-                  required
-                ></textarea>
-              </div>
-              
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={handleCloseEditProjectModal}>
-                  取消
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  <FontAwesomeIcon icon={faSave} /> 儲存變更
-                </button>
-              </div>
             </form>
           </div>
         </div>
