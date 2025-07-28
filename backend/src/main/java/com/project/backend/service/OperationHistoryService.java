@@ -39,4 +39,9 @@ public class OperationHistoryService {
     public List<OperationHistory> getHistoryForProject(Long projectId) {
         return operationHistoryRepository.findByProjectIdOrderByOperationTimeDesc(projectId);
     }
+
+    //所有History
+    public List<OperationHistory> getAllHistory() {
+        return operationHistoryRepository.findAll();
+    }
 } 
