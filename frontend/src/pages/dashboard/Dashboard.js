@@ -142,7 +142,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faFile, 
       color: '#3b82f6',
       link: '/document-management',
-      trend: { direction: 'up', value: 12, label: '較上月(not yet)' }
+      trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
     },
     { 
       title: '完成認證', 
@@ -150,16 +150,16 @@ const Dashboard = ({ canWrite }) => {
       icon: faCheckCircle, 
       color: '#10b981',
       link: '/certification-projects',
-      trend: { direction: 'up', value: 1, label: '本月新增(not yet)' }
+      trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
     },
     { 
-      title: '待處理任務(not yet)', 
+      title: '待處理任務(後端還沒寫)', 
       value: 18, 
       urgentCount: 3,
       icon: faExclamationCircle, 
       color: '#f59e0b',
       link: '/tasks',
-      trend: { direction: 'down', value: 5, label: '較上週(not yet)' }
+      trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
     },
     { 
       title: '即將到期項目', 
@@ -587,7 +587,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faTasks} className="card-header-icon" />
-                待辦事項
+                待辦事項(後端還沒寫)
                 <span className="badge urgent-badge">{todoItems.filter(item => item.urgency === 'high').length}</span>
               </h2>
               <div className="card-actions">
@@ -681,7 +681,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
-                認證類型分布
+                認證類型分布(後端還沒寫)
               </h2>
             </div>
             <div className="chart-container">
@@ -697,7 +697,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faFileAlt} className="card-header-icon" />
-                最近活動
+                最近活動(後端沒寫完)
               </h2>
               <div className="activity-controls">
                 <button className="notification-btn">
@@ -771,7 +771,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
-                文件狀態分布
+                文件狀態分布(後端還沒寫)
               </h2>
             </div>
             <div className="chart-container">
