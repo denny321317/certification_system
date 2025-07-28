@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @RestController
@@ -30,14 +31,14 @@ public class DashboardController {
     @Autowired
     private OperationHistoryService operationHistoryService;
 
-    // 1. 回傳文件總數
+    //回傳文件總數
     @GetMapping("/document-count")
     public ResponseEntity<?> getTotalDocumentCount() {
         long count = fileRepository.count();
         return ResponseEntity.ok(Map.of("totalDocuments", count));
     }
 
-    // 2. 回傳完成專案總數和細項
+    //回傳完成專案總數和細項
     @GetMapping("/project-count")
     public ResponseEntity<?> getProjectCountWithProgress() {
         List<Project> allProjects = projectRepository.findAll();
@@ -75,25 +76,33 @@ public class DashboardController {
 
 
 
-    // 3. 回傳 30 天內即將到期的專案（包含今天）
+    //回傳 30 天內即將到期的專案
     @GetMapping("/upcoming-deadlines")
     public ResponseEntity<?> getProjectsWithUpcomingDeadlines() {
         LocalDate today = LocalDate.now();
         LocalDate in30Days = today.plusDays(30);
 
-        List<ProjectDeadlineDTO> upcomingProjects = projectRepository
-            .findUpcomingProjectDeadlines(today, in30Days);
+        List<ProjectDeadlineDTO> upcomingProjects = projectRepository.findUpcomingProjectDeadlines(today, in30Days);
+
+        //細項: 名稱 剩幾天到期 到期日
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ProjectDeadlineDTO project : upcomingProjects) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", project.getName());
+            map.put("deadline", project.getEndDate());
+            long daysLeft = ChronoUnit.DAYS.between(today, project.getEndDate());
+            map.put("daysLeft", daysLeft);
+            result.add(map);
+        }
 
         Map<String, Object> response = new HashMap<>();
-        response.put("totalUpcoming", upcomingProjects.size());
-        response.put("projects", upcomingProjects);
+        response.put("totalUpcoming", result.size());
+        response.put("projects", result);
 
         return ResponseEntity.ok(response);
     }
 
-
-
-    // 4. 回傳所有專案的歷史紀錄
+    //回傳所有專案的歷史紀錄
     @GetMapping("/all-history")
     public ResponseEntity<?> getAllOperationHistory() {
         List<OperationHistory> history = operationHistoryService.getAllHistory();
