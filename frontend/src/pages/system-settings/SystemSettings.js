@@ -23,7 +23,7 @@
  * ```
  */
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
@@ -37,6 +37,10 @@ import './SystemSettings.css';
  */
 import { AuthContext } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
+
+
+
+const API_BASE_URL = 'http://localhost:8000/api'
 
 
 /**
@@ -64,6 +68,54 @@ const SystemSettings = () => {
     setCurrentPage(newPage);
   };
 
+
+  /**
+   * 處理安全設定
+   */
+  const [securitySettings, setSecuritySettings] = useState({
+    requireMinLength: true,
+    minLength: 8,
+    requireUpperLowerCase: true,
+    requireNumber: true,
+    requireSpecialChar: true,
+    enableTwoFactor: false,
+    maxLoginAttempts: 5,
+    sessionTimeoutMinuites: 30
+  });
+  const [securityLoading, setSecurityLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      setSecurityLoading(true);
+      fetch(`${API_BASE_URL}/security-settings/getSettings`)
+        .then(res => res.json())
+        .then(data => {
+          setSecuritySettings(data);
+          setSecurityLoading(false);
+        })
+        .catch(() => setSecurityLoading(false));
+    }
+  }, [activeTab])
+
+  const handleSecuritySave = (e) => {
+    e.preventDefault();
+    setSecurityLoading(true);
+    fetch(`${API_BASE_URL}/security-settings/putSettings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(securitySettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setSecuritySettings(data);
+        setSecurityLoading(false);
+        alert('安全設定已儲存');
+      })
+      .catch(() => {
+        setSecurityLoading(false);
+        alert('儲存失敗')
+      });
+  };
 
 
   /**
@@ -184,46 +236,89 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">安全設定</h5>
-                <form>
+                <form onSubmit={handleSecuritySave}>
                   <div className="mb-4">
                     <label className="form-label">密碼政策</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={securitySettings.requireMinLength}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireMinLength: e.target.checked}))} 
+                      />
                       <label className="form-check-label">要求至少8個字元</label>
                     </div>
+                    <input
+                      type="number"
+                      className="form-control mt-2"
+                      value={securitySettings.minLength}
+                      min={6}
+                      max={32}
+                      onChange={e => setSecuritySettings(s => ({ ...s, minLength: Number(e.target.value) }))}
+                      disabled={!securitySettings.requireMinLength}
+                    />
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={securitySettings.requireUpperLowerCase}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireUpperLowerCase: e.target.checked}))}
+                      />
                       <label className="form-check-label">必須包含大小寫字母</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={securitySettings.requireNumber}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireNumber: e.target.checked }))}
+                      />
                       <label className="form-check-label">必須包含數字</label>
                     </div>
                     <div className="form-check">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={securitySettings.requireSpecialChar}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireSpecialChar: e.target.checked }))}
+                      />
                       <label className="form-check-label">必須包含特殊字元</label>
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">登入安全</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={securitySettings.enableTwoFactor}
+                        onChange={e => setSecuritySettings(s => ({ ...s, enableTwoFactor: e.target.checked }))}
+                      />
                       <label className="form-check-label">啟用雙因素認證</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={securitySettings.maxLoginAttempts === 5}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginAttempts: e.target.checked ? 5 : 10 }))}
+                      />
                       <label className="form-check-label">登入失敗鎖定（5次嘗試）</label>
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">Session 設定</label>
-                    <select className="form-select mb-3">
+                    <select
+                      className="form-select mb-3"
+                      value={securitySettings.sessionTimeoutMinutes}
+                      onChange={e => setSecuritySettings(s => ({ ...s, sessionTimeoutMinutes: Number(e.target.value) }))}
+                    >
                       <option selected>30 分鐘後自動登出</option>
                       <option>1 小時後自動登出</option>
                       <option>2 小時後自動登出</option>
                     </select>
                   </div>
-                  <button type="submit" className="btn btn-primary">儲存設定</button>
+                  <button type="submit" className="btn btn-primary" disabled={securityLoading}>儲存設定</button>
                 </form>
               </div>
             </div>
