@@ -1,3 +1,4 @@
+import { faL } from '@fortawesome/free-solid-svg-icons';
 import React, { createContext, useState, useEffect } from 'react';
 
 /**
@@ -36,10 +37,20 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('currentUser', JSON.stringify(data.user));
-        setCurrentUser(data.user);
-        return { success: true };
+
+        // for timeout function
+        const timeoutToken = response.data['timeout-token'];
+        const user = response.data.user;
+        if (timeoutToken && user) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('timeoutToken', timeoutToken);
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+          setCurrentUser(data.user);
+
+          return { success: true };
+        } else {
+          return { success: false, error: '登入失敗，伺服器回應無效。'}
+        }
       } else {
         return { success: false, error: data.error || '登入失敗' };
       }

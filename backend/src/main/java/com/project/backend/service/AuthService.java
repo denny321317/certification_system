@@ -4,11 +4,23 @@ import com.project.backend.model.User;
 import com.project.backend.model.Role;
 import com.project.backend.repository.RoleRepository;
 import com.project.backend.repository.UserRepository;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.RoleDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
 import java.util.Optional;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 
 @Service
 public class AuthService {
@@ -17,6 +29,10 @@ public class AuthService {
     private UserRepository userRepository;
     @Autowired
     private RoleRepository roleRepository; // 新增，用於解決 register() 中的 setRole() 衝突
+
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     /**
      * 為了解決 Hibernate lazy loading 問題
@@ -131,6 +147,46 @@ public class AuthService {
     public void saveUser(User user) {
         userRepository.save(user);
     }
+
+    /**
+     * 用來實作 Session Timeout
+     * @param email
+     * @param timeoutMinutes
+     * @return
+     */
+    public String generateTimeoutToken(String email, int timeoutMinutes) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + (long) timeoutMinutes * 60 * 1000);
+
+        Key key = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS512.getJcaName());
+
+        return Jwts.builder()
+            .setSubject(email)
+            .setIssuedAt(now)
+            .setExpiration(expiryDate)
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact();
+    }
     
+    public boolean validateTimeoutToken(String token) {
+        try {
+            Key key = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS512.getJcaName());
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            // Token invalid
+            return false;
+        }
+    }
+
+    public String getEmailfromTimeoutToken(String token) {
+        Key key = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS512.getJcaName());
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getSubject();
+    }
     
 }

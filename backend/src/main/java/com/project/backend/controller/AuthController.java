@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.project.backend.model.SecuritySettings;
 import com.project.backend.model.User;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.EmailService;
+import com.project.backend.service.SecuritySettingsService;
 
 import lombok.Data;
 
@@ -26,6 +28,9 @@ public class AuthController {
     private AuthService authService;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private SecuritySettingsService securitySettingsService;
+
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest request) {
@@ -41,9 +46,14 @@ public class AuthController {
                 loggedInUser.setLastTimeLogin(LocalDateTime.now());
                 authService.saveUser(loggedInUser);
 
+                // 生成 Timeout Token
+                SecuritySettings settings = securitySettingsService.getSettings();
+                String timeoutToken = authService.generateTimeoutToken(loggedInUser.getEmail(), settings.getSessionTimeoutMinutes());
+
                 response.put("success", true);
                 response.put("token", "mock_token");
                 response.put("user", authService.toUserDTO(user.get()));
+                response.put("timeout-token", timeoutToken);
             } else {
                 response.put("success", false);
                 response.put("error", "帳號或密碼錯誤");
