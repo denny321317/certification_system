@@ -43,6 +43,14 @@ public class Project {
     private String agency;
     private Integer progress;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "progress_calculation_mode")
+    private ProgressCalculationMode progressCalculationMode = ProgressCalculationMode.MANUAL;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    private CertificationTemplate certificationTemplate;
+
     @Column(name = "progress_color")
     private String progressColor;
 
@@ -52,6 +60,9 @@ public class Project {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private java.util.List<ProjectTeam> teamMembers;
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectRequirementStatus> requirementStatuses;
 
     // 這裡用 OneToMany 關聯檔案
     @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
