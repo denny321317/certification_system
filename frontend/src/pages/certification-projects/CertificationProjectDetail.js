@@ -1193,111 +1193,22 @@ const CertificationProjectDetail = ({ canWrite }) => {
               </div>
             </div>
             
-            {/* NEW: Checklist and Progress Section */}
-            <div className="checklist-progress-grid">
-              <div className="certification-checklist-section">
-                <h5>
-                  <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
-                  認證項目檢查清單
-                </h5>
-                <div className="template-selector-container">
-                  <label htmlFor="template-select">套用範本:</label>
-                  <select
-                    id="template-select"
-                    className="template-select"
-                    value={selectedTemplate}
-                    onChange={(e) => setSelectedTemplate(e.target.value)}
-                  >
-                    {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="checklist-container">
-                  {requirements.map((req) => (
-                    <div className="checklist-item" key={req.id}>
-                      <input
-                        type="checkbox"
-                        id={`req-${req.id}`}
-                        className="form-check-input"
-                        checked={req.completed}
-                        onChange={() => handleRequirementChange(req.id)}
-                        disabled={progressMode !== 'AUTOMATIC'}
-                      />
-                      <label htmlFor={`req-${req.id}`} className="checklist-label">
-                        {req.text}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="project-progress-management-section">
-                <h5>
-                  <FontAwesomeIcon icon={faChartLine} className="me-2" />
-                  進度管理
-                </h5>
-
-                <div className="progress-mode-toggle">
-                  <span>手動調整</span>
-                  <div className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      id="progress-mode"
-                      className="toggle-input"
-                      checked={progressMode === 'AUTOMATIC'}
-                      onChange={() =>
-                        setProgressMode(
-                          progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC'
-                        )
-                      }
-                    />
-                    <label htmlFor="progress-mode" className="toggle-label"></label>
-                  </div>
-                  <span>自動計算</span>
-                </div>
-
-                <div className="progress-display-wrapper">
-                  <div className="progress-percentage">
-                    {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`} 完成
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className={`progress-fill ${projectDetail.progressColor}`}
-                      style={{
-                        width: `${
-                          progressMode === 'AUTOMATIC'
-                            ? calculatedProgress
-                            : projectDetail.progress
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
-                  {progressMode === 'MANUAL' && (
-                    <div className="manual-progress-slider">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={projectDetail.progress}
-                        className="form-range"
-                        onChange={(e) =>
-                          setProjectDetail({
-                            ...projectDetail,
-                            progress: parseInt(e.target.value, 10),
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
             <div className="project-meta-section">
+              <div className="project-progress-section">
+                <h5>項目進度</h5>
+                <div className="progress-percentage">
+                  {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`} 完成
+                </div>
+                <div className="progress-bar">
+                  <div 
+                    className={`progress-fill ${projectDetail.progressColor}`} 
+                    style={{ 
+                      width: `${progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+              
               <div className="project-team-section">
                 <h5>項目團隊</h5>
                 <div className="team-members">
@@ -1319,6 +1230,153 @@ const CertificationProjectDetail = ({ canWrite }) => {
           </div>
         );
       
+      case 'checklist':
+        return (
+          <div className="checklist-progress-grid">
+            <div className="certification-checklist-section">
+              <h5>
+                <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
+                認證項目檢查清單
+              </h5>
+              <div className="template-selector-container">
+                <label htmlFor="template-select">套用範本:</label>
+                <select
+                  id="template-select"
+                  className="template-select"
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="checklist-container">
+                {requirements.map((req) => (
+                  <div className="checklist-item" key={req.id}>
+                    <input
+                      type="checkbox"
+                      id={`req-${req.id}`}
+                      className="form-check-input"
+                      checked={req.completed}
+                      onChange={() => handleRequirementChange(req.id)}
+                      disabled={progressMode !== 'AUTOMATIC'}
+                    />
+                    <label htmlFor={`req-${req.id}`} className="checklist-label">
+                      {req.text}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="project-progress-management-section">
+              <h5>
+                <FontAwesomeIcon icon={faChartLine} className="me-2" />
+                進度管理
+              </h5>
+
+              <div className="progress-mode-toggle">
+                <span>手動調整</span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="progress-mode"
+                    className="toggle-input"
+                    checked={progressMode === 'AUTOMATIC'}
+                    onChange={() =>
+                      setProgressMode(
+                        progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC'
+                      )
+                    }
+                  />
+                  <label htmlFor="progress-mode" className="toggle-label"></label>
+                </div>
+                <span>自動計算</span>
+              </div>
+
+              <div className="progress-section-standalone">
+                <div className="progress-display-large">
+                  <div className="progress-circle">
+                    <svg className="progress-ring" width="120" height="120">
+                      <circle
+                        className="progress-ring-bg"
+                        stroke="#e9ecef"
+                        strokeWidth="8"
+                        fill="transparent"
+                        r="52"
+                        cx="60"
+                        cy="60"
+                      />
+                      <circle
+                        className="progress-ring-fill"
+                        stroke="#4a6cf7"
+                        strokeWidth="8"
+                        fill="transparent"
+                        r="52"
+                        cx="60"
+                        cy="60"
+                        strokeDasharray={`${2 * Math.PI * 52}`}
+                        strokeDashoffset={`${2 * Math.PI * 52 * (1 - (progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress) / 100)}`}
+                      />
+                    </svg>
+                    <div className="progress-text">
+                      <span className="progress-number">
+                        {progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%
+                      </span>
+                      <span className="progress-label">完成</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="projectProgress" className="form-label">
+                    完成度調整
+                  </label>
+                  <div className="progress-slider-container">
+                    <input
+                      type="range"
+                      id="projectProgress"
+                      name="progress"
+                      className="form-range modern"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}
+                      onChange={(e) => {
+                        if (progressMode === 'MANUAL') {
+                          setProjectDetail({
+                            ...projectDetail,
+                            progress: parseInt(e.target.value, 10),
+                          });
+                        }
+                      }}
+                      disabled={progressMode === 'AUTOMATIC'}
+                    />
+                    <div className="progress-markers">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                      <span>75%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                  <div className="progress-help-text">
+                    <FontAwesomeIcon icon={faInfoCircle} className="help-icon" />
+                    {progressMode === 'AUTOMATIC' 
+                      ? "自動模式下，進度由查檢表完成項自動計算。"
+                      : "手動拖動滑桿以調整專案完成度。"
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'documents':
         const filteredDocuments = getFilteredDocuments();
         const documentsByCategory = getDocumentsByCategory(filteredDocuments);
@@ -2166,6 +2224,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
         >
           <FontAwesomeIcon icon={faFileAlt} className="me-2" />
           項目概覽
+        </div>
+        <div 
+          className={`project-tab ${activeTab === 'checklist' ? 'active' : ''}`}
+          onClick={() => setActiveTab('checklist')}
+        >
+          <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
+          模板進度確認
         </div>
         <div 
           className={`project-tab ${activeTab === 'documents' ? 'active' : ''}`}

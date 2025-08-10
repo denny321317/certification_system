@@ -2857,6 +2857,9 @@ textarea.form-control {
   cursor: pointer;
 }
 
+.progress-section-standalone {
+  margin-top: 1rem;
+}
 
 @media (max-width: 992px) {
   .checklist-progress-grid {
