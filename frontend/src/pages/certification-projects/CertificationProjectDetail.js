@@ -207,6 +207,38 @@ const CertificationProjectDetail = ({ canWrite }) => {
     notes: ''
   });
 
+  // Mock
+  const [templates, setTemplates] = useState([
+    { id: 'smeta-v1', name: 'SMETA 認證標準 V1' },
+    { id: 'iso27001', name: 'ISO 27001 資訊安全管理' },
+    { id: 'custom-template-1', name: '內部稽核客製化範本' },
+  ]);
+
+  const [selectedTemplate, setSelectedTemplate] = useState('smeta-v1');
+  const [progressMode, setProgressMode] = useState('AUTOMATIC'); // MANUAL or AUTOMATIC
+
+  // Mock
+  const [requirements, setRequirements] = useState([
+    { id: 1, text: '供應商資料問卷已填寫完畢', completed: true },
+    { id: 2, text: '勞動合約範本已上傳', completed: true },
+    { id: 3, text: '工作時數紀錄表已提供', completed: false },
+    { id: 4, text: '薪資發放證明已歸檔', completed: true },
+    { id: 5, text: '消防安全演習紀錄', completed: false },
+    { id: 6, text: '化學品儲存與管理政策', completed: false },
+  ]);
+
+  const handleRequirementChange = (id) => {
+    setRequirements(
+      requirements.map((req) =>
+        req.id === id ? { ...req, completed: !req.completed } : req
+      )
+    );
+  };
+
+  const calculatedProgress = Math.round(
+    (requirements.filter((r) => r.completed).length / requirements.length) * 100
+  );
+
   /**
    * 操作歷史狀態
    * @type {[Array, Function]} [操作歷史列表, 設置操作歷史列表的函數]
@@ -1161,18 +1193,111 @@ const CertificationProjectDetail = ({ canWrite }) => {
               </div>
             </div>
             
-            <div className="project-meta-section">
-              <div className="project-progress-section">
-                <h5>項目進度</h5>
-                <div className="progress-percentage">{projectDetail.progress}% 完成</div>
-                <div className="progress-bar">
-                  <div 
-                    className={`progress-fill ${projectDetail.progressColor}`} 
-                    style={{ width: `${projectDetail.progress}%` }}
-                  ></div>
+            {/* NEW: Checklist and Progress Section */}
+            <div className="checklist-progress-grid">
+              <div className="certification-checklist-section">
+                <h5>
+                  <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
+                  認證項目檢查清單
+                </h5>
+                <div className="template-selector-container">
+                  <label htmlFor="template-select">套用範本:</label>
+                  <select
+                    id="template-select"
+                    className="template-select"
+                    value={selectedTemplate}
+                    onChange={(e) => setSelectedTemplate(e.target.value)}
+                  >
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="checklist-container">
+                  {requirements.map((req) => (
+                    <div className="checklist-item" key={req.id}>
+                      <input
+                        type="checkbox"
+                        id={`req-${req.id}`}
+                        className="form-check-input"
+                        checked={req.completed}
+                        onChange={() => handleRequirementChange(req.id)}
+                        disabled={progressMode !== 'AUTOMATIC'}
+                      />
+                      <label htmlFor={`req-${req.id}`} className="checklist-label">
+                        {req.text}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
-              
+
+              <div className="project-progress-management-section">
+                <h5>
+                  <FontAwesomeIcon icon={faChartLine} className="me-2" />
+                  進度管理
+                </h5>
+
+                <div className="progress-mode-toggle">
+                  <span>手動調整</span>
+                  <div className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      id="progress-mode"
+                      className="toggle-input"
+                      checked={progressMode === 'AUTOMATIC'}
+                      onChange={() =>
+                        setProgressMode(
+                          progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC'
+                        )
+                      }
+                    />
+                    <label htmlFor="progress-mode" className="toggle-label"></label>
+                  </div>
+                  <span>自動計算</span>
+                </div>
+
+                <div className="progress-display-wrapper">
+                  <div className="progress-percentage">
+                    {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`} 完成
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className={`progress-fill ${projectDetail.progressColor}`}
+                      style={{
+                        width: `${
+                          progressMode === 'AUTOMATIC'
+                            ? calculatedProgress
+                            : projectDetail.progress
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                  {progressMode === 'MANUAL' && (
+                    <div className="manual-progress-slider">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={projectDetail.progress}
+                        className="form-range"
+                        onChange={(e) =>
+                          setProjectDetail({
+                            ...projectDetail,
+                            progress: parseInt(e.target.value, 10),
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="project-meta-section">
               <div className="project-team-section">
                 <h5>項目團隊</h5>
                 <div className="team-members">
