@@ -1,5 +1,6 @@
 import { faL } from '@fortawesome/free-solid-svg-icons';
 import React, { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 /**
  * 身份驗證上下文
@@ -26,36 +27,22 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
+      const response = await axios.post('http://localhost:8000/api/login', { email, password });
 
-      const data = await response.json();
+      const data = response?.data;
 
-      if (response.ok && data.success) {
-
-        // for timeout function
-        const timeoutToken = response.data['timeout-token'];
-        const user = response.data.user;
-        if (timeoutToken && user) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('timeoutToken', timeoutToken);
-          localStorage.setItem('currentUser', JSON.stringify(data.user));
-          setCurrentUser(data.user);
-
-          return { success: true };
-        } else {
-          return { success: false, error: '登入失敗，伺服器回應無效。'}
-        }
-      } else {
-        return { success: false, error: data.error || '登入失敗' };
+      if (data?.success && data['timeout-token'] && data.user) {
+        const timeoutToken = data['timeout-token'];
+        localStorage.setItem('timeoutToken', timeoutToken);
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        setCurrentUser(data.user);
+        return { success: true };
       }
+
+      return { success: false, error: data?.error || '登入失敗' };
     } catch (error) {
-      return { success: false, error: error.message || '伺服器錯誤' };
+      const msg = error.response?.data?.error || error.message || '登入失敗';
+      return { success: false, error: msg };
     }
   };
 

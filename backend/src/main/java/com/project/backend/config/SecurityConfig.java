@@ -18,11 +18,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/login", "/api/register", "/api/reset-password", "/api/update-password").permitAll()
-                .anyRequest().authenticated()
+            .csrf(csrf -> csrf.disable())  // disable CSRF
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))  // prevents Spring from creating sessions
+            .authorizeHttpRequests(auth -> auth  // define authorisation rules
+                .requestMatchers(    // allowed APIs for public access
+                    "/api/login", 
+                    "/api/register", 
+                    "/api/reset-password", 
+                    "/api/update-password"
+                ).permitAll()
+                .anyRequest().authenticated()   // require authentication for all other request
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
             

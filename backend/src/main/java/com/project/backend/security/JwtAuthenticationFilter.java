@@ -32,11 +32,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         if (StringUtils.hasText(token) && authService.validateTimeoutToken(token)) {
             String email = authService.getEmailfromTimeoutToken(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+            
+            // creates an Authentication object and set it in Spring's Security Context
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
+        // continue to the next filter in the chain
         filterChain.doFilter(request, response);
     }
 

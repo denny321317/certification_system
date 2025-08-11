@@ -8,6 +8,9 @@ import com.project.backend.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.RoleDTO;
@@ -33,6 +36,16 @@ public class AuthService {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
+
+    private Key jwtKey;  // derived HMAC key
+
+
+    @PostConstruct
+    public void initJwtKey() {
+         // jwt.secret is Base64 text; decode and derive an HMAC-SHA key of sufficient length
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        this.jwtKey = Keys.hmacShaKeyFor(keyBytes);
+    }
 
     /**
      * 為了解決 Hibernate lazy loading 問題
@@ -168,10 +181,18 @@ public class AuthService {
             .compact();
     }
     
+
+    /**
+     * Timeout Token 過期，有錯誤或 Signiture 無效時 throws Exception => return false
+     * @param token
+     * @return
+     */
     public boolean validateTimeoutToken(String token) {
         try {
-            Key key = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS512.getJcaName());
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parserBuilder()
+                .setSigningKey(jwtKey)
+                .build()
+                .parseClaimsJws(token);
             return true;
         } catch (Exception e) {
             // Token invalid
