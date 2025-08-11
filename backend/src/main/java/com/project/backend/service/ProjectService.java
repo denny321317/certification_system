@@ -3,6 +3,7 @@ package com.project.backend.service;
 import com.project.backend.dto.ShowProjectDTO;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.TeamMemberDTO;
+import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
 import com.project.backend.model.Project;
@@ -10,6 +11,7 @@ import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
 import com.project.backend.model.ProjectTeam;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.ProjectRepository.CertTypeCount;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.ProjectTeamRepository;
 import com.project.backend.service.OperationHistoryService;
@@ -250,5 +252,19 @@ public class ProjectService {
                 team,
                 documents
         );
+    }
+
+    public CertTypeDTO getCertificationDistribution() {
+        List<CertTypeCount> counts = projectRepository.countProjectsByCertType();
+
+        List<String> labels = counts.stream()
+            .map(CertTypeCount::getCertType)
+            .collect(Collectors.toList());
+
+        List<Long> data = counts.stream()
+            .map(CertTypeCount::getCount)
+            .collect(Collectors.toList());
+
+        return new CertTypeDTO(labels, data);
     }
 }

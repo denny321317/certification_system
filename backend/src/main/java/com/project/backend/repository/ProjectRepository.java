@@ -23,5 +23,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<ProjectDeadlineDTO> findUpcomingProjectDeadlines(@Param("start") LocalDate start,
                                                        @Param("end") LocalDate end);
 
+   @Query("SELECT p.certType AS certType, COUNT(p) AS count FROM Project p GROUP BY p.certType")
+   List<CertTypeCount> countProjectsByCertType();
+   
+
+   public interface CertTypeCount {
+      String getCertType();
+      Long getCount();
+   }
+
 }
 
