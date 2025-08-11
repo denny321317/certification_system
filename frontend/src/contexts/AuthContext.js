@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
 
       if (data?.success && data['timeout-token'] && data.user) {
         const timeoutToken = data['timeout-token'];
+        localStorage.setItem('token', data.token);
         localStorage.setItem('timeoutToken', timeoutToken);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         setCurrentUser(data.user);
