@@ -343,11 +343,13 @@ const Dashboard = ({ canWrite }) => {
     fetch('http://localhost:8000/api/dashboard/certification-distribution')
       .then(res => res.json())
       .then(data => {
+        const total = data.data.reduce((sum, val) => sum + val, 0);
+        const percentages = data.data.map(val => (val / total) * 100);
         const labels = data.labels.map(label => label ?? '未知');
         setChartData({
           labels,
           datasets: [{
-            data: data.data,
+            data: percentages,
             backgroundColor: backgroundColors.slice(0, labels.length),
             borderColor: borderColors.slice(0, labels.length),
             borderWidth: 2,
