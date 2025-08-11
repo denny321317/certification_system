@@ -1,10 +1,13 @@
 package com.project.backend.controller;
 
+import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.ProjectDeadlineDTO;
+import com.project.backend.dto.RecentActivityDTO;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.OperationHistory;
 import com.project.backend.model.Project;
 import com.project.backend.service.OperationHistoryService;
+import com.project.backend.service.ProjectService;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
 
@@ -30,6 +33,8 @@ public class DashboardController {
 
     @Autowired
     private OperationHistoryService operationHistoryService;
+    @Autowired
+    private ProjectService projectService;
 
     //回傳文件總數
     @GetMapping("/document-count")
@@ -103,9 +108,13 @@ public class DashboardController {
     }
 
     //回傳所有專案的歷史紀錄
-    @GetMapping("/all-history")
-    public ResponseEntity<?> getAllOperationHistory() {
-        List<OperationHistory> history = operationHistoryService.getAllHistory();
-        return ResponseEntity.ok(history);
+    @GetMapping("/recent-history")
+    public ResponseEntity<List<RecentActivityDTO>> getRecentTop5() {
+        return ResponseEntity.ok(operationHistoryService.getTop5ClosestToNow());
+    }
+
+    @GetMapping("/certification-distribution")
+    public ResponseEntity<CertTypeDTO> getCertificationDistribution() {
+        return ResponseEntity.ok(projectService.getCertificationDistribution());
     }
 }
