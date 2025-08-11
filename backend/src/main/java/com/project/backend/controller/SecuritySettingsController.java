@@ -11,18 +11,18 @@ import com.project.backend.model.SecuritySettings;
 import com.project.backend.service.SecuritySettingsService;
 
 @RestController
-@RequestMapping("api/security-settings")
+@RequestMapping("/api/security-settings")
 public class SecuritySettingsController {
     
     @Autowired
     private SecuritySettingsService service;
 
-    @GetMapping("/getSettings")
+    @GetMapping
     public SecuritySettings getSettings() {
         return service.getSettings();
     }
 
-    @PutMapping("/putSettings")
+    @PutMapping
     public SecuritySettings updateSettings(@RequestBody SecuritySettings settings) {
         return service.updateSettings(settings);
     }
