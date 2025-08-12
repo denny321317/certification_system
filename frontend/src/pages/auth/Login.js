@@ -4,6 +4,7 @@ import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldAlt, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { AuthContext } from '../../contexts/AuthContext';
+import PasswordChangeModal from '../../components/modals/PasswordChangeModal';
 import './Auth.css';
 
 const Login = () => {
@@ -13,8 +14,12 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState(null);
+
+
   
-  const { login } = useContext(AuthContext);
+  const { login, forcePasswordUpdate } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const handleLogin = async (e) => {
@@ -34,11 +39,35 @@ const Login = () => {
       if (result.success) {
         navigate('/dashboard', { replace: true });
       } else {
-        setError(result.error);
+        if (result.error === 'password_change_required') {
+          setSecuritySettings(result.securitySettings);
+          setShowPasswordChangeModal(true);
+          setError(result.error); // Clear login from error
+        } else {
+          setError(result.error);
+        }
       }
     } catch (err) {
       setError('登錄時發生錯誤，請稍後再試');
       console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (newPassword) => {
+    try {
+      setLoading(true);
+      setError('');
+      const result = await forcePasswordUpdate(email, newPassword);
+      if (result.success) {
+        setShowPasswordChangeModal(false);
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(result.error); // Show error inside the modal
+      }
+    } catch (error) {
+      setError('更新密碼時發生錯誤')
     } finally {
       setLoading(false);
     }
@@ -122,6 +151,13 @@ const Login = () => {
           </Col>
         </Row>
       </Container>
+      <PasswordChangeModal
+        open={showPasswordChangeModal && !!securitySettings}
+        onClose={() => setShowPasswordChangeModal(false)}
+        securitySettings={securitySettings}
+        username={email}
+        oldPassword={password}
+      />
     </div>
   );
 };

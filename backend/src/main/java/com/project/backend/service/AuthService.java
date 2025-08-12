@@ -6,6 +6,8 @@ import com.project.backend.repository.RoleRepository;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.RoleDTO;
+import com.project.backend.model.SecuritySettings;
+import com.project.backend.repository.SecuritySettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -17,6 +19,30 @@ public class AuthService {
     private UserRepository userRepository;
     @Autowired
     private RoleRepository roleRepository; // 新增，用於解決 register() 中的 setRole() 衝突
+    @Autowired
+    private SecuritySettingsRepository securitySettingsRepository;
+    @Autowired
+    private SecuritySettingsService securitySettingsService;
+
+    /**
+     * 用於比對用戶資訊(如: 密碼)是否符合安全設定
+     * @return 資料庫中的安全設定
+     */
+    public SecuritySettings getSecuritySettings() {
+        return securitySettingsRepository.findAll().stream().findFirst().orElse(createDefaultSettings());
+    }
+
+    private SecuritySettings createDefaultSettings() {
+        SecuritySettings defaultSettings = new SecuritySettings();
+        defaultSettings.setRequireMinLength(true);
+        defaultSettings.setMinLength(8);
+        defaultSettings.setRequireUpperLowerCase(false);
+        defaultSettings.setRequireNumber(false);
+        defaultSettings.setRequireSpecialChar(false);
+        return securitySettingsRepository.save(defaultSettings);
+    }
+
+
 
     /**
      * 為了解決 Hibernate lazy loading 問題
@@ -72,6 +98,13 @@ public class AuthService {
             if (Boolean.TRUE.equals(u.isSuspended())) {
                 throw new IllegalStateException("suspended");
             }
+
+            // Check if the password complys to the requirements of the security settings.
+            SecuritySettings securitySettings = securitySettingsService.getSettings();
+            if (!securitySettingsService.isPasswordCompliant(password, securitySettings)) {
+                throw new IllegalStateException("password_not_compliant");
+            }
+
             return Optional.of(u);
         }
         return Optional.empty();

@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.project.backend.model.User;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.EmailService;
+import com.project.backend.service.SecuritySettingsService;
 
 import lombok.Data;
 
@@ -26,6 +27,8 @@ public class AuthController {
     private AuthService authService;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private SecuritySettingsService securitySettingsService;
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest request) {
@@ -52,6 +55,11 @@ public class AuthController {
             if ("suspended".equals(e.getMessage())) {
                 response.put("success", false);
                 response.put("error", "您的帳號已被停用，請聯絡管理員。");
+            } else if ("password_not_compliant".equals(e.getMessage())) {
+                response.put("success", false);
+                response.put("error", "password_change_required");
+                response.put("securitySettings", securitySettingsService.getSettings());
+
             } else {
                 response.put("success", false);
                 response.put("error", "未知錯誤");

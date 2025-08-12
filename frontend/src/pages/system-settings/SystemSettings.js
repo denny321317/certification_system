@@ -246,7 +246,7 @@ const SystemSettings = () => {
                         checked={securitySettings.requireMinLength}
                         onChange={e => setSecuritySettings(s => ({ ...s, requireMinLength: e.target.checked}))} 
                       />
-                      <label className="form-check-label">要求至少8個字元</label>
+                      <label className="form-check-label">要求至少n個字元</label>
                     </div>
                     <input
                       type="number"

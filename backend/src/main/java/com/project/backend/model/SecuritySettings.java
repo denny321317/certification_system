@@ -31,4 +31,80 @@ public class SecuritySettings {
     private int maxLoginAttempts;
     private int sessionTimeoutMinutes;
 
+
+
+    /* Getters and Setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public boolean isRequireMinLength() {
+        return requireMinLength;
+    }
+
+    public void setRequireMinLength(boolean requireMinLength) {
+        this.requireMinLength = requireMinLength;
+    }
+
+    public int getMinLength() {
+        return minLength;
+    }
+
+    public void setMinLength(int minLength) {
+        this.minLength = minLength;
+    }
+
+    public boolean isRequireUpperLowerCase() {
+        return requireUpperLowerCase;
+    }
+
+    public void setRequireUpperLowerCase(boolean requireUpperLowerCase) {
+        this.requireUpperLowerCase = requireUpperLowerCase;
+    }
+
+    public boolean isRequireNumber() {
+        return requireNumber;
+    }
+
+    public void setRequireNumber(boolean requireNumber) {
+        this.requireNumber = requireNumber;
+    }
+
+    public boolean isRequireSpecialChar() {
+        return requireSpecialChar;
+    }
+
+    public void setRequireSpecialChar(boolean requireSpecialChar) {
+        this.requireSpecialChar = requireSpecialChar;
+    }
+
+    public boolean isEnableTwoFactor() {
+        return enableTwoFactor;
+    }
+
+    public void setEnableTwoFactor(boolean enableTwoFactor) {
+        this.enableTwoFactor = enableTwoFactor;
+    }
+
+    public int getMaxLoginAttempts() {
+        return maxLoginAttempts;
+    }
+
+    public void setMaxLoginAttempts(int maxLoginAttempts) {
+        this.maxLoginAttempts = maxLoginAttempts;
+    }
+
+    public int getSessionTimeoutMinutes() {
+        return sessionTimeoutMinutes;
+    }
+
+    public void setSessionTimeoutMinutes(int sessionTimeoutMinutes) {
+        this.sessionTimeoutMinutes = sessionTimeoutMinutes;
+    }
+
 }

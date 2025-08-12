@@ -41,7 +41,11 @@ export const AuthProvider = ({ children }) => {
         setCurrentUser(data.user);
         return { success: true };
       } else {
-        return { success: false, error: data.error || '登入失敗' };
+        return { 
+          success: false,
+          error: data.error || '登入失敗',
+          securitySettings: data.securitySettings
+        };
       }
     } catch (error) {
       return { success: false, error: error.message || '伺服器錯誤' };
