@@ -1,5 +1,6 @@
 package com.project.backend.controller;
 
+import com.project.backend.dto.RecentActivityDTO;
 import com.project.backend.model.OperationHistory;
 import com.project.backend.service.OperationHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,4 +26,7 @@ public class OperationHistoryController {
         List<OperationHistory> history = operationHistoryService.getHistoryForProject(projectId);
         return ResponseEntity.ok(history);
     }
+
+
+
 } 

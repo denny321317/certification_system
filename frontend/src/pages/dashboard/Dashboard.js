@@ -50,6 +50,8 @@ const Dashboard = ({ canWrite }) => {
   const [certificationProgress, setCertificationProgress] = useState([]);
   const [expiringDocuments, setExpiringDocuments] = useState([]);
 
+  const [recentActivities, setRecentActivities] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // 更新時間
@@ -250,40 +252,27 @@ const Dashboard = ({ canWrite }) => {
    *   type: string     // 活動類型
    * }>}
    */
-  const recentActivities = [
-    { 
-      id: 1, 
-      user: '李小明', 
-      action: '上傳了文件', 
-      target: '2023年第一季度ESG報告.pdf', 
-      timestamp: '今天 09:45',
-      type: 'upload'
-    },
-    { 
-      id: 2, 
-      user: '王大力', 
-      action: '更新了認證進度', 
-      target: 'ISO 14001 環境管理系統', 
-      timestamp: '昨天 16:30',
-      type: 'update'
-    },
-    { 
-      id: 3, 
-      user: currentUser?.name || '張三豐', 
-      action: '完成了任務', 
-      target: '準備SMETA審核文件', 
-      timestamp: '2023/6/10 14:15',
-      type: 'complete'
-    },
-    { 
-      id: 4, 
-      user: '林小華', 
-      action: '新增了供應商', 
-      target: '台灣綠色科技有限公司', 
-      timestamp: '2023/6/9 11:20',
-      type: 'create'
-    }
-  ];
+  useEffect(() => {
+    fetch('http://localhost:8000/api/dashboard/recent-history')
+      .then(res => res.json())
+      .then(data => {
+        console.log('抓到的歷史活動資料:', data);
+        if (data && Array.isArray(data)) {
+          const mapped = data.map(item => ({
+            id: item.id,
+            user: item.user || '未知用戶',
+            target: item.target || '',
+            timestamp: item.timestamp || '',
+            type: item.type || 'operation',
+          }));
+          console.log('mapped:', mapped);
+          setRecentActivities(mapped);
+        }
+      })
+      .catch(err => console.error('抓取歷史任務錯誤:', err));
+  }, []);
+
+
 
   /**
    * 文件到期提醒數據結構
@@ -330,38 +319,52 @@ const Dashboard = ({ canWrite }) => {
    * 認證類型分布圖表配置
    * @type {Object} Chart.js圖表數據配置
    */
-  const certificationDistributionData = {
-    labels: ['ISO標準', 'ESG認證', '產品認證', '其他標準'],
-    datasets: [
-      {
-        data: [45, 25, 20, 10],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(16, 185, 129, 0.8)',
-          'rgba(245, 158, 11, 0.8)',
-          'rgba(99, 102, 241, 0.8)'
-        ],
-        borderColor: [
-          'rgba(59, 130, 246, 1)',
-          'rgba(16, 185, 129, 1)',
-          'rgba(245, 158, 11, 1)',
-          'rgba(99, 102, 241, 1)'
-        ],
-        borderWidth: 2,
-        hoverBackgroundColor: [
-          'rgba(59, 130, 246, 0.9)',
-          'rgba(16, 185, 129, 0.9)',
-          'rgba(245, 158, 11, 0.9)',
-          'rgba(99, 102, 241, 0.9)'
-        ]
-      },
-    ],
-  };
+    const [chartData, setChartData] = useState({
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderColor: [],
+      borderWidth: 2,
+      hoverBackgroundColor: []
+    }]
+  });
 
+  useEffect(() => {
+    const backgroundColors = [
+      'rgba(59, 130, 246, 0.8)',
+      'rgba(16, 185, 129, 0.8)',
+      'rgba(245, 158, 11, 0.8)',
+      'rgba(99, 102, 241, 0.8)'
+    ];
+    const borderColors = backgroundColors.map(c => c.replace('0.8', '1'));
+    const hoverBackgroundColors = backgroundColors.map(c => c.replace('0.8', '0.9'));
+
+    fetch('http://localhost:8000/api/dashboard/certification-distribution')
+      .then(res => res.json())
+      .then(data => {
+        const total = data.data.reduce((sum, val) => sum + val, 0);
+        const percentages = data.data.map(val => (val / total) * 100);
+        const labels = data.labels.map(label => label ?? '未知');
+        setChartData({
+          labels,
+          datasets: [{
+            data: percentages,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderColor: borderColors.slice(0, labels.length),
+            borderWidth: 2,
+            hoverBackgroundColor: hoverBackgroundColors.slice(0, labels.length)
+          }]
+        });
+      })
+      .catch(err => console.error('抓取認證類型分布錯誤:', err));
+  }, []);
+  
   /**
    * 文件狀態分布圖表配置
    * @type {Object} Chart.js圖表數據配置
    */
+  
   const documentStatusData = {
     labels: ['有效', '即將到期', '已過期', '草稿'],
     datasets: [
@@ -386,7 +389,7 @@ const Dashboard = ({ canWrite }) => {
       },
     ],
   };
-
+  
   /**
    * 圓餅圖配置選項
    * @type {Object} Chart.js圖表選項
@@ -681,11 +684,11 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
-                認證類型分布(後端還沒寫)
+                認證類型分布
               </h2>
             </div>
             <div className="chart-container">
-              <Doughnut data={certificationDistributionData} options={doughnutOptions} />
+              <Doughnut data={chartData} options={doughnutOptions} />
             </div>
           </div>
         </div>
@@ -697,7 +700,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faFileAlt} className="card-header-icon" />
-                最近活動(後端沒寫完)
+                最近活動
               </h2>
               <div className="activity-controls">
                 <button className="notification-btn">
@@ -765,7 +768,7 @@ const Dashboard = ({ canWrite }) => {
               ))}
             </div>
           </div>
-
+          
           {/* 文件狀態分布圖表 */}
           <div className="dashboard-card">
             <div className="card-header">
