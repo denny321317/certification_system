@@ -10,6 +10,8 @@ import com.project.backend.model.SecuritySettings;
 import com.project.backend.repository.SecuritySettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -89,25 +91,57 @@ public class AuthService {
 
     public Optional<User> login(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent()) {
-            User u = user.get();
-            if (!u.getPassword().equals(password)) {
-                return Optional.empty();
-            }
+        if (user.isEmpty()) return Optional.empty();
+        
+        
+        User u = user.get();
 
-            if (Boolean.TRUE.equals(u.isSuspended())) {
-                throw new IllegalStateException("suspended");
-            }
-
-            // Check if the password complys to the requirements of the security settings.
-            SecuritySettings securitySettings = securitySettingsService.getSettings();
-            if (!securitySettingsService.isPasswordCompliant(password, securitySettings)) {
-                throw new IllegalStateException("password_not_compliant");
-            }
-
-            return Optional.of(u);
+        // If account is still locked due to failed login attempts
+        if (u.getAccountLockedUntil() != null && LocalDateTime.now().isBefore(u.getAccountLockedUntil())) {
+            throw new IllegalStateException("account_locked");
         }
-        return Optional.empty();
+
+
+        if (!u.getPassword().equals(password)) {
+            registerFailedAttempt(u, getSecuritySettings());
+            return Optional.empty();
+        }
+
+        if (Boolean.TRUE.equals(u.isSuspended())) {
+            throw new IllegalStateException("suspended");
+        }
+
+        // Check if the password complys to the requirements of the security settings.
+        SecuritySettings securitySettings = securitySettingsService.getSettings();
+        if (!securitySettingsService.isPasswordCompliant(password, securitySettings)) {
+            throw new IllegalStateException("password_not_compliant");
+        }
+
+
+        u.setFailedLoginAttempts(0);
+        u.setAccountLockedUntil(null);
+        userRepository.save(u);
+        return Optional.of(u);
+    
+        
+    }
+
+    /**
+     * 用於實作過多登入失敗後暫時鎖定
+     * @param u: 用戶
+     * @param settings: 安全設定
+     */
+    public void registerFailedAttempt(User u, SecuritySettings settings) {
+        int attempts = u.getFailedLoginAttempts() + 1;
+        u.setFailedLoginAttempts(attempts);
+        if (attempts >= settings.getMaxLoginAttempts()) {
+            if (settings.getMaxLoginLockMinutes() > 0) {
+                u.setAccountLockedUntil(LocalDateTime.now().plusMinutes(settings.getMaxLoginLockMinutes()));
+            }
+            u.setFailedLoginAttempts(0); // reset after lock
+        }
+        userRepository.save(u);
+        
     }
 
     public User register(String name, String email, String password, String department, String position) {

@@ -1,11 +1,13 @@
 package com.project.backend.controller;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.project.backend.model.SecuritySettings;
 import com.project.backend.model.User;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.EmailService;
@@ -34,6 +36,7 @@ public class AuthController {
     public Map<String, Object> login(@RequestBody LoginRequest request) {
 
         Map<String, Object> response = new HashMap<>();
+        SecuritySettings settings = securitySettingsService.getSettings();
         try {
             Optional<User> user = authService.login(request.getEmail(), request.getPassword());
             if (user.isPresent()) {
@@ -60,8 +63,21 @@ public class AuthController {
                 response.put("success", false);
                 response.put("error", "password_change_required");
                 response.put("securitySettings", securitySettingsService.getSettings());
-
-            } else {
+            
+            } else if ("account_locked".equals(e.getMessage())) {
+                // find user again for remaining time
+                authService.findByEmail(request.getEmail()).ifPresent(u -> {
+                    if (u.getAccountLockedUntil() != null) {
+                        long seconds = Duration.between(LocalDateTime.now(), u.getAccountLockedUntil()).getSeconds();
+                        response.put("lockRemainingSeconds", seconds);
+                    }
+                });
+                response.put("success", false);
+                response.put("error", "account_locked");
+                
+            } 
+            
+            else {
                 response.put("success", false);
                 response.put("error", "未知錯誤");
             }

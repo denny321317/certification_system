@@ -297,17 +297,28 @@ const SystemSettings = () => {
                       <label className="form-check-label">啟用雙因素認證 (未實作) </label>
                     </div>
                     <div className="form-check mb-2">
+                      
+                      <label className="form-check-label">登入失敗鎖定前可嘗試次數: </label>
                       <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={securitySettings.maxLoginAttempts === 5}
-                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginAttempts: e.target.checked ? 5 : 10 }))}
+                        type="number"
+                        className="form-control mt-2"
+                        value={securitySettings.maxLoginAttempts}
+                        min={1}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginAttempts: Number(e.target.value) }))}
                       />
-                      <label className="form-check-label">登入失敗鎖定（5次嘗試）</label>
+                      <label className="form-check-label">達到失敗次數後的鎖定時間: </label>
+                      <input
+                        type='number'
+                        className='form-control mt-2'
+                        min={1}
+                        value={securitySettings.maxLoginLockMinutes}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginLockMinutes: Number(e.target.value) }))}
+                      />
+
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">Session 設定</label>
+                    <label className="form-label">Session 設定 (尚未實作)</label>
                     <select
                       className="form-select mb-3"
                       value={securitySettings.sessionTimeoutMinutes}

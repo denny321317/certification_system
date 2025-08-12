@@ -29,11 +29,22 @@ public class SecuritySettings {
 
     private boolean enableTwoFactor;
     private int maxLoginAttempts;
+    private int maxLoginLockMinutes;  // 登入失敗一定次數後被鎖定的時間，以分鐘記
+
     private int sessionTimeoutMinutes;
 
 
 
     /* Getters and Setters */
+    
+    public int getMaxLoginLockMinutes() {
+        return maxLoginLockMinutes;
+    }
+
+    public void setMaxLoginLockMinutes(int min) {
+        this.maxLoginLockMinutes = min;
+    }
+
 
     public Long getId() {
         return id;
