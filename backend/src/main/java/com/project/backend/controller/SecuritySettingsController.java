@@ -17,12 +17,12 @@ public class SecuritySettingsController {
     @Autowired
     private SecuritySettingsService service;
 
-    @GetMapping
+    @GetMapping("/getSettings")
     public SecuritySettings getSettings() {
         return service.getSettings();
     }
 
-    @PutMapping
+    @PutMapping("/putSettings")
     public SecuritySettings updateSettings(@RequestBody SecuritySettings settings) {
         return service.updateSettings(settings);
     }

@@ -83,7 +83,7 @@ const SystemSettings = () => {
   useEffect(() => {
     if (activeTab === 'security') {
       setSecurityLoading(true);
-      fetch(`http://localhost:8000/security-settings/getSettings`)
+      fetch(`http://localhost:8000/api/security-settings/getSettings`)
         .then(res => res.json())
         .then(data => {
           setSecuritySettings(data);
@@ -96,7 +96,7 @@ const SystemSettings = () => {
   const handleSecuritySave = (e) => {
     e.preventDefault();
     setSecurityLoading(true);
-    fetch(`http://localhost:8000/security-settings/putSettings`, {
+    fetch(`http://localhost:8000/api/security-settings/putSettings`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(securitySettings)
@@ -243,6 +243,13 @@ const SystemSettings = () => {
                         onChange={e => setSecuritySettings(s => ({ ...s, requireMinLength: e.target.checked}))} 
                       />
                       <label className="form-check-label">要求至少n個字元</label>
+                      <input
+                        type="number"
+                        className="form-control mt-2"
+                        value={securitySettings.minLength}
+                        min={1}
+                        onChange={e => setSecuritySettings(s => ({ ...s, minLength: Number(e.target.value) }))}
+                      />
                     </div>
                     <div className="form-check mb-2">
                       <input className="form-check-input" type="checkbox" defaultChecked />
