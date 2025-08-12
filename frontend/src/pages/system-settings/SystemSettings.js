@@ -232,7 +232,7 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">安全設定</h5>
-                <form>
+                <form onSubmit={handleSecuritySave}>
                   <div className="mb-4">
                     <label className="form-label">密碼政策</label>
                     <div className="form-check mb-2">
