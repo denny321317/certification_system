@@ -44,7 +44,9 @@ export const AuthProvider = ({ children }) => {
         return { 
           success: false,
           error: data.error || '登入失敗',
-          securitySettings: data.securitySettings || null
+          securitySettings: data.securitySettings || null,
+          lockRemainingSeconds: data.lockRemainingSeconds || 0,
+          remainingAttempts: data.remainingAttempts
         };
       }
     } catch (error) {
