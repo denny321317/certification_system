@@ -33,7 +33,7 @@ public class User {
 
     private String position;
 
-    @Column(name = "password_reset_token")
+    @Column(name = "password_reset_token", unique = true)
     private String passwordResetToken;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)

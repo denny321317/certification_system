@@ -16,10 +16,11 @@ const Login = () => {
   const [error, setError] = useState('');
   const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
   const [securitySettings, setSecuritySettings] = useState(null);
+  
 
 
   
-  const { login, forcePasswordUpdate } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const handleLogin = async (e) => {
@@ -42,7 +43,7 @@ const Login = () => {
         if (result.error === 'password_change_required') {
           setSecuritySettings(result.securitySettings);
           setShowPasswordChangeModal(true);
-          setError(result.error); // Clear login from error
+          setError(''); // Clear login from error
         } else {
           setError(result.error);
         }
@@ -55,6 +56,7 @@ const Login = () => {
     }
   };
 
+  /* 
   const handlePasswordUpdate = async (newPassword) => {
     try {
       setLoading(true);
@@ -72,6 +74,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+  */
   
   return (
     <div className="auth-page">
@@ -153,7 +156,10 @@ const Login = () => {
       </Container>
       <PasswordChangeModal
         open={showPasswordChangeModal && !!securitySettings}
-        onClose={() => setShowPasswordChangeModal(false)}
+        onClose={() => { 
+          setShowPasswordChangeModal(false);
+          setSecuritySettings(null);
+        }}
         securitySettings={securitySettings}
         username={email}
         oldPassword={password}

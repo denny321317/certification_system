@@ -9,7 +9,8 @@ import React, { useState, useMemo } from 'react';
  *  - securitySettings: object returned from backend (see sample)
  *  - username: string (the username attempted during login)
  *  - oldPassword: string (the password user just used to login; needed for reset)
- *  - resetEndpoint: optional string (defaults to '/reset-password')
+ *  - updateEndpoint: optional string (defaults to '/update-password')
+ *  - token: the password reset token of the user
  *
  * When successful it redirects to /login.
  */
@@ -19,7 +20,7 @@ const PasswordChangeModal = ({
   securitySettings,
   username,
   oldPassword,
-  resetEndpoint = '/reset-password'
+  updateEndpoint = 'http://localhost:8000/api/update-password-for-compliancy',
 }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -74,13 +75,11 @@ const PasswordChangeModal = ({
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      const res = await fetch(resetEndpoint, {
+      const res = await fetch(updateEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username,
-            // Adjust field names to match backend AuthController expectations.
-            // Common patterns: oldPassword / currentPassword / password, newPassword
+          email: username,
           oldPassword,
           newPassword
         })
@@ -130,7 +129,7 @@ const PasswordChangeModal = ({
 
         <form onSubmit={handleSubmit}>
           <div style={styles.field}>
-            <label htmlFor="newPassword">New Password</label>
+            <label htmlFor="newPassword">新密碼</label>
             <input
               id="newPassword"
               type="password"
@@ -142,7 +141,7 @@ const PasswordChangeModal = ({
             />
           </div>
           <div style={styles.field}>
-            <label htmlFor="confirmPassword">Confirm New Password</label>
+            <label htmlFor="confirmPassword">確認新密碼</label>
             <input
               id="confirmPassword"
               type="password"
@@ -157,10 +156,10 @@ const PasswordChangeModal = ({
             {/* Client-side status */}
           <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
             {!passwordsMatch && confirm.length > 0 && (
-              <span style={{ color: 'red' }}>Passwords do not match.</span>
+              <span style={{ color: 'red' }}>密碼不相符</span>
             )}
             {passwordsMatch && confirm.length > 0 && (
-              <span style={{ color: 'green' }}>Passwords match.</span>
+              <span style={{ color: 'green' }}>密碼相符</span>
             )}
           </div>
 
