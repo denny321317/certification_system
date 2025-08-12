@@ -267,15 +267,6 @@ const SystemSettings = () => {
                   <div className="mb-4">
                     <label className="form-label">登入安全</label>
                     <div className="form-check mb-2">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={securitySettings.enableTwoFactor}
-                        onChange={e => setSecuritySettings(s => ({ ...s, enableTwoFactor: e.target.checked }))}
-                      />
-                      <label className="form-check-label">啟用雙因素認證 (未實作) </label>
-                    </div>
-                    <div className="form-check mb-2">
                       
                       <label className="form-check-label">登入失敗鎖定前可嘗試次數: </label>
                       <input
