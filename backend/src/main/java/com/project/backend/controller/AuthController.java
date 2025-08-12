@@ -47,13 +47,11 @@ public class AuthController {
                 loggedInUser.setLastTimeLogin(LocalDateTime.now());
                 authService.saveUser(loggedInUser);
 
-                // 生成 Timeout Token
-                String timeoutToken = authService.generateTimeoutToken(loggedInUser.getEmail(), settings.getSessionTimeoutMinutes());
 
                 response.put("success", true);
                 response.put("token", "mock_token");
                 response.put("user", authService.toUserDTO(user.get()));
-                response.put("timeout-token", timeoutToken);
+                
             } else {
                 response.put("success", false);
                 response.put("error", "帳號或密碼錯誤");
