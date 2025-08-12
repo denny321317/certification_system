@@ -31,7 +31,7 @@ public class SecuritySettingsService {
         if (settings.isRequireMinLength() && password.length() < settings.getMinLength()) {
             return false;
         }
-        if (settings.isRequireUpperLowerCase() && !password.matches(".*[A-Z].*") && !password.matches(".*[a-z].*")) {
+        if (settings.isRequireUpperLowerCase() && !(password.matches(".*[A-Z].*") && password.matches(".*[a-z].*"))) {
             return false;
         }
         if (settings.isRequireNumber() && !password.matches(".*\\d.*")) {

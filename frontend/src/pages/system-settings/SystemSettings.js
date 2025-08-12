@@ -294,7 +294,7 @@ const SystemSettings = () => {
                         checked={securitySettings.enableTwoFactor}
                         onChange={e => setSecuritySettings(s => ({ ...s, enableTwoFactor: e.target.checked }))}
                       />
-                      <label className="form-check-label">啟用雙因素認證</label>
+                      <label className="form-check-label">啟用雙因素認證 (未實作) </label>
                     </div>
                     <div className="form-check mb-2">
                       <input
