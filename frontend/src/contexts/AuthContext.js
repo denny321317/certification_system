@@ -38,6 +38,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         setCurrentUser(data.user);
         return { success: true };
+      } else {
+        return { 
+          success: false,
+          error: data.error || '登入失敗',
+          securitySettings: data.securitySettings || null,
+          lockRemainingSeconds: data.lockRemainingSeconds || 0,
+          remainingAttempts: data.remainingAttempts
+        };
       }
 
       return { success: false, error: data?.error || '登入失敗' };

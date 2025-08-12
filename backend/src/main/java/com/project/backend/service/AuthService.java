@@ -14,11 +14,14 @@ import jakarta.annotation.PostConstruct;
 
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.RoleDTO;
+import com.project.backend.model.SecuritySettings;
+import com.project.backend.repository.SecuritySettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -32,6 +35,30 @@ public class AuthService {
     private UserRepository userRepository;
     @Autowired
     private RoleRepository roleRepository; // 新增，用於解決 register() 中的 setRole() 衝突
+    @Autowired
+    private SecuritySettingsRepository securitySettingsRepository;
+    @Autowired
+    private SecuritySettingsService securitySettingsService;
+
+    /**
+     * 用於比對用戶資訊(如: 密碼)是否符合安全設定
+     * @return 資料庫中的安全設定
+     */
+    public SecuritySettings getSecuritySettings() {
+        return securitySettingsRepository.findAll().stream().findFirst().orElse(createDefaultSettings());
+    }
+
+    private SecuritySettings createDefaultSettings() {
+        SecuritySettings defaultSettings = new SecuritySettings();
+        defaultSettings.setRequireMinLength(true);
+        defaultSettings.setMinLength(8);
+        defaultSettings.setRequireUpperLowerCase(false);
+        defaultSettings.setRequireNumber(false);
+        defaultSettings.setRequireSpecialChar(false);
+        return securitySettingsRepository.save(defaultSettings);
+    }
+
+
 
 
     @Value("${jwt.secret}")
@@ -92,18 +119,57 @@ public class AuthService {
 
     public Optional<User> login(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
-        if (user.isPresent()) {
-            User u = user.get();
-            if (!u.getPassword().equals(password)) {
-                return Optional.empty();
-            }
+        if (user.isEmpty()) return Optional.empty();
+        
+        
+        User u = user.get();
 
-            if (Boolean.TRUE.equals(u.isSuspended())) {
-                throw new IllegalStateException("suspended");
-            }
-            return Optional.of(u);
+        // If account is still locked due to failed login attempts
+        if (u.getAccountLockedUntil() != null && LocalDateTime.now().isBefore(u.getAccountLockedUntil())) {
+            throw new IllegalStateException("account_locked");
         }
-        return Optional.empty();
+
+
+        if (!u.getPassword().equals(password)) {
+            registerFailedAttempt(u, getSecuritySettings());
+            return Optional.empty();
+        }
+
+        if (Boolean.TRUE.equals(u.isSuspended())) {
+            throw new IllegalStateException("suspended");
+        }
+
+        // Check if the password complys to the requirements of the security settings.
+        SecuritySettings securitySettings = securitySettingsService.getSettings();
+        if (!securitySettingsService.isPasswordCompliant(password, securitySettings)) {
+            throw new IllegalStateException("password_not_compliant");
+        }
+
+
+        u.setFailedLoginAttempts(0);
+        u.setAccountLockedUntil(null);
+        userRepository.save(u);
+        return Optional.of(u);
+    
+        
+    }
+
+    /**
+     * 用於實作過多登入失敗後暫時鎖定
+     * @param u: 用戶
+     * @param settings: 安全設定
+     */
+    public void registerFailedAttempt(User u, SecuritySettings settings) {
+        int attempts = u.getFailedLoginAttempts() + 1;
+        u.setFailedLoginAttempts(attempts);
+        if (attempts >= settings.getMaxLoginAttempts()) {
+            if (settings.getMaxLoginLockMinutes() > 0) {
+                u.setAccountLockedUntil(LocalDateTime.now().plusMinutes(settings.getMaxLoginLockMinutes()));
+            }
+            u.setFailedLoginAttempts(0); // reset after lock
+        }
+        userRepository.save(u);
+        
     }
 
     public User register(String name, String email, String password, String department, String position) {

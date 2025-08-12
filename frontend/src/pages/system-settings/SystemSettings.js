@@ -188,8 +188,13 @@ const SystemSettings = () => {
                   <div className="mb-4">
                     <label className="form-label">密碼政策</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">要求至少8個字元</label>
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={securitySettings.requireMinLength}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireMinLength: e.target.checked}))} 
+                      />
+                      <label className="form-check-label">要求至少n個字元</label>
                     </div>
                     <div className="form-check mb-2">
                       <input className="form-check-input" type="checkbox" defaultChecked />
@@ -207,17 +212,42 @@ const SystemSettings = () => {
                   <div className="mb-4">
                     <label className="form-label">登入安全</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">啟用雙因素認證</label>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={securitySettings.enableTwoFactor}
+                        onChange={e => setSecuritySettings(s => ({ ...s, enableTwoFactor: e.target.checked }))}
+                      />
+                      <label className="form-check-label">啟用雙因素認證 (未實作) </label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">登入失敗鎖定（5次嘗試）</label>
+                      
+                      <label className="form-check-label">登入失敗鎖定前可嘗試次數: </label>
+                      <input
+                        type="number"
+                        className="form-control mt-2"
+                        value={securitySettings.maxLoginAttempts}
+                        min={1}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginAttempts: Number(e.target.value) }))}
+                      />
+                      <label className="form-check-label">達到失敗次數後的鎖定時間: </label>
+                      <input
+                        type='number'
+                        className='form-control mt-2'
+                        min={1}
+                        value={securitySettings.maxLoginLockMinutes}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginLockMinutes: Number(e.target.value) }))}
+                      />
+
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">Session 設定</label>
-                    <select className="form-select mb-3">
+                    <label className="form-label">Session 設定 (尚未實作)</label>
+                    <select
+                      className="form-select mb-3"
+                      value={securitySettings.sessionTimeoutMinutes}
+                      onChange={e => setSecuritySettings(s => ({ ...s, sessionTimeoutMinutes: Number(e.target.value) }))}
+                    >
                       <option selected>30 分鐘後自動登出</option>
                       <option>1 小時後自動登出</option>
                       <option>2 小時後自動登出</option>
