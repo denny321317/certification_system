@@ -24,6 +24,7 @@
  */
 
 import React, { useContext, useState } from 'react';
+import { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
@@ -64,6 +65,53 @@ const SystemSettings = () => {
     setCurrentPage(newPage);
   };
 
+    /**
+   * 處理安全設定
+   */
+  const [securitySettings, setSecuritySettings] = useState({
+    requireMinLength: true,
+    minLength: 8,
+    requireUpperLowerCase: true,
+    requireNumber: true,
+    requireSpecialChar: true,
+    enableTwoFactor: false,
+    maxLoginAttempts: 5,
+    sessionTimeoutMinuites: 30
+  });
+  const [securityLoading, setSecurityLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      setSecurityLoading(true);
+      fetch(`http://localhost:8000/security-settings/getSettings`)
+        .then(res => res.json())
+        .then(data => {
+          setSecuritySettings(data);
+          setSecurityLoading(false);
+        })
+        .catch(() => setSecurityLoading(false));
+    }
+  }, [activeTab])
+
+  const handleSecuritySave = (e) => {
+    e.preventDefault();
+    setSecurityLoading(true);
+    fetch(`http://localhost:8000/security-settings/putSettings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(securitySettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setSecuritySettings(data);
+        setSecurityLoading(false);
+        alert('安全設定已儲存');
+      })
+      .catch(() => {
+        setSecurityLoading(false);
+        alert('儲存失敗')
+      });
+  };
 
 
   /**
