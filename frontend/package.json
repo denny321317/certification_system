@@ -51,5 +51,5 @@
       "last 1 safari version"
     ]
   },
-  "packageManager": "pnpm@9"
+  "packageManager": "pnpm@10.8.0"
 }
