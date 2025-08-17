@@ -1,0 +1,139 @@
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --info-color: #0dcaf0;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  
+  --bs-font-sans-serif: "PingFang TC", "Noto Sans TC", "Helvetica Neue", "Microsoft JhengHei", Arial, sans-serif;
+  --bs-border-radius: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--bs-font-sans-serif);
+  background-color: #f7f9fc;
+  color: #333;
+  line-height: 1.5;
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary-color);
+}
+
+a:hover {
+  color: #0a58ca;
+}
+
+/* 全局按鈕樣式覆蓋 */
+.btn {
+  border-radius: var(--bs-border-radius);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: #0a58ca;
+  border-color: #0a53be;
+}
+
+/* 表單樣式覆蓋 */
+.form-control {
+  border-radius: var(--bs-border-radius);
+  padding: 0.5rem 0.75rem;
+  border-color: #dee2e6;
+}
+
+.form-control:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  border-color: var(--primary-color);
+}
+
+/* 卡片樣式覆蓋 */
+.card {
+  border-radius: var(--bs-border-radius);
+}
+
+/* 全局進度條樣式 */
+.progress {
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+/* Alert 樣式覆蓋 */
+.alert {
+  border-radius: var(--bs-border-radius);
+  padding: 1rem;
+  border: none;
+}
+
+/* 自定義文字樣式 */
+.text-muted {
+  color: #6c757d !important;
+}
+
+.fs-sm {
+  font-size: 0.875rem !important;
+}
+
+.fs-xs {
+  font-size: 0.75rem !important;
+}
+
+/* 簡化與修復Firefox中的表單元素 */
+input, 
+button, 
+select, 
+optgroup, 
+textarea {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* 消除按鈕獲取焦點時的外框 */
+button:focus:not(:focus-visible), 
+.btn:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+/* Bootstrap 表格樣式覆蓋 */
+.table {
+  --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+}
+
+.table th {
+  font-weight: 600;
+  color: #495057;
+  border-top: none;
+}
+
+.table td {
+  color: #555;
+}
+
+/* 讓表格在移動裝置上可水平滾動 */
+@media (max-width: 767.98px) {
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+} 
