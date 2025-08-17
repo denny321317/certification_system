@@ -1,0 +1,162 @@
+.modal-backdrop-user-info {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1060; /* Ensure it's above other modals if necessary */
+}
+
+.modal-content-user-info {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 600px;
+  max-width: 90%;
+  z-index: 1070;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header-user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-title-user-info {
+  margin-bottom: 0;
+  font-size: 1.25rem;
+}
+
+.modal-body-user-info {
+  overflow-y: auto;
+  padding-right: 10px; /* For scrollbar */
+  flex-grow: 1;
+}
+
+.user-info-detail {
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.user-info-detail strong {
+  min-width: 180px;
+  display: inline-block;
+  color: #333;
+}
+
+.user-info-detail span {
+  color: #555;
+}
+
+.modal-footer-user-info {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 15px;
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.btn-close-user-info {
+  padding: 0.5rem 0.5rem;
+  margin: -0.5rem -0.5rem -0.5rem auto;
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+  border: 0;
+  border-radius: 0.25rem;
+  opacity: 0.5;
+}
+.btn-close-user-info:hover {
+  opacity: 0.75;
+}
+
+/* Basic styling for list group if not using Bootstrap fully */
+.list-group {
+  padding-left: 0;
+  margin-bottom: 1rem;
+}
+.list-group-item {
+  position: relative;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.125);
+}
+.list-group-item:first-child {
+  border-top-left-radius: .25rem;
+  border-top-right-radius: .25rem;
+}
+.list-group-item:last-child {
+  border-bottom-right-radius: .25rem;
+  border-bottom-left-radius: .25rem;
+  margin-bottom: 0;
+  border-bottom-width: 1px;
+}
+.list-group-item + .list-group-item {
+    border-top-width: 0;
+}
+.d-flex { display: flex !important; }
+.justify-content-between { justify-content: space-between !important; }
+.align-items-center { align-items: center !important; }
+.badge {
+  display: inline-block;
+  padding: .35em .65em;
+  font-size: .75em;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: .25rem;
+}
+.bg-secondary { background-color: #6c757d !important; }
+.rounded-pill { border-radius: 50rem !important; }
+.my-3 { margin-top: 1rem !important; margin-bottom: 1rem !important; }
+hr {
+  margin: 1rem 0;
+  color: inherit;
+  background-color: currentColor;
+  border: 0;
+  opacity: .25;
+  height: 1px;
+}
+/* Ensure Bootstrap button styles are available or define basic ones */
+.btn {
+  display: inline-block;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 0.25rem;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+.btn-secondary {
+  color: #fff;
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+.btn-secondary:hover {
+  color: #fff;
+  background-color: #5c636a;
+  border-color: #565e64;
+}
