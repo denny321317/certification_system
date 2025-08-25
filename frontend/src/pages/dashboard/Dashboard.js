@@ -878,7 +878,66 @@ const Dashboard = ({ canWrite }) => {
           </div>
         </div>
         {/* 新增 Todo Modal */}
-
+        {showAddTodoModal && (
+          <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">新增 Todo</h5>
+                  <button type="button" className="btn-close" onClick={handleCloseAddTodoModal}></button>
+                </div>
+                <form onSubmit={handleAddTodo}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">標題</label>
+                      <input
+                        className="form-control"
+                        value={newTodo.title}
+                        onChange={e => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">截止日期</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={newTodo.dueDate}
+                        onChange={e => setNewTodo(prev => ({ ...prev, dueDate: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">緊急程度</label>
+                      <select
+                        className="form-select"
+                        value={newTodo.urgency}
+                        onChange={e => setNewTodo(prev => ({ ...prev, urgency: e.target.value }))}
+                        required
+                      >
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">類別</label>
+                      <input
+                        className="form-control"
+                        value={newTodo.category}
+                        onChange={e => setNewTodo(prev => ({ ...prev, category: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={handleCloseAddTodoModal}>取消</button>
+                    <button type="submit" className="btn btn-primary">新增</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
