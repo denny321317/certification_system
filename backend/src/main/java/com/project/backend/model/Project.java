@@ -44,7 +44,7 @@ public class Project {
     private Integer progress;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "progress_calculation_mode")
+    @Column(name = "progress_calculation_mode", columnDefinition = "VARCHAR(255) DEFAULT 'MANUAL'")
     private ProgressCalculationMode progressCalculationMode = ProgressCalculationMode.MANUAL;
 
     @ManyToOne(fetch = FetchType.LAZY)

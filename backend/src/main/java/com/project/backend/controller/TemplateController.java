@@ -2,6 +2,7 @@ package com.project.backend.controller;
 
 import com.project.backend.dto.CertificationTemplateDTO;
 import com.project.backend.dto.CertificationTemplateRequestDTO;
+import com.project.backend.model.CertificationTemplate;
 import com.project.backend.service.TemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,8 +19,8 @@ public class TemplateController {
     private TemplateService templateService;
 
     @GetMapping
-    public ResponseEntity<List<CertificationTemplateDTO>> getAllTemplates() {
-        List<CertificationTemplateDTO> templates = templateService.getAllTemplates();
+    public ResponseEntity<List<CertificationTemplate>> getAllTemplates() {
+        List<CertificationTemplate> templates = templateService.getAllTemplates();
         return ResponseEntity.ok(templates);
     }
 

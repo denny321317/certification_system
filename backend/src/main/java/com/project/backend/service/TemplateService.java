@@ -21,10 +21,8 @@ public class TemplateService {
     @Autowired
     private CertificationTemplateRepository templateRepository;
 
-    public List<CertificationTemplateDTO> getAllTemplates() {
-        return templateRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+    public List<CertificationTemplate> getAllTemplates() {
+        return templateRepository.findAll();
     }
 
     @Transactional
@@ -53,7 +51,14 @@ public class TemplateService {
 
         template.setRequirements(requirements);
         CertificationTemplate savedTemplate = templateRepository.save(template);
-        return convertToDto(savedTemplate);
+        return new CertificationTemplateDTO(
+                savedTemplate.getId(),
+                savedTemplate.getDisplayName(),
+                savedTemplate.getDescription(),
+                savedTemplate.getRequirements().stream()
+                        .map(this::convertRequirementToDto)
+                        .collect(Collectors.toList())
+        );
     }
 
     @Transactional
@@ -84,7 +89,14 @@ public class TemplateService {
         template.getRequirements().addAll(newRequirements);
 
         CertificationTemplate updatedTemplate = templateRepository.save(template);
-        return convertToDto(updatedTemplate);
+        return new CertificationTemplateDTO(
+                updatedTemplate.getId(),
+                updatedTemplate.getDisplayName(),
+                updatedTemplate.getDescription(),
+                updatedTemplate.getRequirements().stream()
+                        .map(this::convertRequirementToDto)
+                        .collect(Collectors.toList())
+        );
     }
 
     public void deleteTemplate(String id) {
@@ -92,17 +104,6 @@ public class TemplateService {
             throw new RuntimeException("Template not found with id: " + id);
         }
         templateRepository.deleteById(id);
-    }
-
-    private CertificationTemplateDTO convertToDto(CertificationTemplate template) {
-        return new CertificationTemplateDTO(
-                template.getId(),
-                template.getDisplayName(),
-                template.getDescription(),
-                template.getRequirements().stream()
-                        .map(this::convertRequirementToDto)
-                        .collect(Collectors.toList())
-        );
     }
 
     private TemplateRequirementDTO convertRequirementToDto(TemplateRequirement requirement) {

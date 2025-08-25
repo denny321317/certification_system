@@ -207,37 +207,54 @@ const CertificationProjectDetail = ({ canWrite }) => {
     notes: ''
   });
 
-  // Mock
-  const [templates, setTemplates] = useState([
-    { id: 'smeta-v1', name: 'SMETA 認證標準 V1' },
-    { id: 'iso27001', name: 'ISO 27001 資訊安全管理' },
-    { id: 'custom-template-1', name: '內部稽核客製化範本' },
-  ]);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [progressMode, setProgressMode] = useState('MANUAL'); // MANUAL or AUTOMATIC
 
-  const [selectedTemplate, setSelectedTemplate] = useState('smeta-v1');
-  const [progressMode, setProgressMode] = useState('AUTOMATIC'); // MANUAL or AUTOMATIC
+  useEffect(() => {
+    // Fetch all available templates
+    const fetchTemplates = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/templates');
+        setTemplates(response.data);
+      } catch (error) {
+        console.error("Failed to fetch templates:", error);
+      }
+    };
+    fetchTemplates();
+  }, []);
 
-  // Mock
-  const [requirements, setRequirements] = useState([
-    { id: 1, text: '供應商資料問卷已填寫完畢', completed: true },
-    { id: 2, text: '勞動合約範本已上傳', completed: true },
-    { id: 3, text: '工作時數紀錄表已提供', completed: false },
-    { id: 4, text: '薪資發放證明已歸檔', completed: true },
-    { id: 5, text: '消防安全演習紀錄', completed: false },
-    { id: 6, text: '化學品儲存與管理政策', completed: false },
-  ]);
-
-  const handleRequirementChange = (id) => {
-    setRequirements(
-      requirements.map((req) =>
-        req.id === id ? { ...req, completed: !req.completed } : req
-      )
-    );
+  const handleRequirementChange = async (requirementStatusId, currentCompletedStatus) => {
+    try {
+      await axios.patch(`http://localhost:8000/api/projects/${projectId}/requirements/${requirementStatusId}`, {
+        isCompleted: !currentCompletedStatus
+      });
+      // After successful update, refetch project details to get the latest progress and status
+      fetchProjectDetail();
+    } catch (error) {
+      console.error("Failed to update requirement status:", error);
+      alert("更新查檢項目狀態失敗");
+    }
   };
 
+  const handleTemplateApply = async (templateId) => {
+    if (!templateId) return;
+    try {
+      await axios.put(`http://localhost:8000/api/projects/${projectId}/template`, { templateId });
+      setSelectedTemplate(templateId);
+      // Refetch project details to get the new requirement list
+      fetchProjectDetail();
+      alert("範本已成功套用");
+    } catch (error) {
+      console.error("Failed to apply template:", error);
+      alert("套用範本失敗");
+    }
+  };
+
+
   const calculatedProgress = Math.round(
-    (requirements.filter((r) => r.completed).length / requirements.length) * 100
-  );
+    (projectDetail?.requirementStatuses?.filter((r) => r.isCompleted).length / projectDetail?.requirementStatuses?.length) * 100
+  ) || 0;
 
   /**
    * 操作歷史狀態
@@ -246,6 +263,24 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const [history, setHistory] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [userList, setUserList] = useState([]);
+  // 從API獲取項目詳情
+  const fetchProjectDetail = useCallback(async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${projectId}`);
+      if (!response.ok) throw new Error('載入專案細節失敗');
+      const data = await response.json();
+      setProjectDetail(data);
+      // Set initial state based on fetched data
+      setProgressMode(data.progressCalculationMode || 'MANUAL');
+      if (data.certificationTemplate) {
+        setSelectedTemplate(data.certificationTemplate.id);
+      }
+    } catch (err) {
+      console.error('抓取專案細節錯誤:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
 
   const fetchTeamMembers = useCallback(async () => {
     try {
@@ -291,6 +326,12 @@ const CertificationProjectDetail = ({ canWrite }) => {
     fetchHistory();
   }, [activeTab, projectId]);
 
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectDetail();
+    }
+  }, [projectId, fetchProjectDetail]);
+
   /**
    * 處理文件頁碼變更
    * @param {number} pageNumber - 新的頁碼
@@ -304,26 +345,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   };
 
-  // 從API獲取項目詳情
-  useEffect(() => {
-    const fetchProjectDetail = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/api/projects/${projectId}`);
-        if (!response.ok) throw new Error('載入專案細節失敗');
-        const data = await response.json();
-        setProjectDetail(data);
-      } catch (err) {
-        console.error('抓取專案細節錯誤:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (projectId) {
-      fetchProjectDetail();
-    }
-
-  }, [projectId]);
+  
 
   /**
    * 根據項目狀態返回對應的狀態標籤元素
@@ -1244,25 +1266,26 @@ const CertificationProjectDetail = ({ canWrite }) => {
                   id="template-select"
                   className="template-select"
                   value={selectedTemplate}
-                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  onChange={(e) => handleTemplateApply(e.target.value)}
                 >
+                  <option value="">請選擇要套用的範本</option>
                   {templates.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name}
+                      {t.displayName}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="checklist-container">
-                {requirements.map((req) => (
+                {projectDetail?.requirementStatuses?.map((req) => (
                   <div className="checklist-item" key={req.id}>
                     <input
                       type="checkbox"
                       id={`req-${req.id}`}
                       className="form-check-input"
-                      checked={req.completed}
-                      onChange={() => handleRequirementChange(req.id)}
+                      checked={req.isCompleted}
+                      onChange={() => handleRequirementChange(req.id, req.isCompleted)}
                       disabled={progressMode !== 'AUTOMATIC'}
                     />
                     <label htmlFor={`req-${req.id}`} className="checklist-label">
@@ -1287,11 +1310,17 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     id="progress-mode"
                     className="toggle-input"
                     checked={progressMode === 'AUTOMATIC'}
-                    onChange={() =>
-                      setProgressMode(
-                        progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC'
-                      )
-                    }
+                    onChange={async () => {
+                      const newMode = progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC';
+                      try {
+                        await axios.patch(`http://localhost:8000/api/projects/${projectId}/settings/progress-mode`, { mode: newMode });
+                        setProgressMode(newMode);
+                        fetchProjectDetail(); // Refetch to get updated progress if switched to AUTOMATIC
+                      } catch (error) {
+                        console.error("Failed to switch progress mode:", error);
+                        alert("切換模式失敗");
+                      }
+                    }}
                   />
                   <label htmlFor="progress-mode" className="toggle-label"></label>
                 </div>
@@ -1325,7 +1354,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     </svg>
                     <div className="progress-text">
                       <span className="progress-number">
-                        {progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%
+                        {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`}
                       </span>
                       <span className="progress-label">完成</span>
                     </div>

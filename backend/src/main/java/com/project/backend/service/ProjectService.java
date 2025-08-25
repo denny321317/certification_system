@@ -219,7 +219,7 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectDetailDTO getProjectDetailById(Long id) {
-        Project project = projectRepository.findById(id)
+        Project project = projectRepository.findByIdWithRequirementStatuses(id)
                 .orElseThrow(() -> new IllegalArgumentException("Project with id " + id + " does not exist."));
 
         // 組裝團隊成員
@@ -251,6 +251,12 @@ public class ProjectService {
                 .collect(Collectors.toList());
 
 
+        // Defensively handle null progressCalculationMode for existing data
+        String progressMode = project.getProgressCalculationMode() != null
+                ? project.getProgressCalculationMode().name()
+                : ProgressCalculationMode.MANUAL.name();
+
+
         return new ProjectDetailDTO(
                 project.getId(),
                 project.getName(),
@@ -267,7 +273,7 @@ public class ProjectService {
                 project.getDescription(),
                 team,
                 documents,
-                project.getProgressCalculationMode().name(),
+                progressMode,
                 requirementStatuses
         );
     }
