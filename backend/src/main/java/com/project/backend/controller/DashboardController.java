@@ -162,7 +162,18 @@ public class DashboardController {
 
         return ResponseEntity.ok(todos);
     }
+    
+    @GetMapping("/todos/count")
+    public ResponseEntity<Long> getTodoCount() {
+        long count = todoService.getTodoCount();
+        return ResponseEntity.ok(count);
+    }
 
+    @PatchMapping("/todos/{id}/complete")
+    public ResponseEntity<?> markTodoComplete(@PathVariable Long id, @RequestParam boolean completed) {
+        Todo todo = todoService.updateCompleted(id, completed);
+        return ResponseEntity.ok(todo);
+    }
 
     // 刪除 Todo
     @DeleteMapping("delete/todos/{id}")
