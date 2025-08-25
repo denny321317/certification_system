@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 import com.project.backend.dto.ShowProjectDTO;
 import com.project.backend.dto.ExportSettingsDTO;
@@ -27,6 +28,7 @@ import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.model.Project;
+import com.project.backend.model.ProgressCalculationMode;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.ProjectService;
@@ -140,5 +142,28 @@ public class ProjectController {
         }
     }
 
+    @PutMapping("/{projectId}/template")
+    public ResponseEntity<Void> applyTemplateToProject(@PathVariable Long projectId, @RequestBody Map<String, String> payload) {
+        String templateId = payload.get("templateId");
+        projectService.applyTemplateToProject(projectId, templateId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{projectId}/requirements/{requirementId}")
+    public ResponseEntity<Void> updateRequirementStatus(@PathVariable Long projectId,
+                                                        @PathVariable Long requirementId,
+                                                        @RequestBody Map<String, Boolean> payload) {
+        Boolean isCompleted = payload.get("isCompleted");
+        projectService.updateRequirementStatus(projectId, requirementId, isCompleted);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{projectId}/settings/progress-mode")
+    public ResponseEntity<Void> setProgressCalculationMode(@PathVariable Long projectId,
+                                                           @RequestBody Map<String, String> payload) {
+        ProgressCalculationMode mode = ProgressCalculationMode.valueOf(payload.get("mode"));
+        projectService.setProgressCalculationMode(projectId, mode);
+        return ResponseEntity.ok().build();
+    }
     
 }

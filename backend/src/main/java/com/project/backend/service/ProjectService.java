@@ -2,21 +2,18 @@ package com.project.backend.service;
 
 import com.project.backend.dto.ShowProjectDTO;
 import com.project.backend.dto.ProjectDetailDTO;
+import com.project.backend.dto.ProjectRequirementStatusDTO;
 import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
-import com.project.backend.model.Project;
-import com.project.backend.model.FileEntity;
-import com.project.backend.model.User;
-import com.project.backend.model.ProjectTeam;
-import com.project.backend.repository.ProjectRepository;
-import com.project.backend.repository.UserRepository;
-import com.project.backend.repository.ProjectTeamRepository;
+import com.project.backend.model.*;
+import com.project.backend.repository.*;
 import com.project.backend.service.OperationHistoryService;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,12 +24,20 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final OperationHistoryService operationHistoryService;
     private final ProjectTeamRepository projectTeamRepository;
+    private final CertificationTemplateRepository certificationTemplateRepository;
+    private final ProjectRequirementStatusRepository projectRequirementStatusRepository;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository) {
+
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository,
+                          OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository,
+                          CertificationTemplateRepository certificationTemplateRepository,
+                          ProjectRequirementStatusRepository projectRequirementStatusRepository) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.operationHistoryService = operationHistoryService;
         this.projectTeamRepository = projectTeamRepository;
+        this.certificationTemplateRepository = certificationTemplateRepository;
+        this.projectRequirementStatusRepository = projectRequirementStatusRepository;
     }
 
     @Transactional(readOnly = true)
@@ -123,45 +128,48 @@ public class ProjectService {
     }
 
     public ShowProjectDTO toShowProjectDTO(Project project) {
-        String managerName = null;
+        String managerName = "N/A";
         if (project.getManagerId() != null) {
-            var userOpt = userRepository.findById(project.getManagerId());
-            if (userOpt.isPresent()) {
-                managerName = userOpt.get().getName();
+            User manager = userRepository.findById(project.getManagerId()).orElse(null);
+            if (manager != null) {
+                managerName = manager.getName();
             }
         }
         return new ShowProjectDTO(
-            project.getId(),
-            project.getName(),
-            project.getStatus(),
-            project.getStartDate() != null ? project.getStartDate().toString() : null,
-            project.getEndDate() != null ? project.getEndDate().toString() : null,
-            project.getInternalReviewDate() != null ? project.getInternalReviewDate().toString() : null,
-            project.getExternalReviewDate() != null ? project.getExternalReviewDate().toString() : null,
-            managerName,
-            project.getAgency(),
-            project.getProgressColor(),
-            project.getProgress()
+                project.getId(),
+                project.getName(),
+                project.getStatus(),
+                project.getStartDate() != null ? project.getStartDate().toString() : null,
+                project.getEndDate() != null ? project.getEndDate().toString() : null,
+                project.getInternalReviewDate() != null ? project.getInternalReviewDate().toString() : null,
+                project.getExternalReviewDate() != null ? project.getExternalReviewDate().toString() : null,
+                managerName,
+                project.getAgency(),
+                project.getProgressColor(),
+                project.getProgress()
         );
     }
 
     @Transactional(readOnly = true)
     public List<TeamMemberDTO> getTeamMembers(Long projectId) {
-        List<ProjectTeam> team = projectTeamRepository.findByProjectIdWithDuties(projectId);
-        Project project = projectRepository.findById(projectId).orElse(null);
-        Long managerId = project != null ? project.getManagerId() : null;
-        return team.stream()
-                .filter(pt -> pt.getUser() != null) // Filter out team members with no associated user
-                .map(pt -> new TeamMemberDTO(
-                pt.getUser().getId(),
-                pt.getUser().getName(),
-                pt.getRole(),
-                pt.getUser().getPosition(),
-                pt.getUser().getEmail(),
-                managerId != null && pt.getUser().getId().equals(managerId),
-                pt.getPermission(),
-                pt.getDuties()
-        )).collect(Collectors.toList());
+        List<ProjectTeam> teamMemberships = projectTeamRepository.findByProjectId(projectId);
+        if (teamMemberships.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return teamMemberships.stream().map(pt -> {
+            User user = pt.getUser();
+            return new TeamMemberDTO(
+                    user.getId(),
+                    user.getName(),
+                    pt.getRole(),
+                    user.getPosition(),
+                    user.getEmail(),
+                    false, // isManager flag, can be enhanced later
+                    pt.getPermission(),
+                    pt.getDuties()
+            );
+        }).collect(Collectors.toList());
+
     }
 
     @Transactional
@@ -209,7 +217,6 @@ public class ProjectService {
     }
 
 
-
     @Transactional(readOnly = true)
     public ProjectDetailDTO getProjectDetailById(Long id) {
         Project project = projectRepository.findById(id)
@@ -233,6 +240,17 @@ public class ProjectService {
             )).collect(Collectors.toList());
         }
 
+        // 組裝需求狀態
+        List<ProjectRequirementStatusDTO> requirementStatuses = project.getRequirementStatuses().stream()
+                .map(status -> new ProjectRequirementStatusDTO(
+                        status.getId(),
+                        status.getTemplateRequirement().getId(),
+                        status.getTemplateRequirement().getText(),
+                        status.isCompleted()
+                ))
+                .collect(Collectors.toList());
+
+
         return new ProjectDetailDTO(
                 project.getId(),
                 project.getName(),
@@ -248,7 +266,90 @@ public class ProjectService {
                 project.getProgressColor(),
                 project.getDescription(),
                 team,
-                documents
+                documents,
+                project.getProgressCalculationMode().name(),
+                requirementStatuses
         );
+    }
+
+    @Transactional
+    public void applyTemplateToProject(Long projectId, String templateId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+        CertificationTemplate template = certificationTemplateRepository.findById(templateId)
+                .orElseThrow(() -> new IllegalArgumentException("Template not found with id: " + templateId));
+
+        // 關聯專案與範本
+        project.setCertificationTemplate(template);
+
+        // 清除現有的需求狀態
+        project.getRequirementStatuses().clear();
+        projectRequirementStatusRepository.deleteAll(projectRequirementStatusRepository.findByProjectId(projectId));
+
+
+        // 根據新範本的需求，建立新的狀態紀錄
+        for (TemplateRequirement requirement : template.getRequirements()) {
+            ProjectRequirementStatus status = ProjectRequirementStatus.builder()
+                    .project(project)
+                    .templateRequirement(requirement)
+                    .isCompleted(false)
+                    .build();
+            project.getRequirementStatuses().add(status);
+        }
+
+        projectRepository.save(project);
+
+        // 如果是自動計算模式，立即重新計算進度
+        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
+            calculateProjectProgress(projectId);
+        }
+    }
+
+    @Transactional
+    public void updateRequirementStatus(Long projectId, Long requirementId, boolean isCompleted) {
+        ProjectRequirementStatus status = projectRequirementStatusRepository.findById(requirementId)
+                .orElseThrow(() -> new IllegalArgumentException("Requirement status not found with id: " + requirementId));
+
+        if (!status.getProject().getId().equals(projectId)) {
+            throw new IllegalArgumentException("Requirement status does not belong to the specified project.");
+        }
+
+        status.setCompleted(isCompleted);
+        projectRequirementStatusRepository.save(status);
+
+        Project project = projectRepository.findById(projectId).get();
+        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
+            calculateProjectProgress(projectId);
+        }
+    }
+
+    @Transactional
+    public void setProgressCalculationMode(Long projectId, ProgressCalculationMode mode) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+
+        project.setProgressCalculationMode(mode);
+
+        if (mode == ProgressCalculationMode.AUTOMATIC) {
+            calculateProjectProgress(projectId);
+        }
+
+        projectRepository.save(project);
+    }
+
+    private void calculateProjectProgress(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+
+        List<ProjectRequirementStatus> statuses = project.getRequirementStatuses();
+        if (statuses == null || statuses.isEmpty()) {
+            project.setProgress(0);
+        } else {
+            long completedCount = statuses.stream().filter(ProjectRequirementStatus::isCompleted).count();
+            int progress = (int) Math.round(((double) completedCount / statuses.size()) * 100);
+            project.setProgress(progress);
+        }
+
+        projectRepository.save(project);
     }
 }

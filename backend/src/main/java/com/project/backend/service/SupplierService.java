@@ -43,12 +43,13 @@ public class SupplierService {
         // 如果有 projects 欄位且已載入，則轉換為 ProjectDetailDTO
         if (supplier.getProjects() != null) {
             List<ProjectDetailDTO> projectDTOs = supplier.getProjects().stream()
-                .map(project -> new ProjectDetailDTO(
-                    project.getId(),
-                    project.getName(),
-                    project.getStatus()
-                    // 其他你需要的欄位
-                ))
+                .map(project -> {
+                    ProjectDetailDTO projectDto = new ProjectDetailDTO();
+                    projectDto.setId(project.getId());
+                    projectDto.setName(project.getName());
+                    projectDto.setStatus(project.getStatus());
+                    return projectDto;
+                })
                 .collect(Collectors.toList());
             dto.setProjects(projectDTOs);
         }
