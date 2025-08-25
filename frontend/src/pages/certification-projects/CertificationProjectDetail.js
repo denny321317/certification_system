@@ -1219,13 +1219,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
               <div className="project-progress-section">
                 <h5>項目進度</h5>
                 <div className="progress-percentage">
-                  {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`} 完成
+                  {projectDetail.progress}% 完成
                 </div>
                 <div className="progress-bar">
                   <div 
                     className={`progress-fill ${projectDetail.progressColor}`} 
                     style={{ 
-                      width: `${progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%` 
+                      width: `${projectDetail.progress}%` 
                     }}
                   ></div>
                 </div>
@@ -1349,12 +1349,12 @@ const CertificationProjectDetail = ({ canWrite }) => {
                         cx="60"
                         cy="60"
                         strokeDasharray={`${2 * Math.PI * 52}`}
-                        strokeDashoffset={`${2 * Math.PI * 52 * (1 - (progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress) / 100)}`}
+                        strokeDashoffset={`${2 * Math.PI * 52 * (1 - (projectDetail.progress || 0) / 100)}`}
                       />
                     </svg>
                     <div className="progress-text">
                       <span className="progress-number">
-                        {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`}
+                        {projectDetail.progress}%
                       </span>
                       <span className="progress-label">完成</span>
                     </div>
@@ -1374,7 +1374,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                       min="0"
                       max="100"
                       step="5"
-                      value={progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}
+                      value={projectDetail.progress || 0}
                       onChange={(e) => {
                         if (progressMode === 'MANUAL') {
                           setProjectDetail({

@@ -280,7 +280,7 @@ public class ProjectService {
 
     @Transactional
     public void applyTemplateToProject(Long projectId, String templateId) {
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
         CertificationTemplate template = certificationTemplateRepository.findById(templateId)
                 .orElseThrow(() -> new IllegalArgumentException("Template not found with id: " + templateId));
@@ -288,9 +288,11 @@ public class ProjectService {
         // 關聯專案與範本
         project.setCertificationTemplate(template);
 
-        // 清除現有的需求狀態
+        // 先將進度歸零
+        project.setProgress(0);
+
+        // Rely on orphanRemoval=true to safely clear existing statuses
         project.getRequirementStatuses().clear();
-        projectRequirementStatusRepository.deleteAll(projectRequirementStatusRepository.findByProjectId(projectId));
 
 
         // 根據新範本的需求，建立新的狀態紀錄
@@ -305,16 +307,14 @@ public class ProjectService {
 
         projectRepository.save(project);
 
-        // 如果是自動計算模式，立即重新計算進度
-        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
-            calculateProjectProgress(projectId);
-        }
+        // Recalculate progress if in automatic mode
+        calculateProjectProgress(projectId);
     }
 
     @Transactional
-    public void updateRequirementStatus(Long projectId, Long requirementId, boolean isCompleted) {
-        ProjectRequirementStatus status = projectRequirementStatusRepository.findById(requirementId)
-                .orElseThrow(() -> new IllegalArgumentException("Requirement status not found with id: " + requirementId));
+    public void updateRequirementStatus(Long projectId, Long requirementStatusId, boolean isCompleted) {
+        ProjectRequirementStatus status = projectRequirementStatusRepository.findById(requirementStatusId)
+                .orElseThrow(() -> new IllegalArgumentException("Requirement status not found with id: " + requirementStatusId));
 
         if (!status.getProject().getId().equals(projectId)) {
             throw new IllegalArgumentException("Requirement status does not belong to the specified project.");
@@ -344,18 +344,20 @@ public class ProjectService {
     }
 
     private void calculateProjectProgress(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
 
-        List<ProjectRequirementStatus> statuses = project.getRequirementStatuses();
-        if (statuses == null || statuses.isEmpty()) {
-            project.setProgress(0);
-        } else {
-            long completedCount = statuses.stream().filter(ProjectRequirementStatus::isCompleted).count();
-            int progress = (int) Math.round(((double) completedCount / statuses.size()) * 100);
-            project.setProgress(progress);
+        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
+            List<ProjectRequirementStatus> statuses = project.getRequirementStatuses();
+
+            if (statuses == null || statuses.isEmpty()) {
+                project.setProgress(0);
+            } else {
+                long completedCount = statuses.stream().filter(ProjectRequirementStatus::isCompleted).count();
+                int progress = (int) Math.round(((double) completedCount / statuses.size()) * 100);
+                project.setProgress(progress);
+            }
+            projectRepository.save(project);
         }
-
-        projectRepository.save(project);
     }
 }
