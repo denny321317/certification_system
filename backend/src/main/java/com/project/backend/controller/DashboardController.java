@@ -3,13 +3,17 @@ package com.project.backend.controller;
 import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.ProjectDeadlineDTO;
 import com.project.backend.dto.RecentActivityDTO;
+import com.project.backend.dto.TodoDTO;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.OperationHistory;
 import com.project.backend.model.Project;
+import com.project.backend.model.Todo;
 import com.project.backend.service.OperationHistoryService;
 import com.project.backend.service.ProjectService;
+import com.project.backend.service.TodoService;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.TodoRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -35,6 +39,11 @@ public class DashboardController {
     private OperationHistoryService operationHistoryService;
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private TodoService todoService;
+    @Autowired
+    private TodoRepository todoRepository;
 
     //回傳文件總數
     @GetMapping("/document-count")
@@ -116,5 +125,49 @@ public class DashboardController {
     @GetMapping("/certification-distribution")
     public ResponseEntity<CertTypeDTO> getCertificationDistribution() {
         return ResponseEntity.ok(projectService.getCertificationDistribution());
+    }
+
+    // 建立待辦事項
+    @PostMapping("create/todos")
+    public ResponseEntity<TodoDTO> createTodo(@RequestBody Todo todo) {
+        Todo created = todoService.createTodo(todo);
+
+        TodoDTO dto = new TodoDTO(
+                created.getId(),
+                created.getTitle(),
+                created.getDescription(),
+                created.getUrgency(),
+                created.getDueDate(),
+                created.getCategory(),
+                created.isCompleted() 
+        );
+
+        return ResponseEntity.ok(dto);
+    }
+
+    // 查詢全部 Todo
+    @GetMapping("/todos")
+    public ResponseEntity<List<TodoDTO>> getAllTodos() {
+        List<TodoDTO> todos = todoService.getAllTodos().stream()
+                .map(todo -> new TodoDTO(
+                        todo.getId(),
+                        todo.getTitle(),
+                        todo.getDescription(),
+                        todo.getUrgency(),
+                        todo.getDueDate(),
+                        todo.getCategory(),
+                        todo.isCompleted()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(todos);
+    }
+
+
+    // 刪除 Todo
+    @DeleteMapping("delete/todos/{id}")
+    public ResponseEntity<?> deleteTodo(@PathVariable Long id) {
+        todoService.deleteTodo(id);
+        return ResponseEntity.ok("刪除成功");
     }
 }
