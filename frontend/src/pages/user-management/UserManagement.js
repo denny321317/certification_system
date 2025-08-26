@@ -669,11 +669,11 @@ const UserManagement = ({ canWrite }) => {
     const userRoleName = user.role && typeof user.role === 'object' ? user.role.name : user.role;
 
     // 標籤篩選
-    if (activeTab === '管理員' && userRoleName !== 'Admin') return false;
-    if (activeTab === '審核員' && userRoleName !== 'Auditor') return false;
-    if (activeTab === '一般使用者' && userRoleName !== 'User') return false;
-    if (activeTab === '經理' && userRoleName !== 'Manager') return false;
-    if (activeTab === '訪客' && userRoleName !== 'Guest') return false;
+    if (activeTab === '管理員' && userRoleName !== '系統管理員') return false;
+    if (activeTab === '審核員' && userRoleName !== '認證審核員') return false;
+    if (activeTab === '一般使用者' && userRoleName !== '一般使用者') return false;
+    if (activeTab === '經理' && userRoleName !== '部門經理') return false;
+    if (activeTab === '訪客' && userRoleName !== '訪客') return false;
     
     // 搜索篩選
     if (searchTerm && 
