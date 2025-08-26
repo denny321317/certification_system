@@ -76,6 +76,7 @@ const UserManagement = ({ canWrite }) => {
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
    */
   const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
   
   /**
    * 用戶數據列表
@@ -659,10 +660,6 @@ const UserManagement = ({ canWrite }) => {
 
 
 
-  
-
-
-
   /**
    * 根據當前標籤和搜索關鍵字過濾用戶
    * @returns {Array} 過濾後的用戶列表
@@ -687,6 +684,11 @@ const UserManagement = ({ canWrite }) => {
     
     return true;
   });
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   
   /**
    * 渲染角色標籤
@@ -760,6 +762,12 @@ const UserManagement = ({ canWrite }) => {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
+
+  const handleUsersPerPageChange = (e) => {
+    setUsersPerPage(Number(e.target.value));
+    setCurrentPage(1); // 更改每頁人數後返回至第一頁
+    
+  }
 
 
   /**
@@ -835,7 +843,7 @@ const UserManagement = ({ canWrite }) => {
                         </td>
                       </tr>
                     ) : (
-                      filteredUsers.map(user => (
+                      currentUsers.map(user => (
                         <tr key={user.id} className={user.suspended ? 'user-suspended-row' : ''}>
                           <td>
                             <div className="d-flex align-items-center">
@@ -887,25 +895,36 @@ const UserManagement = ({ canWrite }) => {
             </div>
           </div>
           
-          <nav aria-label="使用者分頁">
-            <ul className="pagination justify-content-center mt-4">
-              <li className="page-item disabled">
-                <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled>上一頁</button>
-              </li>
-              <li className="page-item active">
-                <button className="page-link" onClick={() => handlePageChange(1)}>1</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(2)}>2</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(3)}>3</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(currentPage + 1)}>下一頁</button>
-              </li>
-            </ul>
-          </nav>
+          <div className="d-flex justify-content-center align-items-center mt-4">
+            <nav aria-label="使用者分頁">
+              <ul className="pagination mb-0">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>上一頁</button>
+                </li>
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(index + 1)}>{index + 1}</button>
+                  </li>
+                ))}
+                <li className={`page-item ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0}>下一頁</button>
+                </li>
+              </ul>
+            </nav>
+            <div className="d-flex align-items-center ms-3">
+              <span className="me-2 small text-muted">每頁顯示:</span>
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={usersPerPage}
+                onChange={handleUsersPerPageChange}
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+          </div>
         </div>
         
         <div className="col-md-4">
