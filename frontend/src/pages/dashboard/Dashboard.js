@@ -27,6 +27,7 @@ import {
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { AuthContext } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Dashboard.css';
 
 // 註冊Chart.js組件
@@ -38,6 +39,7 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tool
  */
 const Dashboard = ({ canWrite }) => {
   const { currentUser } = useContext(AuthContext);
+  const { settings } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [completedTasks, setCompletedTasks] = useState(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -61,6 +63,63 @@ const Dashboard = ({ canWrite }) => {
   const handleCloseAddTodoModal = () => setShowAddTodoModal(false);
 
   const [isLoading, setIsLoading] = useState(true);
+
+  const formatDate = (dateInput, includeTime = false) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return dateInput || 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return dateInput || 'N/A';
+    }
+
+    try {
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: settings.timezone,
+        hour12: false,
+      };
+      if (includeTime) {
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+
+      if (!year || !month || !day) {
+        return date.toLocaleDateString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      let formattedDate = settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+      
+      if (includeTime) {
+        const hour = getPart('hour');
+        const minute = getPart('minute');
+        if (hour && minute) {
+          return `${formattedDate} ${hour}:${minute}`;
+        }
+      }
+      
+      return formattedDate;
+
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return new Date(dateInput).toLocaleDateString();
+    }
+  };
 
   // 更新時間
   useEffect(() => {
@@ -574,7 +633,8 @@ const Dashboard = ({ canWrite }) => {
               year: 'numeric', 
               month: 'long', 
               day: 'numeric',
-              weekday: 'long'
+              weekday: 'long',
+              timeZone: settings?.timezone
             })}</span>
           </div>
           <button 

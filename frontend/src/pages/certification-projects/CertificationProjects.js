@@ -29,7 +29,9 @@ import {
   faUpload, faClipboardCheck, faExclamationTriangle, 
   faTimes, faEdit, faFileExport, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import './CertificationProjects.css';
+
 
 // 狀態標籤輔助函數
 const getStatusBadge = (status) => {
@@ -86,6 +88,7 @@ const getTimelineIcon = (status) => {
  * @returns {JSX.Element} 認證項目管理介面
  */
 const CertificationProjects = ({ canWrite }) => {
+  const { settings } = useSettings();
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -306,6 +309,53 @@ const CertificationProjects = ({ canWrite }) => {
     
     // 模擬匯出成功
     alert('報告匯出成功');
+  };
+
+  /**
+   * 處理日期格式顯示
+   * @param {*} dateInput 
+   * @returns 
+   */
+  const formatDate = (dateInput) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return dateInput || 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return dateInput || 'N/A';
+    }
+
+    try {
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: settings.timezone,
+      };
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+
+      if (!year || !month || !day) {
+        return date.toLocaleDateString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      return settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return new Date(dateInput).toLocaleDateString();
+    }
   };
   
   /**
@@ -652,13 +702,13 @@ const CertificationProjects = ({ canWrite }) => {
                   <div className="project-meta-label">
                     {project.status === 'planned' ? '預計開始日期' : '專案開始日期'}
                   </div>
-                  <div className="project-meta-value">{project.startDate}</div>
+                  <div className="project-meta-value">{formatDate(project.startDate)}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">
                     {project.status === 'completed' ? '完成日期' : '預計完成日期'}
                   </div>
-                  <div className="project-meta-value">{project.endDate}</div>
+                  <div className="project-meta-value">{formatDate(project.endDate)}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">負責人</div>
@@ -699,10 +749,10 @@ const CertificationProjects = ({ canWrite }) => {
                             {item.status === 'current' ? (
                               <span className="text-primary">
                                 <FontAwesomeIcon icon={faClock} className="me-1" />
-                                {item.date}
+                                {formatDate(item.date)}
                               </span>
                             ) : (
-                              <span className="text-muted">{item.date}</span>
+                              <span className="text-muted">{formatDate(item.date)}</span>
                             )}
                           </span>
                         </div>
