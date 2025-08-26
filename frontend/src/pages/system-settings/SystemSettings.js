@@ -260,7 +260,7 @@ const SystemSettings = () => {
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">日期格式 (尚未實作)</label>
+                    <label className="form-label">日期格式</label>
                     <select 
                       className="form-select"
                       value={generalSettings.dateFormat}

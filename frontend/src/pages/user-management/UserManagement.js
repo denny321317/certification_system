@@ -285,6 +285,64 @@ const UserManagement = ({ canWrite }) => {
     Functions
    */
 
+  /**
+   * 用於實作日期格式
+   */
+  const formatDate = (dateInput) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return 'N/A';
+    }
+
+    try {
+      // Options to get all parts of the date in the target timezone
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: settings.timezone,
+      };
+
+      // Use Intl.DateTimeFormat to correctly handle the timezone
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+      const hour = getPart('hour');
+      const minute = getPart('minute');
+
+      // Fallback if for some reason parts are not found
+      if (!year || !month || !day || !hour || !minute) {
+        return date.toLocaleString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      // Assemble the date string based on the dateFormat setting
+      let formattedDate = settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+      
+      // Append the time
+      return `${formattedDate} ${hour}:${minute}`;
+
+    } catch (error) {
+      console.error("Error formatting date with timezone:", error);
+      // Fallback if Intl fails (e.g., invalid timezone string)
+      return new Date(dateInput).toLocaleString();
+    }
+  };
+
   /** 
    * 原本沒有的新 Function
    * 用來從後段 API 獲取資料
@@ -864,7 +922,7 @@ const UserManagement = ({ canWrite }) => {
                               : renderStatusBadge(user.online)
                             }
                           </td>
-                          <td>{user.lastTimeLogin && settings ? new Date(user.lastTimeLogin).toLocaleString('zh-TW', { timeZone: settings.timezone }) : 'N/A'}</td>
+                          <td>{user.lastTimeLogin && settings ? formatDate(user.lastTimeLogin) : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div 
