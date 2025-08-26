@@ -52,6 +52,17 @@ const SystemSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
 
   /**
+   * 處理基本設定
+   */
+  const [generalSettings, setGeneralSettings] = useState({
+    systemName: "企頁認證資料整合系統",
+    systemLanguage: "繁體中文",
+    timezone: "Asia/Taipei",
+    dateFormat: "YYYY-MM-DD"
+  })
+  const [generalLoading, setGeneralLoading] = useState(false);
+
+  /**
    * 當前頁碼（用於稽核日誌分頁）
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
    */
@@ -90,6 +101,15 @@ const SystemSettings = () => {
           setSecurityLoading(false);
         })
         .catch(() => setSecurityLoading(false));
+    } else if (activeTab === 'general') {
+      setGeneralLoading(true);
+      fetch(`http://localhost:8000/api/general-settings`)
+        .then(res => res.json())
+        .then(data => {
+          setGeneralSettings(data);
+          setGeneralLoading(false);
+        })
+        .catch(() => setGeneralLoading(false));
     }
   }, [activeTab])
 
@@ -110,6 +130,26 @@ const SystemSettings = () => {
       .catch(() => {
         setSecurityLoading(false);
         alert('儲存失敗')
+      });
+  };
+
+  const handleGeneralSave = (e) => {
+    e.preventDefault();
+    setGeneralLoading(true);
+    fetch(`http://localhost:8000/api/general-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json'},
+      body: JSON.stringify(generalSettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setGeneralSettings(data);
+        setGeneralLoading(false);
+        alert('基本設定已儲存');
+      })
+      .catch(() => {
+        setGeneralLoading(false);
+        alert('儲存失敗');
       });
   };
 
@@ -186,37 +226,57 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">基本設定</h5>
-                <form>
+                <form onSubmit={handleGeneralSave}>
                   <div className="mb-4">
                     <label className="form-label">系統名稱</label>
-                    <input type="text" className="form-control" defaultValue="企業認證資料整合系統" />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      defaultValue="企業認證資料整合系統"
+                      value={generalSettings.systemName}
+                      onChange={e => setGeneralSettings(s => ({ ...s, systemName: e.target.value}))}
+                    />
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">系統語言</label>
-                    <select className="form-select">
-                      <option selected>繁體中文</option>
-                      <option>English</option>
-                      <option>日本語</option>
+                    <label className="form-label">系統語言 (目前僅繁體中文可用)</label>
+                    <select 
+                      className="form-select"
+                      value={generalSettings.systemLanguage}
+                      onChange={e => setGeneralSettings(s => ({ ...s, systemLanguage: e.target.value}))}
+                    >  
+                      <option value="zh-tw">繁體中文</option>
+                      <option value="en-us">English</option>
+                      <option value="jp">日本語</option>
                     </select>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">時區設定</label>
-                    <select className="form-select">
-                      <option selected>(GMT+08:00) 台北</option>
-                      <option>(GMT+09:00) 東京</option>
-                      <option>(GMT+00:00) 倫敦</option>
+                    <select 
+                      className="form-select"
+                      value={generalSettings.timezone}
+                      onChange={e => setGeneralSettings(s => ({ ...s, timezone: e.target.value}))}
+                    >
+                      <option value="Asia/Taipei">(GMT+08:00) 台北</option>
+                      <option value="Asia/Tokyo">(GMT+09:00) 東京</option>
+                      <option value="Europe/London">(GMT+00:00) 倫敦</option>
                     </select>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">日期格式</label>
-                    <select className="form-select">
-                      <option selected>YYYY-MM-DD</option>
-                      <option>DD/MM/YYYY</option>
-                      <option>MM/DD/YYYY</option>
+                    <select 
+                      className="form-select"
+                      value={generalSettings.dateFormat}
+                      onChange={e => setGeneralSettings(s => ({ ...s, dateFormat: e.target.value}))}
+                    >
+                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                     </select>
                   </div>
                   <div className="d-flex justify-content-between">
-                  <button type="submit" className="btn btn-primary">儲存設定</button>
+                  <button type="submit" className="btn btn-primary" disabled={setGeneralLoading}>
+                    {generalLoading ? '儲存中...' : '儲存設定'}
+                  </button>
                     <button type="button" className="btn btn-danger" onClick={handleLogout}>
                       <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
                       系統登出
