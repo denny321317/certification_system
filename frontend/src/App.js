@@ -34,6 +34,7 @@ import SystemSettings from './pages/system-settings/SystemSettings';
 // 共用組件
 import MainLayout from './components/layout/MainLayout';
 import './App.css';
+import { SettingsProvider } from './contexts/SettingsContext';
 
 /**
  * 受保護的路由組件
@@ -58,128 +59,130 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* 根路徑重定向到登入頁面 */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          
-          {/* 公開的認證頁面 */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* 需要登入才能訪問的頁面 */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Dashboard />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 文件管理模組 */}
-          <Route 
-            path="/document-management" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <DocumentManagement />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 模板中心模組 */}
-          <Route 
-            path="/template-center" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <TemplateCenter />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 認證專案模組 */}
-          <Route 
-            path="/certification-projects" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <CertificationProjects />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path='/certification-projects/create'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <CreateCertificationProject />
-                </MainLayout>
-              </ProtectedRoute>
-            }
+      <SettingsProvider>
+        <Router>
+          <Routes>
+            {/* 根路徑重定向到登入頁面 */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            
+            {/* 公開的認證頁面 */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* 需要登入才能訪問的頁面 */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Dashboard />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 文件管理模組 */}
+            <Route 
+              path="/document-management" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DocumentManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 模板中心模組 */}
+            <Route 
+              path="/template-center" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <TemplateCenter />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 認證專案模組 */}
+            <Route 
+              path="/certification-projects" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CertificationProjects />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route
+              path='/certification-projects/create'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CreateCertificationProject />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
 
-          />
-          <Route
-            path='/certification-projects/:projectId'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <CertificationProjectDetail />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          {/* 報表分析模組 */}
-          <Route 
-            path="/reports-analysis" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <ReportsAnalysis />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 供應商管理模組 */}
-          <Route 
-            path="/supplier-management" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <SupplierManagement />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 用戶管理模組 */}
-          <Route 
-            path="/user-management" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <UserManagement />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-          {/* 系統設定模組 */}
-          <Route 
-            path="/system-settings" 
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <SystemSettings />
-                </MainLayout>
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </Router>
+            />
+            <Route
+              path='/certification-projects/:projectId'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CertificationProjectDetail />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            {/* 報表分析模組 */}
+            <Route 
+              path="/reports-analysis" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ReportsAnalysis />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 供應商管理模組 */}
+            <Route 
+              path="/supplier-management" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <SupplierManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 用戶管理模組 */}
+            <Route 
+              path="/user-management" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <UserManagement />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+            {/* 系統設定模組 */}
+            <Route 
+              path="/system-settings" 
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <SystemSettings />
+                  </MainLayout>
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </Router>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

@@ -38,6 +38,7 @@ import './SystemSettings.css';
  */
 import { AuthContext } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext'
 
 
 /**
@@ -51,15 +52,12 @@ const SystemSettings = () => {
    */
   const [activeTab, setActiveTab] = useState('general');
 
+  const {settings, loading: settingsLoading, refreshSettings } = useSettings();
+
   /**
    * 處理基本設定
    */
-  const [generalSettings, setGeneralSettings] = useState({
-    systemName: "企頁認證資料整合系統",
-    systemLanguage: "繁體中文",
-    timezone: "Asia/Taipei",
-    dateFormat: "YYYY-MM-DD"
-  })
+  const [generalSettings, setGeneralSettings] = useState(settings);
   const [generalLoading, setGeneralLoading] = useState(false);
 
   /**
@@ -143,7 +141,7 @@ const SystemSettings = () => {
     })
       .then(res => res.json())
       .then(data => {
-        setGeneralSettings(data);
+        refreshSettings();
         setGeneralLoading(false);
         alert('基本設定已儲存');
       })
@@ -244,13 +242,13 @@ const SystemSettings = () => {
                       value={generalSettings.systemLanguage}
                       onChange={e => setGeneralSettings(s => ({ ...s, systemLanguage: e.target.value}))}
                     >  
-                      <option value="zh-tw">繁體中文</option>
+                      <option value="zh-tw">繁體中文</option>  {/* 本系統預設使用繁體中文 */}
                       <option value="en-us">English</option>
                       <option value="jp">日本語</option>
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">時區設定</label>
+                    <label className="form-label">時區設定</label> 
                     <select 
                       className="form-select"
                       value={generalSettings.timezone}

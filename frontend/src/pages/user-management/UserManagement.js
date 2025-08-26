@@ -45,12 +45,14 @@ import UserInfoModal from '../../components/modals/UserInfoModal';
 import EditUserInfoModal from '../../components/modals/EditUserInfoModal';
 import ChangeRoleNameModal from '../../components/modals/ChangeRoleNameModal';
 import SuspendUserModal from '../../components/modals/SuspendUserModal';
+import { useSettings } from '../../contexts/SettingsContext';
 
 /**
  * 用戶管理組件
  * @returns {JSX.Element} 用戶管理界面
  */
 const UserManagement = ({ canWrite }) => {
+  const { settings } = useSettings();
   /**
    * 當前選中的標籤狀態
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -854,7 +856,7 @@ const UserManagement = ({ canWrite }) => {
                               : renderStatusBadge(user.online)
                             }
                           </td>
-                          <td>{user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A'}</td>
+                          <td>{user.lastTimeLogin && settings ? new Date(user.lastTimeLogin).toLocaleString('zh-TW', { timeZone: settings.timezone }) : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div 
