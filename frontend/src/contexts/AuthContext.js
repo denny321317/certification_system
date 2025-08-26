@@ -1,5 +1,6 @@
 import { faL } from '@fortawesome/free-solid-svg-icons';
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback
+ } from 'react';
 import axios from 'axios';
 
 /**
@@ -13,13 +14,35 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [securitySettings, setSecuritySettings] = useState(null);
+
+  
 
   useEffect(() => {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
       setCurrentUser(JSON.parse(userData));
     }
+    fetchSecuritySettings();
     setLoading(false);
+  }, []);
+
+  /**
+   * 抓取安全設定
+   */
+  const fetchSecuritySettings = useCallback(async() => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/security-settings/getSettings');
+      
+      // FOR DEBUG
+      console.log('AuthContext: API response received: ', response.data);
+
+      if (response.data) {
+        setSecuritySettings(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch security settings: ", error);
+    }
   }, []);
 
   /**
@@ -165,7 +188,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  
+  // FOR DEBUG
+  console.log("AuthProvider is rendering. Current securitySettings state: ", securitySettings);
 
   const value = {
     currentUser,
@@ -175,6 +199,7 @@ export const AuthProvider = ({ children }) => {
     register,
     forgotPassword,
     resetPassword,
+    fetchSecuritySettings
 
   };
 
