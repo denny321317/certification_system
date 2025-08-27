@@ -8,11 +8,14 @@ import com.project.backend.model.CertificationTemplate;
 import com.project.backend.model.TemplateDocument;
 import com.project.backend.model.TemplateRequirement;
 import com.project.backend.repository.CertificationTemplateRepository;
+import com.project.backend.repository.ProjectRequirementStatusRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +23,9 @@ public class TemplateService {
 
     @Autowired
     private CertificationTemplateRepository templateRepository;
+
+    @Autowired
+    private ProjectRequirementStatusRepository projectRequirementStatusRepository;
 
     public List<CertificationTemplate> getAllTemplates() {
         return templateRepository.findAll();
@@ -51,14 +57,7 @@ public class TemplateService {
 
         template.setRequirements(requirements);
         CertificationTemplate savedTemplate = templateRepository.save(template);
-        return new CertificationTemplateDTO(
-                savedTemplate.getId(),
-                savedTemplate.getDisplayName(),
-                savedTemplate.getDescription(),
-                savedTemplate.getRequirements().stream()
-                        .map(this::convertRequirementToDto)
-                        .collect(Collectors.toList())
-        );
+        return convertTemplateToDto(savedTemplate);
     }
 
     @Transactional
@@ -69,34 +68,53 @@ public class TemplateService {
         template.setDisplayName(updateDTO.getDisplayName());
         template.setDescription(updateDTO.getDescription());
 
+        Map<Long, TemplateRequirement> existingRequirements = template.getRequirements().stream()
+                .collect(Collectors.toMap(TemplateRequirement::getId, Function.identity()));
+
+        List<TemplateRequirement> updatedRequirements = updateDTO.getRequirements().stream().map(reqDto -> {
+            TemplateRequirement req = existingRequirements.getOrDefault(reqDto.getId(), new TemplateRequirement());
+            if (req.getId() != null) {
+                existingRequirements.remove(req.getId());
+            }
+
+            req.setText(reqDto.getText());
+            req.setTemplate(template);
+
+            Map<Long, TemplateDocument> existingDocuments = req.getDocuments() != null ?
+                    req.getDocuments().stream().collect(Collectors.toMap(TemplateDocument::getId, Function.identity())) :
+                    Map.of();
+
+            List<TemplateDocument> updatedDocuments = reqDto.getDocuments().stream().map(docDto -> {
+                TemplateDocument doc = existingDocuments.getOrDefault(docDto.getId(), new TemplateDocument());
+                if (doc.getId() != null) {
+                    existingDocuments.remove(doc.getId());
+                }
+                doc.setName(docDto.getName());
+                doc.setDescription(docDto.getDescription());
+                doc.setRequirement(req);
+                return doc;
+            }).collect(Collectors.toList());
+
+            req.getDocuments().clear();
+            req.getDocuments().addAll(updatedDocuments);
+
+            // Remove old documents
+            req.getDocuments().removeAll(existingDocuments.values());
+
+            return req;
+        }).collect(Collectors.toList());
+
+        for (TemplateRequirement toBeRemoved : existingRequirements.values()) {
+            if (projectRequirementStatusRepository.existsByTemplateRequirementId(toBeRemoved.getId())) {
+                throw new RuntimeException("Cannot delete requirement that is in use by a project: " + toBeRemoved.getText());
+            }
+        }
+
         template.getRequirements().clear();
-        List<TemplateRequirement> newRequirements = updateDTO.getRequirements().stream()
-                .map(reqDto -> {
-                    TemplateRequirement req = new TemplateRequirement();
-                    req.setText(reqDto.getText());
-                    req.setTemplate(template);
-                    List<TemplateDocument> documents = reqDto.getDocuments().stream()
-                            .map(docDto -> {
-                                TemplateDocument doc = new TemplateDocument();
-                                doc.setName(docDto.getName());
-                                doc.setDescription(docDto.getDescription());
-                                doc.setRequirement(req);
-                                return doc;
-                            }).collect(Collectors.toList());
-                    req.setDocuments(documents);
-                    return req;
-                }).collect(Collectors.toList());
-        template.getRequirements().addAll(newRequirements);
+        template.getRequirements().addAll(updatedRequirements);
 
         CertificationTemplate updatedTemplate = templateRepository.save(template);
-        return new CertificationTemplateDTO(
-                updatedTemplate.getId(),
-                updatedTemplate.getDisplayName(),
-                updatedTemplate.getDescription(),
-                updatedTemplate.getRequirements().stream()
-                        .map(this::convertRequirementToDto)
-                        .collect(Collectors.toList())
-        );
+        return convertTemplateToDto(updatedTemplate);
     }
 
     public void deleteTemplate(String id) {
@@ -106,8 +124,20 @@ public class TemplateService {
         templateRepository.deleteById(id);
     }
 
+    private CertificationTemplateDTO convertTemplateToDto(CertificationTemplate template) {
+        return new CertificationTemplateDTO(
+                template.getId(),
+                template.getDisplayName(),
+                template.getDescription(),
+                template.getRequirements().stream()
+                        .map(this::convertRequirementToDto)
+                        .collect(Collectors.toList())
+        );
+    }
+
     private TemplateRequirementDTO convertRequirementToDto(TemplateRequirement requirement) {
         return new TemplateRequirementDTO(
+                requirement.getId(),
                 requirement.getText(),
                 requirement.getDocuments().stream()
                         .map(this::convertDocumentToDto)
@@ -117,6 +147,7 @@ public class TemplateService {
 
     private TemplateDocumentDTO convertDocumentToDto(TemplateDocument document) {
         return new TemplateDocumentDTO(
+                document.getId(),
                 document.getName(),
                 document.getDescription()
         );

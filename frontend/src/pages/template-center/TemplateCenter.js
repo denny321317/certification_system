@@ -253,7 +253,7 @@ const TemplateCenter = ({ canWrite }) => {
       requirements: cert.requirements.length ? cert.requirements.map(r => ({
         ...r,
         documents: r.documents ? r.documents.map(d => ({ ...d })) : []
-      })) : [{ text: '', documents: [] }]
+      })) : [{ id: null, text: '', documents: [{id: null, name: '', description: ''}] }]
     });
     setShowEditModal(true);
   };
@@ -279,7 +279,10 @@ const TemplateCenter = ({ canWrite }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error('Failed to update template');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to update template');
+      }
       const updatedTemplate = await response.json();
       setCertificationTemplates(prev => prev.map(t => t.id === id ? updatedTemplate : t));
       setShowEditModal(false);

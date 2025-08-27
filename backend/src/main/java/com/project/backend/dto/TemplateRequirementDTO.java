@@ -10,6 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TemplateRequirementDTO {
+    private Long id;
     private String text;
     private List<TemplateDocumentDTO> documents;
 } 

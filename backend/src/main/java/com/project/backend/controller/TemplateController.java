@@ -2,6 +2,7 @@ package com.project.backend.controller;
 
 import com.project.backend.dto.CertificationTemplateDTO;
 import com.project.backend.dto.CertificationTemplateRequestDTO;
+import com.project.backend.dto.TemplateRequirementDTO;
 import com.project.backend.model.CertificationTemplate;
 import com.project.backend.service.TemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +32,13 @@ public class TemplateController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CertificationTemplateDTO> updateTemplate(@PathVariable String id, @RequestBody CertificationTemplateRequestDTO updateDTO) {
-        CertificationTemplateDTO updatedTemplate = templateService.updateTemplate(id, updateDTO);
-        return ResponseEntity.ok(updatedTemplate);
+    public ResponseEntity<?> updateTemplate(@PathVariable String id, @RequestBody CertificationTemplateRequestDTO updateDTO) {
+        try {
+            CertificationTemplateDTO updatedTemplate = templateService.updateTemplate(id, updateDTO);
+            return ResponseEntity.ok(updatedTemplate);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
