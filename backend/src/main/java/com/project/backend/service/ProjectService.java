@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 public class ProjectService {
@@ -340,12 +341,40 @@ public class ProjectService {
         status.setCompleted(isCompleted);
         projectRequirementStatusRepository.save(status);
 
-        Project project = status.getProject();
+        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
+            calculateProjectProgress(project);
+            projectRepository.save(project); // Ensure progress is saved immediately
+        }
+        
+        // Return the updated project details using the helper
+        return buildProjectDetailDTO(project);
+    }
+
+    @Transactional
+    public ProjectDetailDTO batchUpdateRequirementStatuses(Long projectId, List<Map<String, Object>> statusesPayload) {
+        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+
+        Map<Long, Boolean> updates = statusesPayload.stream()
+                .collect(Collectors.toMap(
+                        s -> ((Number) s.get("id")).longValue(),
+                        s -> (Boolean) s.get("isCompleted")
+                ));
+
+        for (ProjectRequirementStatus status : project.getRequirementStatuses()) {
+            if (updates.containsKey(status.getId())) {
+                status.setCompleted(updates.get(status.getId()));
+            }
+        }
+
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
             calculateProjectProgress(project);
         }
         
-        // Return the updated project details using the helper
+        projectRepository.save(project);
+
         return buildProjectDetailDTO(project);
     }
 
@@ -363,6 +392,14 @@ public class ProjectService {
         projectRepository.save(project);
     }
 
+    @Transactional
+    public void updateProjectProgress(Long projectId, int progress) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+        project.setProgress(progress);
+        projectRepository.save(project);
+    }
+
     private void calculateProjectProgress(Project project) {
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
             List<ProjectRequirementStatus> statuses = project.getRequirementStatuses();
@@ -374,7 +411,6 @@ public class ProjectService {
                 int progress = (int) Math.round(((double) completedCount / statuses.size()) * 100);
                 project.setProgress(progress);
             }
-            projectRepository.save(project);
         }
     }
 }

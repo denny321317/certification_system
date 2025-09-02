@@ -165,5 +165,22 @@ public class ProjectController {
         projectService.setProgressCalculationMode(projectId, mode);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{projectId}/requirements")
+    public ResponseEntity<ProjectDetailDTO> batchUpdateRequirementStatuses(@PathVariable Long projectId,
+                                                                         @RequestBody List<Map<String, Object>> payload) {
+        ProjectDetailDTO updatedProject = projectService.batchUpdateRequirementStatuses(projectId, payload);
+        return ResponseEntity.ok(updatedProject);
+    }
+
+    @PatchMapping("/{projectId}/progress")
+    public ResponseEntity<Void> updateProjectProgress(@PathVariable Long projectId, @RequestBody Map<String, Integer> payload) {
+        Integer progress = payload.get("progress");
+        if (progress == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        projectService.updateProjectProgress(projectId, progress);
+        return ResponseEntity.ok().build();
+    }
     
 }

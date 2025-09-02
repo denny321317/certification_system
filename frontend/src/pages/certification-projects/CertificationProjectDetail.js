@@ -341,6 +341,28 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   }, [projectId, fetchProjectDetail]);
 
+  useEffect(() => {
+    if (projectDetail && projectDetail.progressCalculationMode === 'AUTOMATIC' && projectDetail.requirementStatuses) {
+      const total = projectDetail.requirementStatuses.length;
+      if (total > 0) {
+        const completed = projectDetail.requirementStatuses.filter(r => r.isCompleted).length;
+        const calculatedProgress = Math.round((completed / total) * 100);
+
+        if (calculatedProgress !== projectDetail.progress) {
+          // Update local state immediately for better UX
+          setProjectDetail(prev => ({ ...prev, progress: calculatedProgress }));
+
+          // Sync with backend
+          axios.patch(`http://localhost:8000/api/projects/${projectId}/progress`, { progress: calculatedProgress })
+            .catch(error => {
+              console.error("Failed to sync progress with backend:", error);
+              // Optionally revert state or show an error to the user
+            });
+        }
+      }
+    }
+  }, [projectDetail, projectId]);
+
   /**
    * 處理文件頁碼變更
    * @param {number} pageNumber - 新的頁碼
@@ -1295,17 +1317,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                           <input
                             type="checkbox"
                             checked={req.isCompleted}
-                            onChange={async () => {
-                              try {
-                                const response = await axios.patch(`http://localhost:8000/api/projects/${projectId}/requirements/${req.id}`, {
-                                  isCompleted: !req.isCompleted
-                                });
-                                // Use the returned project detail to update the state
-                                setProjectDetail(response.data);
-                              } catch (error) {
-                                console.error("Failed to update requirement status:", error);
-                              }
-                            }}
+                            onChange={() => handleChecklistChange(req.id)}
                             disabled={progressMode !== 'AUTOMATIC'}
                           />
                           <span className="slider round"></span>
@@ -1335,6 +1347,12 @@ const CertificationProjectDetail = ({ canWrite }) => {
                       )}
                     </React.Fragment>
                   ))}
+                </div>
+                <div className="checklist-actions" style={{ textAlign: 'right', marginTop: '20px' }}>
+                  <button className="btn btn-primary" onClick={handleSaveChecklist}>
+                      <FontAwesomeIcon icon={faSave} className="me-2" />
+                      儲存
+                  </button>
                 </div>
               </div>
             </div>
@@ -2279,6 +2297,36 @@ const CertificationProjectDetail = ({ canWrite }) => {
     } catch (error) {
       console.error("Failed to apply template:", error);
       alert("套用範本失敗");
+    }
+  };
+
+  const handleChecklistChange = (requirementId) => {
+    setProjectDetail(prevProjectDetail => {
+      const newRequirementStatuses = prevProjectDetail.requirementStatuses.map(status => {
+        if (status.id === requirementId) {
+          return { ...status, isCompleted: !status.isCompleted };
+        }
+        return status;
+      });
+      return { ...prevProjectDetail, requirementStatuses: newRequirementStatuses };
+    });
+  };
+
+  const handleSaveChecklist = async () => {
+    if (!projectDetail || !projectDetail.requirementStatuses) return;
+
+    const payload = projectDetail.requirementStatuses.map(req => ({
+      id: req.id,
+      isCompleted: req.isCompleted,
+    }));
+
+    try {
+      const response = await axios.put(`http://localhost:8000/api/projects/${projectId}/requirements`, payload);
+      setProjectDetail(response.data);
+      alert('儲存成功！');
+    } catch (error)      {
+      console.error("Failed to save checklist changes:", error);
+      alert("儲存失敗，請稍後再試。");
     }
   };
 
