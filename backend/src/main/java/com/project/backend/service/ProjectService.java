@@ -323,10 +323,12 @@ public class ProjectService {
             project.getRequirementStatuses().add(status);
         }
 
-        projectRepository.save(project);
+        // Recalculate progress if in automatic mode before saving
+        if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
+            calculateProjectProgress(project);
+        }
 
-        // Recalculate progress if in automatic mode
-        calculateProjectProgress(project);
+        projectRepository.save(project);
     }
 
     @Transactional
@@ -370,14 +372,12 @@ public class ProjectService {
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
             calculateProjectProgress(project);
         }
-        
-        // Explicitly save the updated statuses first
-        projectRequirementStatusRepository.saveAll(project.getRequirementStatuses());
-        
-        // Then save the project with the updated progress
-        projectRepository.save(project);
 
-        return buildProjectDetailDTO(project);
+        // Saving the project entity will cascade the changes to its requirement statuses.
+        // We use the returned instance to ensure we build the DTO from the latest persisted state.
+        Project savedProject = projectRepository.save(project);
+
+        return buildProjectDetailDTO(savedProject);
     }
 
     @Transactional
