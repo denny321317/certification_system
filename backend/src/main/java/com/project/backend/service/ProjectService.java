@@ -360,19 +360,21 @@ public class ProjectService {
         Map<Long, Boolean> updates = statusesPayload.stream()
                 .collect(Collectors.toMap(
                         s -> ((Number) s.get("id")).longValue(),
-                        s -> (Boolean) s.get("isCompleted")
+                        s -> java.util.Optional.ofNullable((Boolean) s.get("isCompleted")).orElse(false)
                 ));
 
         for (ProjectRequirementStatus status : project.getRequirementStatuses()) {
-            if (updates.containsKey(status.getId())) {
-                status.setCompleted(updates.get(status.getId()));
-            }
+            status.setCompleted(updates.getOrDefault(status.getId(), status.isCompleted()));
         }
 
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
             calculateProjectProgress(project);
         }
         
+        // Explicitly save the updated statuses first
+        projectRequirementStatusRepository.saveAll(project.getRequirementStatuses());
+        
+        // Then save the project with the updated progress
         projectRepository.save(project);
 
         return buildProjectDetailDTO(project);
