@@ -150,12 +150,12 @@ public class ProjectController {
     }
 
     @PatchMapping("/{projectId}/requirements/{requirementId}")
-    public ResponseEntity<Void> updateRequirementStatus(@PathVariable Long projectId,
+    public ResponseEntity<ProjectDetailDTO> updateRequirementStatus(@PathVariable Long projectId,
                                                         @PathVariable Long requirementId,
                                                         @RequestBody Map<String, Boolean> payload) {
         Boolean isCompleted = payload.get("isCompleted");
-        projectService.updateRequirementStatus(projectId, requirementId, isCompleted);
-        return ResponseEntity.ok().build();
+        ProjectDetailDTO updatedProject = projectService.updateRequirementStatus(projectId, requirementId, isCompleted);
+        return ResponseEntity.ok(updatedProject);
     }
 
     @PatchMapping("/{projectId}/settings/progress-mode")

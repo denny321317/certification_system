@@ -27,5 +27,5 @@ public class ProjectDetailDTO {
     private List<DocumentDTO> documents;
     private String progressCalculationMode;
     private List<ProjectRequirementStatusDTO> requirementStatuses;
-
+    private CertificationTemplateDTO certificationTemplate;
 } 

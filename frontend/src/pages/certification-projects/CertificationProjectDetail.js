@@ -26,7 +26,8 @@ import {
   faSearch, faDownload, faTimes, faFolder, faFilePdf, 
   faFileWord, faFileExcel, faFileImage, faFile, faSortAmountDown, faSortAmountUp, faPlus,
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
-  faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
+  faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown,
+  faCheckSquare
 } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjectDetail.css';
 
@@ -223,6 +224,14 @@ const CertificationProjectDetail = ({ canWrite }) => {
     };
     fetchTemplates();
   }, []);
+
+  useEffect(() => {
+    if (projectDetail) {
+      const currentTemplateId = projectDetail.certificationTemplate?.id || '';
+      setSelectedTemplate(currentTemplateId);
+      setProgressMode(projectDetail.progressCalculationMode || 'MANUAL');
+    }
+  }, [projectDetail]);
 
   const handleRequirementChange = async (requirementStatusId, currentCompletedStatus) => {
     try {
@@ -1278,21 +1287,55 @@ const CertificationProjectDetail = ({ canWrite }) => {
               </div>
 
               <div className="checklist-container">
-                {projectDetail?.requirementStatuses?.map((req) => (
-                  <div className="checklist-item" key={req.id}>
-                    <input
-                      type="checkbox"
-                      id={`req-${req.id}`}
-                      className="form-check-input"
-                      checked={req.isCompleted}
-                      onChange={() => handleRequirementChange(req.id, req.isCompleted)}
-                      disabled={progressMode !== 'AUTOMATIC'}
-                    />
-                    <label htmlFor={`req-${req.id}`} className="checklist-label">
-                      {req.text}
-                    </label>
-                  </div>
-                ))}
+                <div className="checklist-items">
+                  {projectDetail && projectDetail.requirementStatuses && projectDetail.requirementStatuses.map(req => (
+                    <React.Fragment key={req.id}>
+                      <div className="checklist-item">
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={req.isCompleted}
+                            onChange={async () => {
+                              try {
+                                const response = await axios.patch(`http://localhost:8000/api/projects/${projectId}/requirements/${req.id}`, {
+                                  isCompleted: !req.isCompleted
+                                });
+                                // Use the returned project detail to update the state
+                                setProjectDetail(response.data);
+                              } catch (error) {
+                                console.error("Failed to update requirement status:", error);
+                              }
+                            }}
+                            disabled={progressMode !== 'AUTOMATIC'}
+                          />
+                          <span className="slider round"></span>
+                        </label>
+                        <span className="item-label">{req.text}</span>
+                      </div>
+                      {/* Render documents associated with the requirement */}
+                      {req.documents && req.documents.length > 0 && (
+                        <div className="document-list">
+                          {req.documents.map(doc => (
+                            <div className="document-item" key={doc.id}>
+                              <label className="switch document-switch">
+                                <input
+                                  type="checkbox"
+                                  // This assumes a similar checked state and handler exists for documents.
+                                  // For now, we'll make them read-only until the backend logic for document completion is confirmed.
+                                  // checked={doc.isCompleted} 
+                                  // onChange={() => handleDocumentCheck(doc.id)}
+                                  disabled // Initially disabled
+                                />
+                                <span className="slider round"></span>
+                              </label>
+                              <span className="document-label">{doc.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -2225,6 +2268,20 @@ const CertificationProjectDetail = ({ canWrite }) => {
     return '已完成';
   };
 
+  const handleApplyTemplate = async (templateId) => {
+    if (!templateId) return;
+    try {
+      await axios.put(`http://localhost:8000/api/projects/${projectId}/template`, { templateId });
+      setSelectedTemplate(templateId);
+      // Refetch project details to get the new requirement list
+      fetchProjectDetail();
+      alert("範本已成功套用");
+    } catch (error) {
+      console.error("Failed to apply template:", error);
+      alert("套用範本失敗");
+    }
+  };
+
   return (
     <div className="certification-project-detail">
       {/* 項目頂部信息 */}
@@ -2541,11 +2598,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
                                 cx="60"
                                 cy="60"
                                 strokeDasharray={`${2 * Math.PI * 52}`}
-                                strokeDashoffset={`${2 * Math.PI * 52 * (1 - editProjectForm.progress / 100)}`}
+                                strokeDashoffset={`${2 * Math.PI * 52 * (1 - (projectDetail.progress || 0) / 100)}`}
                               />
                             </svg>
                             <div className="progress-text">
-                              <span className="progress-number">{editProjectForm.progress}%</span>
+                              <span className="progress-number">
+                                {projectDetail.progress}%
+                              </span>
                               <span className="progress-label">完成</span>
                             </div>
                           </div>
@@ -2564,8 +2623,16 @@ const CertificationProjectDetail = ({ canWrite }) => {
                               min="0"
                               max="100"
                               step="5"
-                              value={editProjectForm.progress}
-                              onChange={handleEditProjectFormChange}
+                              value={projectDetail.progress || 0}
+                              onChange={(e) => {
+                                if (progressMode === 'MANUAL') {
+                                  setProjectDetail({
+                                    ...projectDetail,
+                                    progress: parseInt(e.target.value, 10),
+                                  });
+                                }
+                              }}
+                              disabled={progressMode === 'AUTOMATIC'}
                             />
                             <div className="progress-markers">
                               <span>0%</span>
@@ -2577,16 +2644,10 @@ const CertificationProjectDetail = ({ canWrite }) => {
                           </div>
                           <div className="progress-help-text">
                             <FontAwesomeIcon icon={faInfoCircle} className="help-icon" />
-                            拖動滑桿調整專案完成度，這將影響報表分析的統計結果
-                          </div>
-                        </div>
-
-                        <div className="progress-status-info">
-                          <div className="status-item">
-                            <span className="status-label">進度狀態：</span>
-                            <span className={`status-badge ${getProgressStatus(editProjectForm.progress)}`}>
-                              {getProgressStatusText(editProjectForm.progress)}
-                            </span>
+                            {progressMode === 'AUTOMATIC' 
+                              ? "自動模式下，進度由查檢表完成項自動計算。"
+                              : "手動拖動滑桿以調整專案完成度。"
+                            }
                           </div>
                         </div>
                       </div>
@@ -2594,284 +2655,17 @@ const CertificationProjectDetail = ({ canWrite }) => {
                   </div>
                 )}
               </div>
-
               <div className="edit-form-actions">
-                <div className="action-buttons">
-                  <button type="button" className="btn btn-outline" onClick={handleCloseEditProjectModal}>
-                    <FontAwesomeIcon icon={faTimes} className="btn-icon" />
-                    取消
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    <FontAwesomeIcon icon={faSave} className="btn-icon" />
-                    儲存變更
-                  </button>
-                </div>
-                <div className="form-hint">
-                  <FontAwesomeIcon icon={faInfoCircle} className="hint-icon" />
-                  變更將立即生效並同步更新相關報表
-                </div>
+                <button type="submit" className="btn btn-primary">
+                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  保存
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={handleCloseEditProjectModal}>
+                  <FontAwesomeIcon icon={faTimes} className="me-2" />
+                  取消
+                </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-      
-      {/* 刪除項目確認對話框 */}
-      {showDeleteConfirmModal && (
-        <div className="modal-overlay">
-          <div className="modal-dialog modal-confirm">
-            <div className="modal-content">
-              <div className="modal-header bg-danger">
-                <h5 className="modal-title">確認刪除</h5>
-                <button className="btn-close" onClick={handleCloseDeleteConfirmModal}>
-                  <FontAwesomeIcon icon={faTimes} />
-                </button>
-              </div>
-              <div className="modal-body">
-                <div className="alert-warning">
-                  <FontAwesomeIcon icon={faExclamationTriangle} />
-                  <div>警告：此操作將永久刪除專案「{projectDetail.name}」及其所有相關資料。此操作無法復原。</div>
-                </div>
-                
-                <div className="form-group">
-                  <label>請輸入專案名稱確認刪除：</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder={projectDetail.name}
-                  />
-                </div>
-                
-                <div className="form-check">
-                  <input type="checkbox" id="confirmDelete" className="form-check-input" />
-                  <label htmlFor="confirmDelete" className="form-check-label">
-                    我已閱讀並理解此操作的風險
-                  </label>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline-secondary" onClick={handleCloseDeleteConfirmModal}>
-                  取消
-                </button>
-                <button type="button" className="btn btn-danger" onClick={handleDeleteProject}>
-                  <FontAwesomeIcon icon={faTrash} /> 確認刪除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* 匯出報告對話框 */}
-      {showExportReportModal && (
-        <div className="modal-overlay">
-          <div className="upload-modal">
-            <div className="upload-modal-header">
-              <h5>匯出專案報告</h5>
-              <button className="btn-close" onClick={handleCloseExportReportModal}>
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
-            </div>
-            <div className="upload-form">
-              <div className="form-row">
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="exportFormat">報告格式</label>
-                    <select
-                      id="exportFormat"
-                      name="format"
-                      className="form-control"
-                      value={exportSettings.format}
-                      onChange={handleExportSettingChange}
-                    >
-                      <option value="excel">Excel試算表</option>
-                      <option value="pdf">待開發</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-col">
-                  <div className="form-group">
-                    <label htmlFor="exportLanguage">報告語言</label>
-                    <select
-                      id="exportLanguage"
-                      name="language"
-                      className="form-control"
-                    >
-                      <option value="zh-TW">繁體中文</option>
-                      <option value="en">待開發</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>選擇包含的內容</label>
-                <div className="checkbox-group">
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeBasicInfo"
-                      name="includeBasicInfo"
-                      className="form-check-input"
-                      checked={exportSettings.includeBasicInfo}
-                      onChange={handleExportSettingChange}
-                    />
-                    <label className="form-check-label" htmlFor="includeBasicInfo">
-                      專案基本資訊
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeTeamInfo"
-                      name="includeTeamInfo"
-                      className="form-check-input"
-                      checked={exportSettings.includeTeamInfo}
-                      onChange={handleExportSettingChange}
-                    />
-                    <label className="form-check-label" htmlFor="includeTeamInfo">
-                      團隊成員資訊
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeDocuments"
-                      name="includeDocuments"
-                      className="form-check-input"
-                      checked={exportSettings.includeDocuments}
-                      onChange={handleExportSettingChange}
-                    />
-                    <label className="form-check-label" htmlFor="includeDocuments">
-                      文件清單
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      type="checkbox"
-                      id="includeReviews"
-                      name="includeReviews"
-                      className="form-check-input"
-                      checked={exportSettings.includeReviews}
-                      onChange={handleExportSettingChange}
-                    />
-                    <label className="form-check-label" htmlFor="includeReviews">
-                      審核記錄
-                    </label>
-                  </div> 
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="reportNotes">附加說明</label>
-                <textarea
-                  id="reportNotes"
-                  name="notes"
-                  className="form-control"
-                  rows="3"
-                  placeholder="在報告中添加的備註或說明..."
-                  value={exportSettings.notes}
-                  onChange={handleExportSettingChange}
-                ></textarea>
-              </div>
-              
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={handleCloseExportReportModal}>
-                  取消
-                </button>
-                <button type="button" className="btn btn-primary" onClick={handleExportReport}>
-                  <FontAwesomeIcon icon={faFileExport} /> 匯出報告
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {showPermissionModal && selectedMemberIndex !== null &&(
-        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">編輯職責</h5>
-                <button type="button" className="btn-close" onClick={handleClosePermissionModal}></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">多重職責（可多選）</label>
-                  <input
-                    className="form-control"
-                    value={editDutiesInput}
-                    onChange={e => {
-                      const input = e.target.value;
-                      setEditDutiesInput(input);
-                      setEditDuties(
-                        input.split(',').map(s => s.trim()).filter(Boolean)
-                      );
-                    }}
-                    placeholder="以逗號分隔多個職責"
-                  />
-                  <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={handleClosePermissionModal}>關閉</button>
-                <button type="button" className="btn btn-primary" onClick={handleUpdateMember}>儲存</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      {showAddMemberModal && (
-        <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">添加團隊成員</h5>
-                <button type="button" className="btn-close" onClick={handleCloseAddMemberModal}></button>
-              </div>
-              <form onSubmit={handleAddMember}>
-                <div className="modal-body">
-                  {addMemberError && <div className="alert alert-danger py-2">{addMemberError}</div>}
-                  <div className="mb-3">
-                    <label className="form-label">選擇用戶</label>
-                    <select className="form-select" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} required>
-                      <option value="">請選擇</option>
-                      {availableUsers.map(u => (
-                        <option key={u.id} value={u.id}>{u.name}（{u.position || '無職稱'}）</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* 移除職責欄位 */}
-                  <div className="mb-3">
-                    <label className="form-label">權限</label>
-                    <select className="form-select" value={selectedPermission} onChange={e => setSelectedPermission(e.target.value)} required>
-                      <option value="view">僅檢視</option>
-                      <option value="edit">可編輯</option>
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">多重職責（可多選）</label>
-                    <input
-                      className="form-control"
-                      value={dutiesInput}
-                      onChange={e => {
-                        const input = e.target.value;
-                        setDutiesInput(input);
-                        setSelectedDuties(
-                          input.split(',').map(s => s.trim()).filter(Boolean)
-                        );
-                      }}
-                      placeholder="以逗號分隔多個職責"
-                    />
-                    <small className="text-muted">例如：文件管理, 進度追蹤, 審核協助</small>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={handleCloseAddMemberModal}>取消</button>
-                  <button type="submit" className="btn btn-primary" disabled={!selectedUserId}>新增</button>
-                </div>
-              </form>
-            </div>
           </div>
         </div>
       )}
@@ -2879,4 +2673,4 @@ const CertificationProjectDetail = ({ canWrite }) => {
   );
 };
 
-export default CertificationProjectDetail; 
+export default CertificationProjectDetail;

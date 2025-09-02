@@ -6,6 +6,7 @@ import com.project.backend.dto.ProjectRequirementStatusDTO;
 import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
+import com.project.backend.dto.CertificationTemplateDTO;
 import com.project.backend.model.*;
 import com.project.backend.repository.*;
 import com.project.backend.service.OperationHistoryService;
@@ -221,41 +222,56 @@ public class ProjectService {
     public ProjectDetailDTO getProjectDetailById(Long id) {
         Project project = projectRepository.findByIdWithRequirementStatuses(id)
                 .orElseThrow(() -> new IllegalArgumentException("Project with id " + id + " does not exist."));
+        return buildProjectDetailDTO(project);
+    }
 
-        // 組裝團隊成員
-        List<TeamMemberDTO> team = getTeamMembers(id);
+    private ProjectDetailDTO buildProjectDetailDTO(Project project) {
+        List<TeamMemberDTO> team = getTeamMembers(project.getId());
 
-        // 組裝文件
-        List<DocumentDTO> documents = null;
-        if (project.getDocuments() != null) {
-            documents = project.getDocuments().stream().map(doc -> new DocumentDTO(
-                    doc.getId(),
-                    doc.getOriginalFilename(),
-                    doc.getFilename(),
-                    doc.getCategory(),
-                    doc.getFileType(),
-                    doc.getUploadedBy(),
-                    doc.getUploadTime() != null ? doc.getUploadTime().toLocalDate().toString() : null,
-                    doc.getDescription()
-            )).collect(Collectors.toList());
-        }
+        List<DocumentDTO> documents = project.getDocuments() != null ?
+                project.getDocuments().stream().map(doc -> new DocumentDTO(
+                        doc.getId(),
+                        doc.getOriginalFilename(),
+                        doc.getFilename(),
+                        doc.getCategory(),
+                        doc.getFileType(),
+                        doc.getUploadedBy(),
+                        doc.getUploadTime() != null ? doc.getUploadTime().toLocalDate().toString() : null,
+                        doc.getDescription()
+                )).collect(Collectors.toList()) : new ArrayList<>();
 
-        // 組裝需求狀態
         List<ProjectRequirementStatusDTO> requirementStatuses = project.getRequirementStatuses().stream()
-                .map(status -> new ProjectRequirementStatusDTO(
-                        status.getId(),
-                        status.getTemplateRequirement().getId(),
-                        status.getTemplateRequirement().getText(),
-                        status.isCompleted()
-                ))
+                .map(status -> {
+                    List<DocumentDTO> documentDTOs = status.getTemplateRequirement().getDocuments().stream()
+                            .map(doc -> new DocumentDTO(
+                                    doc.getId(),
+                                    doc.getName(),
+                                    null, null, null, null, null, null
+                            )).collect(Collectors.toList());
+
+                    return new ProjectRequirementStatusDTO(
+                            status.getId(),
+                            status.getTemplateRequirement().getId(),
+                            status.getTemplateRequirement().getText(),
+                            status.isCompleted(),
+                            documentDTOs
+                    );
+                })
                 .collect(Collectors.toList());
 
-
-        // Defensively handle null progressCalculationMode for existing data
         String progressMode = project.getProgressCalculationMode() != null
                 ? project.getProgressCalculationMode().name()
                 : ProgressCalculationMode.MANUAL.name();
 
+        CertificationTemplateDTO templateDTO = null;
+        if (project.getCertificationTemplate() != null) {
+            templateDTO = new CertificationTemplateDTO(
+                    project.getCertificationTemplate().getId(),
+                    project.getCertificationTemplate().getDisplayName(),
+                    project.getCertificationTemplate().getDescription(),
+                    null // Requirements not needed for this view
+            );
+        }
 
         return new ProjectDetailDTO(
                 project.getId(),
@@ -274,7 +290,8 @@ public class ProjectService {
                 team,
                 documents,
                 progressMode,
-                requirementStatuses
+                requirementStatuses,
+                templateDTO
         );
     }
 
@@ -308,13 +325,13 @@ public class ProjectService {
         projectRepository.save(project);
 
         // Recalculate progress if in automatic mode
-        calculateProjectProgress(projectId);
+        calculateProjectProgress(project);
     }
 
     @Transactional
-    public void updateRequirementStatus(Long projectId, Long requirementStatusId, boolean isCompleted) {
-        ProjectRequirementStatus status = projectRequirementStatusRepository.findById(requirementStatusId)
-                .orElseThrow(() -> new IllegalArgumentException("Requirement status not found with id: " + requirementStatusId));
+    public ProjectDetailDTO updateRequirementStatus(Long projectId, Long requirementId, boolean isCompleted) {
+        ProjectRequirementStatus status = projectRequirementStatusRepository.findById(requirementId)
+                .orElseThrow(() -> new IllegalArgumentException("Requirement status not found with id: " + requirementId));
 
         if (!status.getProject().getId().equals(projectId)) {
             throw new IllegalArgumentException("Requirement status does not belong to the specified project.");
@@ -323,30 +340,30 @@ public class ProjectService {
         status.setCompleted(isCompleted);
         projectRequirementStatusRepository.save(status);
 
-        Project project = projectRepository.findById(projectId).get();
+        Project project = status.getProject();
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
-            calculateProjectProgress(projectId);
+            calculateProjectProgress(project);
         }
+        
+        // Return the updated project details using the helper
+        return buildProjectDetailDTO(project);
     }
 
     @Transactional
     public void setProgressCalculationMode(Long projectId, ProgressCalculationMode mode) {
-        Project project = projectRepository.findById(projectId)
+        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
 
         project.setProgressCalculationMode(mode);
 
         if (mode == ProgressCalculationMode.AUTOMATIC) {
-            calculateProjectProgress(projectId);
+            calculateProjectProgress(project);
         }
 
         projectRepository.save(project);
     }
 
-    private void calculateProjectProgress(Long projectId) {
-        Project project = projectRepository.findByIdWithRequirementStatuses(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
-
+    private void calculateProjectProgress(Project project) {
         if (project.getProgressCalculationMode() == ProgressCalculationMode.AUTOMATIC) {
             List<ProjectRequirementStatus> statuses = project.getRequirementStatuses();
 
