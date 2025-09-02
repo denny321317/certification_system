@@ -151,8 +151,9 @@ const MainLayout = ({ children }) => {
                 <FontAwesomeIcon icon={faUser} />
               </div>
               <div className="user-info">
-                <span className="user-name">{currentUser?.name || '用戶名稱'}</span>
-                <span className="user-role">{currentUser?.roleDTO.name || '系統管理員'}</span>
+                <span className="user-name">{currentUser?.name ?? currentUser?.username ?? currentUser?.email ?? '用戶名稱'}</span>
+
+                <span className="user-role">  {currentUser?.roleDTO?.name ?? currentUser?.role ?? '系統管理員'}</span>
               </div>
               <div className="user-dropdown">
                 <div className="dropdown-item">
