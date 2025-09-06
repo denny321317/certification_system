@@ -23,6 +23,7 @@ import {
   faArrowLeft, faSave, faTimes, faExclamationCircle,
   faCalendarAlt, faUser, faBuilding, faClipboardCheck, faFileAlt
 } from '@fortawesome/free-solid-svg-icons';
+import { getTemplateOptions } from '../../services/templateService';
 import './CreateCertificationProject.css';
 
 /**
@@ -63,33 +64,11 @@ const CreateCertificationProject = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /**
-   * 認證類型選項
+   * 認證模板選項（從模板中心獲取）
    * @type {Array<{id: string, name: string}>}
    */
-  const certificationTypes = [
-    { id: 'smeta', name: 'SMETA 4支柱認證' },
-    { id: 'iso9001', name: 'ISO 9001 品質管理系統' },
-    { id: 'iso14001', name: 'ISO 14001 環境管理系統' },
-    { id: 'iso45001', name: 'ISO 45001 職業安全衛生' },
-    { id: 'sa8000', name: 'SA8000 社會責任認證' },
-    { id: 'bsci', name: 'BSCI 商業社會責任認證' },
-    { id: 'fsc', name: 'FSC 森林管理委員會認證' },
-    { id: 'other', name: '其他認證' }
-  ];
+  const certificationTemplates = getTemplateOptions();
 
-  /**
-   * 認證機構選項
-   * @type {Array<{id: string, name: string}>}
-   */
-  const certificationAgencies = [
-    { id: 'sgs', name: 'SGS Taiwan' },
-    { id: 'bsi', name: 'BSI Taiwan' },
-    { id: 'tuv', name: 'TÜV Rheinland' },
-    { id: 'bureau', name: 'Bureau Veritas' },
-    { id: 'intertek', name: 'Intertek' },
-    { id: 'dekra', name: 'DEKRA' },
-    { id: 'other', name: '其他機構' }
-  ];
 
   /**
    * 負責人選項
@@ -135,7 +114,7 @@ const CreateCertificationProject = () => {
     }
     
     if (!formData.certType) {
-      errors.certType = '請選擇認證類型';
+      errors.certType = '請選擇認證模板';
     }
     
     if (!formData.startDate) {
@@ -162,8 +141,8 @@ const CreateCertificationProject = () => {
       errors.manager = '請選擇專案負責人';
     }
     
-    if (!formData.agency) {
-      errors.agency = '請選擇認證機構';
+    if (!formData.agency.trim()) {
+      errors.agency = '請輸入認證機構';
     }
     
     setFormErrors(errors);
@@ -245,31 +224,31 @@ const CreateCertificationProject = () => {
               )}
             </div>
             
-            <div className="form-group">
-              <label htmlFor="certType">
-                認證類型 <span className="required">*</span>
-              </label>
-              <select
-                id="certType"
-                name="certType"
-                value={formData.certType}
-                onChange={handleInputChange}
-                className={`form-control ${formErrors.certType ? 'is-invalid' : ''}`}
-              >
-                <option value="">選擇認證類型</option>
-                {certificationTypes.map(type => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-              {formErrors.certType && (
-                <div className="invalid-feedback">
-                  <FontAwesomeIcon icon={faExclamationCircle} className="me-1" />
-                  {formErrors.certType}
-                </div>
-              )}
-            </div>
+             <div className="form-group">
+               <label htmlFor="certType">
+                 認證模板 <span className="required">*</span>
+               </label>
+               <select
+                 id="certType"
+                 name="certType"
+                 value={formData.certType}
+                 onChange={handleInputChange}
+                 className={`form-control ${formErrors.certType ? 'is-invalid' : ''}`}
+               >
+                 <option value="">選擇認證模板</option>
+                 {certificationTemplates.map(template => (
+                   <option key={template.id} value={template.id}>
+                     {template.name}
+                   </option>
+                 ))}
+               </select>
+               {formErrors.certType && (
+                 <div className="invalid-feedback">
+                   <FontAwesomeIcon icon={faExclamationCircle} className="me-1" />
+                   {formErrors.certType}
+                 </div>
+               )}
+             </div>
             
             <div className="form-group">
               <label htmlFor="description">專案描述</label>
@@ -452,20 +431,15 @@ const CreateCertificationProject = () => {
               </label>
               <div className="input-with-icon">
                 <FontAwesomeIcon icon={faBuilding} className="input-icon" />
-                <select
+                <input
+                  type="text"
                   id="agency"
                   name="agency"
                   value={formData.agency}
                   onChange={handleInputChange}
                   className={`form-control ${formErrors.agency ? 'is-invalid' : ''}`}
-                >
-                  <option value="">選擇認證機構</option>
-                  {certificationAgencies.map(agency => (
-                    <option key={agency.id} value={agency.name}>
-                      {agency.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="輸入認證機構名稱"
+                />
               </div>
               {formErrors.agency && (
                 <div className="invalid-feedback">

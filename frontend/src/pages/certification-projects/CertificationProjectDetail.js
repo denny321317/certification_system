@@ -23,11 +23,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faArrowLeft, faClock, faFileAlt, faUsers, faCheckCircle, 
   faExclamationTriangle, faEdit, faHistory, faComments, faUpload, faClipboardCheck,
-  faSearch, faFilter, faDownload, faTimes, faFolder, faFilePdf, 
+  faSearch, faDownload, faTimes, faFolder, faFilePdf, 
   faFileWord, faFileExcel, faFileImage, faFile, faSortAmountDown, faSortAmountUp, faPlus,
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
-  faProjectDiagram, faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
+  faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown,
+  faList
 } from '@fortawesome/free-solid-svg-icons';
+import { getTemplateById } from '../../services/templateService';
 import './CertificationProjectDetail.css';
 
 // 引入審核與回饋組件
@@ -231,6 +233,7 @@ const CertificationProjectDetail = () => {
       const mockProjectDetail = {
         id: parseInt(projectId),
         name: 'SMETA 4支柱認證',
+        certType: 'smeta', // 新增認證模板類型
         status: 'internal-review',
         startDate: '2023-07-15',
         endDate: '2023-10-30',
@@ -924,6 +927,19 @@ const CertificationProjectDetail = () => {
               <p>{projectDetail.description}</p>
             </div>
             
+            <div className="project-basic-info-section">
+              <div className="basic-info-list">
+                <div className="basic-info-item">
+                  <span className="info-label">認證機構：</span>
+                  <span className="info-value agency-name">{projectDetail.agency}</span>
+                </div>
+                <div className="basic-info-item">
+                  <span className="info-label">專案負責人：</span>
+                  <span className="info-value">{projectDetail.manager}</span>
+                </div>
+              </div>
+            </div>
+            
             <div className="project-status-section">
               <div className="status-header">
                 <h5>項目狀態</h5>
@@ -1027,6 +1043,53 @@ const CertificationProjectDetail = () => {
                 </div>
               </div>
             </div>
+          </div>
+        );
+      
+      case 'template':
+        // 獲取專案對應的認證模板
+        const projectTemplate = getTemplateById(projectDetail.certType);
+        
+        return (
+          <div className="project-template">
+            {projectTemplate ? (
+              <>
+                <div className="template-detail-card">
+                  <h4>{projectTemplate.displayName} 認證需求指標與文件指引</h4>
+                  <p className="text-muted">{projectTemplate.description}</p>
+                  <h6 className="mt-4">需求指標與對應文件</h6>
+                  <div>
+                    {projectTemplate.requirements.length > 0 ? (
+                      <ul className="list-group">
+                        {projectTemplate.requirements.map((requirement, index) => (
+                          <li key={index} className="list-group-item">
+                            <div><b>{index + 1}. {requirement.text}</b></div>
+                            {requirement.documents && requirement.documents.length > 0 ? (
+                              <ul className="mt-2">
+                                {requirement.documents.map((document, docIndex) => (
+                                  <li key={docIndex}><b>{document.name}</b>：{document.description}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div className="text-muted ms-3">（無需文件）</div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-muted">無符合條件的需求指標或文件</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="template-not-found">
+                <div className="alert alert-warning">
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
+                  找不到對應的認證模板，請聯繫系統管理員。
+                </div>
+              </div>
+            )}
           </div>
         );
       
@@ -1715,6 +1778,13 @@ const CertificationProjectDetail = () => {
         >
           <FontAwesomeIcon icon={faFileAlt} className="me-2" />
           項目概覽
+        </div>
+        <div 
+          className={`project-tab ${activeTab === 'template' ? 'active' : ''}`}
+          onClick={() => setActiveTab('template')}
+        >
+          <FontAwesomeIcon icon={faList} className="me-2" />
+          認證模板
         </div>
         <div 
           className={`project-tab ${activeTab === 'documents' ? 'active' : ''}`}

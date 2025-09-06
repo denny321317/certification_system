@@ -28,6 +28,12 @@ import {
   faTimes, faEdit, faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import TemplateEditor from './components/TemplateEditor';
+import { 
+  getTemplates, 
+  createTemplate as createTemplateService, 
+  updateTemplate as updateTemplateService, 
+  deleteTemplate as deleteTemplateService 
+} from '../../services/templateService';
 import './TemplateCenter.css';
 
 /**
@@ -234,90 +240,24 @@ const TemplateCenter = () => {
     setCurrentPage(newPage);
   };
 
-  // 1. 靜態認證模板資料（重構為一對多巢狀需求-文件結構）
-  const certificationTemplates = [
-    {
-      id: 'smeta',
-      displayName: 'SMETA',
-      description: 'SMETA（Sedex會員道德貿易審核）是一套國際公認的社會責任審核標準，涵蓋勞工、健康安全、環境與商業道德四大支柱。',
-      requirements: [
-        {
-          text: '完成自我評估問卷',
-          documents: [
-            { name: '自我評估問卷', description: '依SMETA標準填寫的自我評估表格' }
-          ]
-        },
-        {
-          text: '準備勞工權益、健康安全、環境管理、商業道德等相關文件',
-          documents: [
-            { name: '勞工權益政策', description: '公司對勞工權益的承諾與政策文件' },
-            { name: '健康安全管理程序', description: '現場作業安全與健康管理相關文件' },
-            { name: '環境管理計劃', description: '企業環境保護與管理措施說明' },
-            { name: '商業道德聲明', description: '反貪腐、誠信經營等政策文件' }
-          ]
-        },
-        {
-          text: '接受現場審核與文件審查',
-          documents: []
-        }
-      ]
-    },
-    {
-      id: 'ctpat',
-      displayName: 'C-TPAT',
-      description: 'C-TPAT（海關-商貿反恐夥伴計畫）是美國海關推動的供應鏈安全認證，強調貨物運輸安全與反恐措施。',
-      requirements: [
-        {
-          text: '建立供應鏈安全政策',
-          documents: [
-            { name: '供應鏈安全政策', description: '公司針對供應鏈安全的政策文件' }
-          ]
-        },
-        {
-          text: '落實人員背景查核與培訓',
-          documents: [
-            { name: '人員背景查核紀錄', description: '員工背景調查與查核紀錄' },
-            { name: '安全培訓記錄', description: '針對反恐與安全的教育訓練紀錄' }
-          ]
-        },
-        {
-          text: '完善貨物運輸與倉儲安全措施',
-          documents: [
-            { name: '貨物運輸安全計劃', description: '貨物運輸過程的安全管理措施說明' }
-          ]
-        }
-      ]
-    },
-    {
-      id: 'iso9001',
-      displayName: 'ISO9001',
-      description: 'ISO 9001 是國際標準化組織制定的品質管理體系標準，強調持續改善與顧客滿意。',
-      requirements: [
-        {
-          text: '建立品質管理手冊',
-          documents: [
-            { name: '品質管理手冊', description: '公司品質政策、組織架構與管理流程' }
-          ]
-        },
-        {
-          text: '明確組織職責與流程',
-          documents: [
-            { name: '程序文件', description: '各部門作業流程與標準作業程序(SOP)' }
-          ]
-        },
-        {
-          text: '持續監控與改善品質指標',
-          documents: [
-            { name: '內部稽核報告', description: '品質管理體系的自我檢查與改善報告' },
-            { name: '顧客滿意度調查', description: '顧客意見回饋與滿意度調查紀錄' }
-          ]
-        }
-      ]
-    }
-  ];
+  // 1. 從服務獲取認證模板資料
+  const [certificationTemplates, setCertificationTemplates] = useState([]);
+  
+  // 載入模板數據
+  useEffect(() => {
+    setCertificationTemplates(getTemplates());
+  }, []);
 
   // 2. 左側認證類型選單
-  const [activeCert, setActiveCert] = useState(certificationTemplates[0]?.id || '');
+  const [activeCert, setActiveCert] = useState('');
+  
+  // 當模板載入完成後設置預設選中的模板
+  useEffect(() => {
+    if (certificationTemplates.length > 0 && !activeCert) {
+      setActiveCert(certificationTemplates[0].id);
+    }
+  }, [certificationTemplates, activeCert]);
+  
   const filteredCertTemplates = certificationTemplates.filter(t =>
     t.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -385,6 +325,7 @@ const TemplateCenter = () => {
     e.preventDefault();
     const certId = newTemplateForm.certId.trim();
     if (!certId) return;
+    
     // 只保留有內容的需求與文件
     const requirements = newTemplateForm.requirements
       .filter(r => r.text.trim())
@@ -392,14 +333,20 @@ const TemplateCenter = () => {
         text: r.text.trim(),
         documents: r.documents.filter(d => d.name.trim())
       }));
-    certificationTemplates.push({
-      id: certId,
+    
+    const success = createTemplateService({
+      certId: certId,
       displayName: certId,
       description: newTemplateForm.description,
       requirements
     });
-    setShowCreateModal(false);
-    setNewTemplateForm({ certId: '', description: '', requirements: [ { text: '', documents: [] } ] });
+    
+    if (success) {
+      // 重新載入模板列表
+      setCertificationTemplates(getTemplates());
+      setShowCreateModal(false);
+      setNewTemplateForm({ certId: '', description: '', requirements: [ { text: '', documents: [] } ] });
+    }
   };
 
   // 3. 搜尋功能整合
@@ -484,18 +431,24 @@ const TemplateCenter = () => {
   };
   const handleSaveEditTemplate = (e) => {
     e.preventDefault();
-    const idx = certificationTemplates.findIndex(t => t.id === editTemplateForm.id);
-    if (idx !== -1) {
-      certificationTemplates[idx].displayName = editTemplateForm.displayName;
-      certificationTemplates[idx].description = editTemplateForm.description;
-      certificationTemplates[idx].requirements = editTemplateForm.requirements
-        .filter(r => r.text.trim())
-        .map(r => ({
-          text: r.text.trim(),
-          documents: r.documents.filter(d => d.name.trim())
-        }));
+    const requirements = editTemplateForm.requirements
+      .filter(r => r.text.trim())
+      .map(r => ({
+        text: r.text.trim(),
+        documents: r.documents.filter(d => d.name.trim())
+      }));
+    
+    const success = updateTemplateService(editTemplateForm.id, {
+      displayName: editTemplateForm.displayName,
+      description: editTemplateForm.description,
+      requirements
+    });
+    
+    if (success) {
+      // 重新載入模板列表
+      setCertificationTemplates(getTemplates());
+      setShowEditModal(false);
     }
-    setShowEditModal(false);
   };
   // 刪除
   const handleShowDeleteModal = (id) => {
@@ -503,13 +456,19 @@ const TemplateCenter = () => {
     setShowDeleteModal(true);
   };
   const handleDeleteTemplate = () => {
-    const idx = certificationTemplates.findIndex(t => t.id === deleteTargetId);
-    if (idx !== -1) {
-      certificationTemplates.splice(idx, 1);
+    const success = deleteTemplateService(deleteTargetId);
+    
+    if (success) {
+      // 重新載入模板列表
+      const updatedTemplates = getTemplates();
+      setCertificationTemplates(updatedTemplates);
+      
+      // 如果刪除的是當前選中的模板，切換到第一個模板
       if (activeCert === deleteTargetId) {
-        setActiveCert(certificationTemplates[0]?.id || '');
+        setActiveCert(updatedTemplates[0]?.id || '');
       }
     }
+    
     setShowDeleteModal(false);
     setDeleteTargetId('');
   };
