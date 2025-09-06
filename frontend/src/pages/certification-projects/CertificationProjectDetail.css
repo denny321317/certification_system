@@ -156,6 +156,11 @@
   font-weight: 700;
 }
 
+/* 認證模板頁籤樣式 */
+.project-template .template-detail-card .list-group-item ul li b {
+  color: #6366f1;
+}
+
 /* 時間線樣式 */
 .project-timeline {
   margin-bottom: 24px;
