@@ -143,7 +143,7 @@ public class ProjectController {
             projectService.saveChecklistState(
                 projectId, 
                 request.getSelectedTemplateId(), 
-                request.getRequirements(), 
+                request.getChecklistState(), 
                 request.getProgress()
             );
             return ResponseEntity.ok().body("{\"message\": \"Checklist saved successfully\"}");

@@ -268,9 +268,18 @@ const CertificationProjectDetail = ({ canWrite }) => {
       }
     };
 
-    // Only fetch requirements if we have a selected template
-    // and the project's own checklist state hasn't been loaded yet.
-    if (!projectDetail?.checklistState) {
+    // Logic to decide whether to load from saved state or fetch new template
+    if (projectDetail?.checklistState) {
+        const savedState = JSON.parse(projectDetail.checklistState);
+        // We assume savedState is an object like { templateId: '...', requirements: [...] }
+        if (savedState.templateId === selectedTemplate) {
+            setRequirements(savedState.requirements);
+        } else {
+            // Template has changed, fetch new requirements
+            fetchRequirements();
+        }
+    } else if (selectedTemplate) {
+        // No saved state, fetch new requirements
         fetchRequirements();
     }
   }, [selectedTemplate, projectDetail]);
@@ -304,7 +313,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     );
   };
 
-  const allDocuments = requirements.flatMap(indicator => indicator.documents);
+  const allDocuments = Array.isArray(requirements) ? requirements.flatMap(indicator => indicator.documents) : [];
   const completedDocuments = allDocuments.filter(doc => doc.completed);
   const calculatedProgress =
     allDocuments.length > 0
@@ -313,9 +322,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
 
   const handleSaveChecklist = async () => {
     setIsSaving(true);
+    // Include templateId in the saved state
     const payload = {
       selectedTemplateId: selectedTemplate,
-      requirements: requirements,
+      checklistState: JSON.stringify({
+        templateId: selectedTemplate,
+        requirements: requirements,
+      }),
       progress: progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress,
     };
 
@@ -418,13 +431,9 @@ const CertificationProjectDetail = ({ canWrite }) => {
         const data = await response.json();
         setProjectDetail(data);
 
-        // Check and apply saved checklist state from backend
+        // Set the selected template from the project details
         if (data.selectedTemplateId) {
           setSelectedTemplate(data.selectedTemplateId);
-        }
-        if (data.checklistState) {
-          // Parse the JSON string from backend and set it to requirements state
-          setRequirements(JSON.parse(data.checklistState));
         }
 
       } catch (err) {

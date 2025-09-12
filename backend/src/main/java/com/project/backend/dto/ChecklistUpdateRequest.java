@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class ChecklistUpdateRequest {
     private String selectedTemplateId;
-    private List<Map<String, Object>> requirements;
+    private String checklistState;
     private int progress;
 
     // Getters and Setters
@@ -17,12 +17,12 @@ public class ChecklistUpdateRequest {
         this.selectedTemplateId = selectedTemplateId;
     }
 
-    public List<Map<String, Object>> getRequirements() {
-        return requirements;
+    public String getChecklistState() {
+        return checklistState;
     }
 
-    public void setRequirements(List<Map<String, Object>> requirements) {
-        this.requirements = requirements;
+    public void setChecklistState(String checklistState) {
+        this.checklistState = checklistState;
     }
 
     public int getProgress() {

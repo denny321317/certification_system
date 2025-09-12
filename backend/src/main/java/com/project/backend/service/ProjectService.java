@@ -273,16 +273,14 @@ public class ProjectService {
         );
     }
 
-    public void saveChecklistState(Long projectId, String selectedTemplateId, List<Map<String, Object>> requirements, int progress) throws JsonProcessingException {
+    public void saveChecklistState(Long projectId, String selectedTemplateId, String checklistState, int progress) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
-
+        
         project.setSelectedTemplateId(selectedTemplateId);
         project.setProgress(progress);
-
-        String checklistStateJson = objectMapper.writeValueAsString(requirements);
-        project.setChecklistState(checklistStateJson);
-
+        project.setChecklistState(checklistState);
+        
         projectRepository.save(project);
     }
 }
