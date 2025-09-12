@@ -219,25 +219,82 @@ const CertificationProjectDetail = ({ canWrite }) => {
 
   // Mock
   const [requirements, setRequirements] = useState([
-    { id: 1, text: '供應商資料問卷已填寫完畢', completed: true },
-    { id: 2, text: '勞動合約範本已上傳', completed: true },
-    { id: 3, text: '工作時數紀錄表已提供', completed: false },
-    { id: 4, text: '薪資發放證明已歸檔', completed: true },
-    { id: 5, text: '消防安全演習紀錄', completed: false },
-    { id: 6, text: '化學品儲存與管理政策', completed: false },
+    {
+      id: 1,
+      text: '商業實踐與道德',
+      completed: false,
+      documents: [
+        { id: 11, text: '反貪腐政策文件', completed: true },
+        { id: 12, text: '商業道德行為準則', completed: false },
+        { id: 13, text: '利益衝突申報表', completed: true },
+      ],
+    },
+    {
+      id: 2,
+      text: '勞工標準',
+      completed: false,
+      documents: [
+        { id: 21, text: '員工手冊與勞動合約', completed: true },
+        { id: 22, text: '工時與薪資紀錄', completed: false },
+        { id: 23, text: '禁止童工政策', completed: false },
+      ],
+    },
+    {
+      id: 3,
+      text: '健康與安全',
+      completed: false,
+      documents: [
+        { id: 31, text: '消防安全檢查報告', completed: true },
+        { id: 32, text: '急救箱與應急設備清單', completed: true },
+        { id: 33, text: '化學品管理程序', completed: false },
+      ],
+    },
+    {
+      id: 4,
+      text: '環境管理',
+      completed: false,
+      documents: [
+        { id: 41, text: '廢棄物處理紀錄', completed: false },
+        { id: 42, text: '環保許可證', completed: false },
+      ],
+    },
   ]);
 
-  const handleRequirementChange = (id) => {
-    setRequirements(
-      requirements.map((req) =>
-        req.id === id ? { ...req, completed: !req.completed } : req
-      )
+  const handleRequirementChange = (indicatorId, documentId = null) => {
+    setRequirements(prevRequirements =>
+      prevRequirements.map(indicator => {
+        if (indicator.id === indicatorId) {
+          let newDocuments;
+          let newIndicatorCompleted;
+
+          if (documentId) {
+            // Toggle a single document
+            newDocuments = indicator.documents.map(doc =>
+              doc.id === documentId ? { ...doc, completed: !doc.completed } : doc
+            );
+            // After toggling a doc, recalculate indicator status
+            newIndicatorCompleted = newDocuments.every(doc => doc.completed);
+          } else {
+            // Toggle an entire indicator (and all its documents)
+            newIndicatorCompleted = !indicator.completed;
+            newDocuments = indicator.documents.map(doc => ({
+              ...doc,
+              completed: newIndicatorCompleted,
+            }));
+          }
+          return { ...indicator, documents: newDocuments, completed: newIndicatorCompleted };
+        }
+        return indicator;
+      })
     );
   };
 
-  const calculatedProgress = Math.round(
-    (requirements.filter((r) => r.completed).length / requirements.length) * 100
-  );
+  const allDocuments = requirements.flatMap(indicator => indicator.documents);
+  const completedDocuments = allDocuments.filter(doc => doc.completed);
+  const calculatedProgress =
+    allDocuments.length > 0
+      ? Math.round((completedDocuments.length / allDocuments.length) * 100)
+      : 0;
 
   /**
    * 操作歷史狀態
@@ -1255,19 +1312,38 @@ const CertificationProjectDetail = ({ canWrite }) => {
               </div>
 
               <div className="checklist-container">
-                {requirements.map((req) => (
-                  <div className="checklist-item" key={req.id}>
-                    <input
-                      type="checkbox"
-                      id={`req-${req.id}`}
-                      className="form-check-input"
-                      checked={req.completed}
-                      onChange={() => handleRequirementChange(req.id)}
-                      disabled={progressMode !== 'AUTOMATIC'}
-                    />
-                    <label htmlFor={`req-${req.id}`} className="checklist-label">
-                      {req.text}
-                    </label>
+                {requirements.map((indicator) => (
+                  <div className="checklist-indicator-group" key={indicator.id}>
+                    <div className="checklist-item indicator">
+                      <input
+                        type="checkbox"
+                        id={`indicator-${indicator.id}`}
+                        className="form-check-input"
+                        checked={indicator.completed}
+                        onChange={() => handleRequirementChange(indicator.id)}
+                        disabled={progressMode !== 'AUTOMATIC'}
+                      />
+                      <label htmlFor={`indicator-${indicator.id}`} className="checklist-label indicator-label">
+                        <strong>{indicator.text}</strong>
+                      </label>
+                    </div>
+                    <div className="checklist-documents" style={{ marginLeft: '2rem' }}>
+                      {indicator.documents.map((doc) => (
+                        <div className="checklist-item document" key={doc.id}>
+                          <input
+                            type="checkbox"
+                            id={`doc-${doc.id}`}
+                            className="form-check-input"
+                            checked={doc.completed}
+                            onChange={() => handleRequirementChange(indicator.id, doc.id)}
+                            disabled={progressMode !== 'AUTOMATIC'}
+                          />
+                          <label htmlFor={`doc-${doc.id}`} className="checklist-label document-label">
+                            {doc.text}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
