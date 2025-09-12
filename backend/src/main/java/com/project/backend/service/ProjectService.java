@@ -267,7 +267,9 @@ public class ProjectService {
                 project.getProgressColor(),
                 project.getDescription(),
                 team,
-                documents
+                documents,
+                project.getSelectedTemplateId(),
+                project.getChecklistState()
         );
     }
 
