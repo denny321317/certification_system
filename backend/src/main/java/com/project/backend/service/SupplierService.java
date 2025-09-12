@@ -46,8 +46,8 @@ public class SupplierService {
                 .map(project -> new ProjectDetailDTO(
                     project.getId(),
                     project.getName(),
-                    project.getStatus()
-                    // 其他你需要的欄位
+                    project.getStatus(),
+                    null, null, null, null, null, null, null, 0, null, null, null, null, null, null
                 ))
                 .collect(Collectors.toList());
             dto.setProjects(projectDTOs);
