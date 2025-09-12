@@ -208,58 +208,72 @@ const CertificationProjectDetail = ({ canWrite }) => {
   });
 
   // Mock
-  const [templates, setTemplates] = useState([
-    { id: 'smeta-v1', name: 'SMETA 認證標準 V1' },
-    { id: 'iso27001', name: 'ISO 27001 資訊安全管理' },
-    { id: 'custom-template-1', name: '內部稽核客製化範本' },
-  ]);
+  const [templates, setTemplates] = useState([]);
+  
+  const [requirements, setRequirements] = useState([]);
 
   const [selectedTemplate, setSelectedTemplate] = useState('smeta-v1');
   const [progressMode, setProgressMode] = useState('AUTOMATIC'); // MANUAL or AUTOMATIC
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mock
-  const [requirements, setRequirements] = useState([
-    {
-      id: 1,
-      text: '商業實踐與道德',
-      completed: false,
-      documents: [
-        { id: 11, text: '反貪腐政策文件', completed: true },
-        { id: 12, text: '商業道德行為準則', completed: false },
-        { id: 13, text: '利益衝突申報表', completed: true },
-      ],
-    },
-    {
-      id: 2,
-      text: '勞工標準',
-      completed: false,
-      documents: [
-        { id: 21, text: '員工手冊與勞動合約', completed: true },
-        { id: 22, text: '工時與薪資紀錄', completed: false },
-        { id: 23, text: '禁止童工政策', completed: false },
-      ],
-    },
-    {
-      id: 3,
-      text: '健康與安全',
-      completed: false,
-      documents: [
-        { id: 31, text: '消防安全檢查報告', completed: true },
-        { id: 32, text: '急救箱與應急設備清單', completed: true },
-        { id: 33, text: '化學品管理程序', completed: false },
-      ],
-    },
-    {
-      id: 4,
-      text: '環境管理',
-      completed: false,
-      documents: [
-        { id: 41, text: '廢棄物處理紀錄', completed: false },
-        { id: 42, text: '環保許可證', completed: false },
-      ],
-    },
-  ]);
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/templates');
+        if (!response.ok) {
+          throw new Error('無法獲取範本列表');
+        }
+        const data = await response.json();
+        // Assuming the API returns an array of templates like [{ id: '...', name: '...' }]
+        setTemplates(data);
+        if (data.length > 0 && !selectedTemplate) {
+            // If no template is selected yet, default to the first one
+            setSelectedTemplate(data[0].id);
+        }
+      } catch (error) {
+        console.error('獲取範本失敗:', error);
+        // Keep the mock data as fallback if API fails
+      }
+    };
+
+    fetchTemplates();
+  }, []); // Run only once on component mount
+
+  useEffect(() => {
+    if (!selectedTemplate) return;
+
+    const fetchRequirements = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/templates/${selectedTemplate}`);
+        if (!response.ok) {
+          throw new Error('無法獲取範本要求');
+        }
+        const templateData = await response.json();
+        
+        // Transform the fetched data to match the frontend's state structure
+        const transformedRequirements = templateData.requirements.map((req, index) => ({
+          id: index + 1, // Or use a unique ID from backend if available
+          text: req.text,
+          completed: false, // Default to not completed
+          documents: req.documents.map((doc, docIndex) => ({
+            id: (index + 1) * 100 + docIndex + 1, // Or use a unique ID from backend
+            text: doc.name,
+            completed: false, // Default to not completed
+          })),
+        }));
+        setRequirements(transformedRequirements);
+      } catch (error) {
+        console.error('獲取範本要求失敗:', error);
+        setRequirements([]); // Clear requirements on error
+      }
+    };
+
+    // Only fetch requirements if we have a selected template
+    // and the project's own checklist state hasn't been loaded yet.
+    if (!projectDetail?.checklistState) {
+        fetchRequirements();
+    }
+  }, [selectedTemplate, projectDetail]);
 
   const handleRequirementChange = (indicatorId, documentId = null) => {
     setRequirements(prevRequirements =>
@@ -300,8 +314,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const handleSaveChecklist = async () => {
     setIsSaving(true);
     const payload = {
-      projectId: projectId,
-      selectedTemplate: selectedTemplate,
+      selectedTemplateId: selectedTemplate,
       requirements: requirements,
       progress: progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress,
     };
@@ -309,12 +322,18 @@ const CertificationProjectDetail = ({ canWrite }) => {
     console.log("Saving checklist data:", payload);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`http://localhost:8000/api/projects/save-checklist/${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      // Mock backend response for saving checklist
-      // In a real application, you would have a proper API endpoint
-      // For now, we'll just show a success message
+      if (!response.ok) {
+        throw new Error('儲存失敗');
+      }
+
       alert('儲存成功');
 
     } catch (error) {
@@ -398,6 +417,16 @@ const CertificationProjectDetail = ({ canWrite }) => {
         if (!response.ok) throw new Error('載入專案細節失敗');
         const data = await response.json();
         setProjectDetail(data);
+
+        // Check and apply saved checklist state from backend
+        if (data.selectedTemplateId) {
+          setSelectedTemplate(data.selectedTemplateId);
+        }
+        if (data.checklistState) {
+          // Parse the JSON string from backend and set it to requirements state
+          setRequirements(JSON.parse(data.checklistState));
+        }
+
       } catch (err) {
         console.error('抓取專案細節錯誤:', err);
       } finally {
