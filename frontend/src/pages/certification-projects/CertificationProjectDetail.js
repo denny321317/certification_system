@@ -216,6 +216,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
 
   const [selectedTemplate, setSelectedTemplate] = useState('smeta-v1');
   const [progressMode, setProgressMode] = useState('AUTOMATIC'); // MANUAL or AUTOMATIC
+  const [isSaving, setIsSaving] = useState(false);
 
   // Mock
   const [requirements, setRequirements] = useState([
@@ -295,6 +296,34 @@ const CertificationProjectDetail = ({ canWrite }) => {
     allDocuments.length > 0
       ? Math.round((completedDocuments.length / allDocuments.length) * 100)
       : 0;
+
+  const handleSaveChecklist = async () => {
+    setIsSaving(true);
+    const payload = {
+      projectId: projectId,
+      selectedTemplate: selectedTemplate,
+      requirements: requirements,
+      progress: progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress,
+    };
+
+    console.log("Saving checklist data:", payload);
+
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Mock backend response for saving checklist
+      // In a real application, you would have a proper API endpoint
+      // For now, we'll just show a success message
+      alert('儲存成功');
+
+    } catch (error) {
+      console.error("Failed to save checklist:", error);
+      alert('儲存失敗，請稍後再試');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   /**
    * 操作歷史狀態
@@ -1346,6 +1375,16 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="checklist-actions" style={{ marginTop: '20px', textAlign: 'right', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveChecklist}
+                  disabled={isSaving || progressMode !== 'AUTOMATIC'}
+                >
+                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  {isSaving ? '儲存中...' : '儲存變更'}
+                </button>
               </div>
             </div>
 
