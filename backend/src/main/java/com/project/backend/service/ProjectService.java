@@ -16,8 +16,14 @@ import com.project.backend.service.OperationHistoryService;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.backend.model.Project;
+import com.project.backend.repository.ProjectRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,12 +33,25 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final OperationHistoryService operationHistoryService;
     private final ProjectTeamRepository projectTeamRepository;
+    private final ObjectMapper objectMapper;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository) {
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository, ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.operationHistoryService = operationHistoryService;
         this.projectTeamRepository = projectTeamRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional
+    public Project createProject(Project project) {
+        updateProgressByStatus(project);
+        Project savedProject = projectRepository.save(project);
+        // TODO: Replace "admin" with actual logged-in user
+        String operator = "admin";
+        String details = String.format("建立了新專案 '%s'", savedProject.getName());
+        operationHistoryService.recordHistory(savedProject.getId(), operator, "CREATE_PROJECT", details);
+        return savedProject;
     }
 
     @Transactional(readOnly = true)
@@ -48,7 +67,7 @@ public class ProjectService {
             throw new IllegalArgumentException("Project with id " + id + " does not exist.");
         }
         projectRepository.deleteById(id);
-        
+
         // Record history
         // TODO: Replace "admin" with actual logged-in user and get project name before deletion
         String operator = "admin";
@@ -193,7 +212,7 @@ public class ProjectService {
         projectTeamRepository.deleteByProjectIdAndUserId(projectId, userId);
         return getTeamMembers(projectId);
     }
-    
+
 
     @Transactional
     public List<TeamMemberDTO> updateMemberDuties(Long projectId, Long userId, List<String> duties) {
@@ -250,5 +269,18 @@ public class ProjectService {
                 team,
                 documents
         );
+    }
+
+    public void saveChecklistState(Long projectId, String selectedTemplateId, List<Map<String, Object>> requirements, int progress) throws JsonProcessingException {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+
+        project.setSelectedTemplateId(selectedTemplateId);
+        project.setProgress(progress);
+
+        String checklistStateJson = objectMapper.writeValueAsString(requirements);
+        project.setChecklistState(checklistStateJson);
+
+        projectRepository.save(project);
     }
 }

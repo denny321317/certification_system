@@ -4,6 +4,7 @@ import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -69,10 +70,40 @@ public class Project {
     @JoinColumn(name = "project_id")  // file 表裡要有 project_id 外鍵
     private List<FileEntity> documents;
 
+    @Column(name = "selected_template_id")
+    private String selectedTemplateId;
+
+    @Lob
+    @Column(name = "checklist_state", columnDefinition = "TEXT")
+    private String checklistState;
+
 
     @ManyToMany(mappedBy = "projects")
     private List<Supplier> suppliers;
 
+    public void setProgress(int progress) {
+        this.progress = progress;
+    }
+
+    public String getSelectedTemplateId() {
+        return selectedTemplateId;
+    }
+
+    public void setSelectedTemplateId(String selectedTemplateId) {
+        this.selectedTemplateId = selectedTemplateId;
+    }
+
+    public String getChecklistState() {
+        return checklistState;
+    }
+
+    public void setChecklistState(String checklistState) {
+        this.checklistState = checklistState;
+    }
+
+    public List<ProjectTeam> getTeam() {
+        return teamMembers;
+    }
 
 }
 
