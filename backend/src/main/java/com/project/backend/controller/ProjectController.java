@@ -26,9 +26,8 @@ import com.project.backend.dto.ExportSettingsDTO;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
+import com.project.backend.dto.ChecklistUpdateRequest;
 import com.project.backend.model.Project;
-import com.project.backend.repository.ProjectRepository;
-import com.project.backend.service.AuthService;
 import com.project.backend.service.ProjectService;
 import com.project.backend.service.ReviewService;
 import com.project.backend.utils.ProjectExcelGenerator;
@@ -42,9 +41,6 @@ public class ProjectController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
-    @Autowired
-    private ProjectRepository projectRepository;
-
     private final ProjectService projectService;
     private final ReviewService reviewService;
 
@@ -56,8 +52,7 @@ public class ProjectController {
 
     @PostMapping("/CreateProject")
     public Project createProject(@RequestBody Project project) {
-        projectService.updateProgressByStatus(project);
-        return projectRepository.save(project);
+        return projectService.createProject(project);
     }
 
     @GetMapping("/GetAllProject")
@@ -137,6 +132,24 @@ public class ProjectController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/save-checklist/{projectId}")
+    public ResponseEntity<?> saveChecklist(
+            @PathVariable Long projectId,
+            @RequestBody ChecklistUpdateRequest request) {
+        try {
+            projectService.saveChecklistState(
+                projectId, 
+                request.getSelectedTemplateId(), 
+                request.getChecklistState(), 
+                request.getProgress()
+            );
+            return ResponseEntity.ok().body("{\"message\": \"Checklist saved successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("{\"error\": \"Failed to save checklist: " + e.getMessage() + "\"}");
         }
     }
 

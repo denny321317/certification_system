@@ -207,6 +207,156 @@ const CertificationProjectDetail = ({ canWrite }) => {
     notes: ''
   });
 
+  // Mock
+  const [templates, setTemplates] = useState([]);
+  
+  const [requirements, setRequirements] = useState([]);
+
+  const [selectedTemplate, setSelectedTemplate] = useState('smeta-v1');
+  const [progressMode, setProgressMode] = useState('AUTOMATIC'); // MANUAL or AUTOMATIC
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/templates');
+        if (!response.ok) {
+          throw new Error('無法獲取範本列表');
+        }
+        const data = await response.json();
+        // Assuming the API returns an array of templates like [{ id: '...', name: '...' }]
+        setTemplates(data);
+        if (data.length > 0 && !selectedTemplate) {
+            // If no template is selected yet, default to the first one
+            setSelectedTemplate(data[0].id);
+        }
+      } catch (error) {
+        console.error('獲取範本失敗:', error);
+        // Keep the mock data as fallback if API fails
+      }
+    };
+
+    fetchTemplates();
+  }, []); // Run only once on component mount
+
+  useEffect(() => {
+    if (!selectedTemplate) return;
+
+    const fetchRequirements = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/templates/${selectedTemplate}`);
+        if (!response.ok) {
+          throw new Error('無法獲取範本要求');
+        }
+        const templateData = await response.json();
+        
+        // Transform the fetched data to match the frontend's state structure
+        const transformedRequirements = templateData.requirements.map((req, index) => ({
+          id: index + 1, // Or use a unique ID from backend if available
+          text: req.text,
+          completed: false, // Default to not completed
+          documents: req.documents.map((doc, docIndex) => ({
+            id: (index + 1) * 100 + docIndex + 1, // Or use a unique ID from backend
+            text: doc.name,
+            completed: false, // Default to not completed
+          })),
+        }));
+        setRequirements(transformedRequirements);
+      } catch (error) {
+        console.error('獲取範本要求失敗:', error);
+        setRequirements([]); // Clear requirements on error
+      }
+    };
+
+    // Logic to decide whether to load from saved state or fetch new template
+    if (projectDetail?.checklistState) {
+        const savedState = JSON.parse(projectDetail.checklistState);
+        // We assume savedState is an object like { templateId: '...', requirements: [...] }
+        if (savedState.templateId === selectedTemplate) {
+            setRequirements(savedState.requirements);
+        } else {
+            // Template has changed, fetch new requirements
+            fetchRequirements();
+        }
+    } else if (selectedTemplate) {
+        // No saved state, fetch new requirements
+        fetchRequirements();
+    }
+  }, [selectedTemplate, projectDetail]);
+
+  const handleRequirementChange = (indicatorId, documentId = null) => {
+    setRequirements(prevRequirements =>
+      prevRequirements.map(indicator => {
+        if (indicator.id === indicatorId) {
+          let newDocuments;
+          let newIndicatorCompleted;
+
+          if (documentId) {
+            // Toggle a single document
+            newDocuments = indicator.documents.map(doc =>
+              doc.id === documentId ? { ...doc, completed: !doc.completed } : doc
+            );
+            // After toggling a doc, recalculate indicator status
+            newIndicatorCompleted = newDocuments.every(doc => doc.completed);
+          } else {
+            // Toggle an entire indicator (and all its documents)
+            newIndicatorCompleted = !indicator.completed;
+            newDocuments = indicator.documents.map(doc => ({
+              ...doc,
+              completed: newIndicatorCompleted,
+            }));
+          }
+          return { ...indicator, documents: newDocuments, completed: newIndicatorCompleted };
+        }
+        return indicator;
+      })
+    );
+  };
+
+  const allDocuments = Array.isArray(requirements) ? requirements.flatMap(indicator => indicator.documents) : [];
+  const completedDocuments = allDocuments.filter(doc => doc.completed);
+  const calculatedProgress =
+    allDocuments.length > 0
+      ? Math.round((completedDocuments.length / allDocuments.length) * 100)
+      : 0;
+
+  const handleSaveChecklist = async () => {
+    setIsSaving(true);
+    // Include templateId in the saved state
+    const payload = {
+      selectedTemplateId: selectedTemplate,
+      checklistState: JSON.stringify({
+        templateId: selectedTemplate,
+        requirements: requirements,
+      }),
+      progress: progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress,
+    };
+
+    console.log("Saving checklist data:", payload);
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/save-checklist/${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('儲存失敗');
+      }
+
+      alert('儲存成功');
+
+    } catch (error) {
+      console.error("Failed to save checklist:", error);
+      alert('儲存失敗，請稍後再試');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   /**
    * 操作歷史狀態
    * @type {[Array, Function]} [操作歷史列表, 設置操作歷史列表的函數]
@@ -280,6 +430,12 @@ const CertificationProjectDetail = ({ canWrite }) => {
         if (!response.ok) throw new Error('載入專案細節失敗');
         const data = await response.json();
         setProjectDetail(data);
+
+        // Set the selected template from the project details
+        if (data.selectedTemplateId) {
+          setSelectedTemplate(data.selectedTemplateId);
+        }
+
       } catch (err) {
         console.error('抓取專案細節錯誤:', err);
       } finally {
@@ -1164,11 +1320,15 @@ const CertificationProjectDetail = ({ canWrite }) => {
             <div className="project-meta-section">
               <div className="project-progress-section">
                 <h5>項目進度</h5>
-                <div className="progress-percentage">{projectDetail.progress}% 完成</div>
+                <div className="progress-percentage">
+                  {progressMode === 'AUTOMATIC' ? `${calculatedProgress}%` : `${projectDetail.progress}%`} 完成
+                </div>
                 <div className="progress-bar">
                   <div 
                     className={`progress-fill ${projectDetail.progressColor}`} 
-                    style={{ width: `${projectDetail.progress}%` }}
+                    style={{ 
+                      width: `${progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%` 
+                    }}
                   ></div>
                 </div>
               </div>
@@ -1194,6 +1354,182 @@ const CertificationProjectDetail = ({ canWrite }) => {
           </div>
         );
       
+      case 'checklist':
+        return (
+          <div className="checklist-progress-grid">
+            <div className="certification-checklist-section">
+              <h5>
+                <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
+                認證項目檢查清單
+              </h5>
+              <div className="template-selector-container">
+                <label htmlFor="template-select">套用範本:</label>
+                <select
+                  id="template-select"
+                  className="template-select"
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="checklist-container">
+                {requirements.map((indicator) => (
+                  <div className="checklist-indicator-group" key={indicator.id}>
+                    <div className="checklist-item indicator">
+                      <input
+                        type="checkbox"
+                        id={`indicator-${indicator.id}`}
+                        className="form-check-input"
+                        checked={indicator.completed}
+                        onChange={() => handleRequirementChange(indicator.id)}
+                        disabled={progressMode !== 'AUTOMATIC'}
+                      />
+                      <label htmlFor={`indicator-${indicator.id}`} className="checklist-label indicator-label">
+                        <strong>{indicator.text}</strong>
+                      </label>
+                    </div>
+                    <div className="checklist-documents" style={{ marginLeft: '2rem' }}>
+                      {indicator.documents.map((doc) => (
+                        <div className="checklist-item document" key={doc.id}>
+                          <input
+                            type="checkbox"
+                            id={`doc-${doc.id}`}
+                            className="form-check-input"
+                            checked={doc.completed}
+                            onChange={() => handleRequirementChange(indicator.id, doc.id)}
+                            disabled={progressMode !== 'AUTOMATIC'}
+                          />
+                          <label htmlFor={`doc-${doc.id}`} className="checklist-label document-label">
+                            {doc.text}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="checklist-actions" style={{ marginTop: '20px', textAlign: 'right', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSaveChecklist}
+                  disabled={isSaving || progressMode !== 'AUTOMATIC'}
+                >
+                  <FontAwesomeIcon icon={faSave} className="me-2" />
+                  {isSaving ? '儲存中...' : '儲存變更'}
+                </button>
+              </div>
+            </div>
+
+            <div className="project-progress-management-section">
+              <h5>
+                <FontAwesomeIcon icon={faChartLine} className="me-2" />
+                進度管理
+              </h5>
+
+              <div className="progress-mode-toggle">
+                <span>手動調整</span>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="progress-mode"
+                    className="toggle-input"
+                    checked={progressMode === 'AUTOMATIC'}
+                    onChange={() =>
+                      setProgressMode(
+                        progressMode === 'AUTOMATIC' ? 'MANUAL' : 'AUTOMATIC'
+                      )
+                    }
+                  />
+                  <label htmlFor="progress-mode" className="toggle-label"></label>
+                </div>
+                <span>自動計算</span>
+              </div>
+
+              <div className="progress-section-standalone">
+                <div className="progress-display-large">
+                  <div className="progress-circle">
+                    <svg className="progress-ring" width="120" height="120">
+                      <circle
+                        className="progress-ring-bg"
+                        stroke="#e9ecef"
+                        strokeWidth="8"
+                        fill="transparent"
+                        r="52"
+                        cx="60"
+                        cy="60"
+                      />
+                      <circle
+                        className="progress-ring-fill"
+                        stroke="#4a6cf7"
+                        strokeWidth="8"
+                        fill="transparent"
+                        r="52"
+                        cx="60"
+                        cy="60"
+                        strokeDasharray={`${2 * Math.PI * 52}`}
+                        strokeDashoffset={`${2 * Math.PI * 52 * (1 - (progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress) / 100)}`}
+                      />
+                    </svg>
+                    <div className="progress-text">
+                      <span className="progress-number">
+                        {progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}%
+                      </span>
+                      <span className="progress-label">完成</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="projectProgress" className="form-label">
+                    完成度調整
+                  </label>
+                  <div className="progress-slider-container">
+                    <input
+                      type="range"
+                      id="projectProgress"
+                      name="progress"
+                      className="form-range modern"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={progressMode === 'AUTOMATIC' ? calculatedProgress : projectDetail.progress}
+                      onChange={(e) => {
+                        if (progressMode === 'MANUAL') {
+                          setProjectDetail({
+                            ...projectDetail,
+                            progress: parseInt(e.target.value, 10),
+                          });
+                        }
+                      }}
+                      disabled={progressMode === 'AUTOMATIC'}
+                    />
+                    <div className="progress-markers">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                      <span>75%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                  <div className="progress-help-text">
+                    <FontAwesomeIcon icon={faInfoCircle} className="help-icon" />
+                    {progressMode === 'AUTOMATIC' 
+                      ? "自動模式下，進度由查檢表完成項自動計算。"
+                      : "手動拖動滑桿以調整專案完成度。"
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'documents':
         const filteredDocuments = getFilteredDocuments();
         const documentsByCategory = getDocumentsByCategory(filteredDocuments);
@@ -2041,6 +2377,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
         >
           <FontAwesomeIcon icon={faFileAlt} className="me-2" />
           項目概覽
+        </div>
+        <div 
+          className={`project-tab ${activeTab === 'checklist' ? 'active' : ''}`}
+          onClick={() => setActiveTab('checklist')}
+        >
+          <FontAwesomeIcon icon={faClipboardCheck} className="me-2" />
+          模板進度確認
         </div>
         <div 
           className={`project-tab ${activeTab === 'documents' ? 'active' : ''}`}
