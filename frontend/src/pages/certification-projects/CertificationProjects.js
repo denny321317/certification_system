@@ -248,15 +248,13 @@ const CertificationProjects = ({ canWrite }) => {
    */
   const handleEditProject = async () => {
     try {
+      const { managerName, ...projectToUpdate } = currentProject;
       const response = await fetch(
         `http://localhost:8000/api/projects/UpdateProject/${currentProject.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...currentProject,
-            // 不要傳 users/team/teamMembers 等欄位
-          })
+          body: JSON.stringify(projectToUpdate)
         }
       );
       if (!response.ok) {
