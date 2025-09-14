@@ -45,67 +45,75 @@ public class FileController {
     }
 
     @PostMapping("/certification-projects/{projectId}/upload")
-    public ResponseEntity<?> uploadFile(
-        @PathVariable("projectId") Long projectId,
-        @RequestParam("file") MultipartFile file,
-        @RequestParam("category") String category,
-        @RequestParam("description") String description
+    public ResponseEntity<?> uploadFiles(
+            @PathVariable("projectId") Long projectId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("category") String category,
+            @RequestParam("description") String description
     ) {
         try {
             Optional<Project> optionalProject = projectRepository.findById(projectId);
             if (optionalProject.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("success", false, "error", "找不到專案"));
+                        .body(Map.of("success", false, "error", "找不到專案"));
             }
 
             Project project = optionalProject.get();
 
-            String originalFilename = file.getOriginalFilename();
-            String extension = getExtension(originalFilename);
-            String filename = UUID.randomUUID().toString() + "." + extension;
-            // 新增分類資料夾邏輯
+            // 確保類別資料夾存在
             Path categoryFolder = fileStorageLocation.resolve(category);
-            Files.createDirectories(categoryFolder); // 若不存在則自動建立
+            Files.createDirectories(categoryFolder);
 
-            // 將檔案存入 uploads/category/
-            Path targetPath = categoryFolder.resolve(filename);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            // Path targetPath = fileStorageLocation.resolve(filename);
-            // Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            List<Map<String, Object>> uploadedFiles = new ArrayList<>();
 
-            FileEntity fileEntity = new FileEntity();
-            // fileEntity.setFilename(filename);
-            fileEntity.setFilename(category + "/" + filename); // 儲存相對路徑，方便下載時定位
-            fileEntity.setOriginalFilename(originalFilename);
-            fileEntity.setFileType(extension);
-            fileEntity.setUploadTime(LocalDateTime.now());
-            fileEntity.setUploadedBy("admin");
-            fileEntity.setSizeInBytes(file.getSize());
-            fileEntity.setStatus("pending");
-            fileEntity.setCategory(category);
-            fileEntity.setDescription(description);
-            fileEntity.setProject(project); // 關聯專案
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) continue; // 跳過空檔案
 
-            fileRepository.save(fileEntity);
+                String originalFilename = file.getOriginalFilename();
+                String extension = getExtension(originalFilename);
+                String filename = UUID.randomUUID().toString() + "." + extension;
 
-            // Record history
-            // TODO: Replace "admin" with actual logged-in user
-            String operator = "admin"; 
-            String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
-            operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
+                // 儲存到 uploads/category/
+                Path targetPath = categoryFolder.resolve(filename);
+                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", fileEntity.getId());
-            response.put("name", fileEntity.getOriginalFilename());
-            response.put("filename", fileEntity.getFilename());
-            response.put("category", fileEntity.getCategory());
-            response.put("type", fileEntity.getFileType());
-            response.put("uploadedBy", fileEntity.getUploadedBy());
-            response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
-            response.put("description", fileEntity.getDescription());
-            response.put("status", fileEntity.getStatus());
+                FileEntity fileEntity = new FileEntity();
+                fileEntity.setFilename(category + "/" + filename); // 儲存相對路徑
+                fileEntity.setOriginalFilename(originalFilename);
+                fileEntity.setFileType(extension);
+                fileEntity.setUploadTime(LocalDateTime.now());
+                fileEntity.setUploadedBy("admin");
+                fileEntity.setSizeInBytes(file.getSize());
+                fileEntity.setStatus("pending");
+                fileEntity.setCategory(category);
+                fileEntity.setDescription(description);
+                fileEntity.setProject(project);
 
-            return ResponseEntity.ok(response);
+                fileRepository.save(fileEntity);
+
+                // 記錄歷史 todo 跟登入的人連結
+                String operator = "admin";
+                String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
+                operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
+
+                Map<String, Object> fileResponse = new HashMap<>();
+                fileResponse.put("id", fileEntity.getId());
+                fileResponse.put("name", fileEntity.getOriginalFilename());
+                fileResponse.put("filename", fileEntity.getFilename());
+                fileResponse.put("category", fileEntity.getCategory());
+                fileResponse.put("type", fileEntity.getFileType());
+                fileResponse.put("uploadedBy", fileEntity.getUploadedBy());
+                fileResponse.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
+                fileResponse.put("description", fileEntity.getDescription());
+                fileResponse.put("status", fileEntity.getStatus());
+
+                uploadedFiles.add(fileResponse);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "files", uploadedFiles
+            ));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
