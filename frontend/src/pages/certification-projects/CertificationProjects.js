@@ -382,21 +382,6 @@ const CertificationProjects = ({ canWrite }) => {
               <FontAwesomeIcon icon={faEdit} className="me-2" />
               編輯專案
             </div>
-            <div 
-              className={`settings-tab ${settingsTab === 'export' ? 'active' : ''}`}
-              onClick={() => setSettingsTab('export')}
-            >
-              <FontAwesomeIcon icon={faFileExport} className="me-2" />
-              匯出報告
-            </div>
-            <div 
-              className={`settings-tab delete-tab ${settingsTab === 'delete' ? 'active' : ''}`}
-              onClick={() => setSettingsTab('delete')}
-              disabled={ !canWrite }
-            >
-              <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
-              刪除專案
-            </div>
           </div>
           
           <div className="settings-modal-content">
@@ -578,56 +563,7 @@ const CertificationProjects = ({ canWrite }) => {
               </div>
             )}
             
-            {settingsTab === 'export' && (
-              <div className="export-report">
-                <div className="export-info">
-                  <h5>匯出專案報告</h5>
-                  <p>匯出 {currentProject.name} 的完整報告，包含所有專案資訊、審核狀態、團隊成員以及時間軸等資料。</p>
-                  
-                  <div className="export-options">
-                    <div className="export-option">
-                      <input type="radio" id="pdf" name="exportFormat" value="pdf" defaultChecked />
-                      <label htmlFor="pdf">PDF 格式</label>
-                    </div>
-                    <div className="export-option">
-                      <input type="radio" id="excel" name="exportFormat" value="excel" />
-                      <label htmlFor="excel">Excel 格式</label>
-                    </div>
-                    <div className="export-option">
-                      <input type="radio" id="word" name="exportFormat" value="word" />
-                      <label htmlFor="word">Word 格式</label>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="form-actions">
-                  <button className="btn btn-primary" onClick={handleExportReport}>
-                    <FontAwesomeIcon icon={faFileExport} className="me-2" />
-                    匯出報告
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {settingsTab === 'delete' && (
-              <div className="delete-project">
-                <div className="delete-warning">
-                  <h5>刪除專案</h5>
-                  <p className="warning-text">
-                    <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
-                    警告：此操作將永久刪除專案「{currentProject.name}」及其所有相關數據，且無法復原。
-                  </p>
-                  <p>請確認您已備份所需的資料，並確定要執行此操作。</p>
-                </div>
-                
-                <div className="form-actions">
-                  <button className="btn btn-danger" onClick={handleDeleteProject}>
-                    <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
-                    確認刪除
-                  </button>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
