@@ -293,9 +293,14 @@ const UserManagement = ({ canWrite }) => {
       return 'N/A';
     }
 
-    const date = new Date(dateInput);
-    if (isNaN(date)) {
-      return 'N/A';
+    let date;
+    if (Array.isArray(dateInput)) {
+      // Handle array format: [year, month, day, hour, minute, second, nanoseconds]
+      // JavaScript Date months are 0-based, so subtract 1 from month
+      date = new Date(dateInput[0], dateInput[1] - 1, dateInput[2], dateInput[3], dateInput[4], dateInput[5]);
+    } else {
+      // Handle string or other formats (e.g., ISO string)
+      date = new Date(dateInput);
     }
 
     try {
