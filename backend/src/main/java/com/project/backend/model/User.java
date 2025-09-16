@@ -62,7 +62,7 @@ public class User {
     private int failedLoginAttempts;
     private LocalDateTime accountLockedUntil;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> notifications = new ArrayList<>();
 
     // default constructor for JPA

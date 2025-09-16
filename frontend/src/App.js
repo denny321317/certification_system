@@ -30,6 +30,7 @@ import NotFound from './pages/not-found/NotFound';
 import PrivateRoute from './components/common/PrivateRoute';
 import UserManagement from './pages/user-management/UserManagement';
 import SystemSettings from './pages/system-settings/SystemSettings';
+import Notifications from './pages/notifications/Notifications';
 
 // 共用組件
 import MainLayout from './components/layout/MainLayout';
@@ -179,6 +180,17 @@ function App() {
                   </MainLayout>
                 </ProtectedRoute>
               } 
+            />
+            {/* 通知模組 */}
+            <Route 
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Notifications />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </Router>
