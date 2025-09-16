@@ -27,10 +27,15 @@ import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.dto.ChecklistUpdateRequest;
+import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
+import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.UserRepository;
+import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ProjectService;
 import com.project.backend.service.ReviewService;
 import com.project.backend.utils.ProjectExcelGenerator;
+import com.project.backend.model.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +48,15 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ReviewService reviewService;
+    
+    @Autowired
+    private NotificationSettingsService notificationSettingsService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @Autowired
     public ProjectController(ProjectService projectService, ReviewService reviewService) {
@@ -94,8 +108,20 @@ public class ProjectController {
         String role = body.get("role") != null ? body.get("role").toString() : "";
         String permission = body.get("permission") != null ? body.get("permission").toString() : "view";
         java.util.List<String> duties = (java.util.List<String>) body.get("duties");
-        return projectService.addTeamMember(projectId, userId, role, permission, duties);
-    }
+
+        // Assuming you have the Project and User objects
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow();
+
+        // After adding the member (e.g., after projectTeamRepository.save(projectTeam);)
+        NotificationSettings settings = notificationSettingsService.getSettings();
+        if (settings.isNewProjectNotice()) {
+            user.addNotification("You have been added to project: '" + project.getName() + "'.");
+            userRepository.save(user);
+        }
+
+            return projectService.addTeamMember(projectId, userId, role, permission, duties);
+        }
 
     @PostMapping("/{projectId}/remove-member")
     public List<TeamMemberDTO> removeTeamMember(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
