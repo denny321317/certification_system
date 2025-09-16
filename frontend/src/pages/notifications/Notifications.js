@@ -34,13 +34,13 @@ const Notifications = () => {
     <div className="notifications-container">
         <div className="notifications-card">
         <div className="notifications-card-body">
-            <h2 className="notifications-title">Your Notifications</h2>
+            <h2 className="notifications-title">您的通知</h2>
             {notifications.length === 0 ? (
-            <p className="no-notifications">No notifications yet.</p>
+            <p className="no-notifications">目前沒有通知</p>
             ) : (
             <ul className="notifications-list">
-                {notifications.map((notification, index) => (
-                <li key={index} className="notification-item">
+                {notifications.slice().reverse().map((notification) => (
+                <li key={notification} className="notification-item">
                     {notification}
                 </li>
                 ))}
