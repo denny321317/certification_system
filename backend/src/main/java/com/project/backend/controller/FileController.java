@@ -7,14 +7,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.model.FileEntity;
+import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
 import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.UserRepository;
 import com.project.backend.service.AuthService;
+import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.OperationHistoryService;
+import com.project.backend.model.ProjectTeam;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -40,11 +45,20 @@ public class FileController {
     @Autowired
     private OperationHistoryService operationHistoryService;
 
+    @Autowired
+    private NotificationSettingsService notificationSettingsService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+
+
     public FileController() throws IOException {
         Files.createDirectories(fileStorageLocation);
     }
 
     @PostMapping("/certification-projects/{projectId}/upload")
+    @Transactional
     public ResponseEntity<?> uploadFile(
         @PathVariable("projectId") Long projectId,
         @RequestParam("file") MultipartFile file,
@@ -88,6 +102,20 @@ public class FileController {
 
             fileRepository.save(fileEntity);
 
+            // Add notification logic
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String notificationMessage = "New document uploaded: '" + fileEntity.getOriginalFilename() + "' in project '" + project.getName() + "'.";
+                List<User> usersToUpdate = new ArrayList<>();
+                for (ProjectTeam pt : project.getTeam()) {
+                    User user = pt.getUser();
+                    user.addNotification(notificationMessage);
+                    usersToUpdate.add(user);
+                }
+                userRepository.saveAll(usersToUpdate);  // Batch save
+            }
+
+
             // Record history
             // TODO: Replace "admin" with actual logged-in user
             String operator = "admin"; 
@@ -104,6 +132,9 @@ public class FileController {
             response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
             response.put("description", fileEntity.getDescription());
             response.put("status", fileEntity.getStatus());
+
+
+
 
             return ResponseEntity.ok(response);
 
@@ -141,6 +172,7 @@ public class FileController {
 
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
+    @Transactional
     public ResponseEntity<?> deleteFile(@PathVariable Long id) {
         Optional<FileEntity> optional = fileRepository.findById(id);
         if (optional.isEmpty()) {
@@ -151,6 +183,8 @@ public class FileController {
         try {
             Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
             fileRepository.delete(file);
+
+            
 
             // Record history
             // TODO: Replace "admin" with actual logged-in user
