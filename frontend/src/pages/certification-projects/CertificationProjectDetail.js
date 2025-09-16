@@ -1011,25 +1011,17 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * 處理批量下載當前分類的全部文件
    * @param {string} category - 文件分類ID
    */
+  const [selectedCategory, setSelectedCategory] = useState(activeDocCategory);
+
   const handleBatchDownload = (category) => {
-    // 在實際應用中，這裡應該調用後端API進行批量下載
-    // 模擬下載過程
-    const categoryName = documentCategories.find(c => c.id === category)?.name || '所選文件';
-    const categoryFiles = projectDetail.documents.filter(doc => 
-      category === 'all' || doc.category === category
-    );
-    
-    if (categoryFiles.length === 0) {
-      alert('沒有可下載的文件');
+    if (!category) {
+      alert("請先選擇一個類別");
       return;
     }
-    
-    alert(`正在準備下載${categoryFiles.length}個${categoryName}，請稍候...`);
-    console.log('下載文件列表:', categoryFiles.map(doc => doc.name).join(', '));
-    
-    // 如果是實際應用，可以使用以下程式碼創建一個下載任務
-    // const downloadUrl = `/api/projects/${projectId}/documents/download?category=${category}`;
-    // window.location.href = downloadUrl;
+
+    // 直接呼叫後端 API，觸發瀏覽器下載 ZIP
+    const downloadUrl = `http://localhost:8000/api/documents/download-category/${category}?projectId=${projectId}`;
+    window.location.href = downloadUrl;
   };
 
   /**
@@ -1559,14 +1551,31 @@ const CertificationProjectDetail = ({ canWrite }) => {
             <div className="documents-header">
               <h5>項目文件管理</h5>
               <div className="documents-actions">
-                <button 
-                  className="btn btn-outline-primary btn-sm me-2" 
-                  onClick={() => handleBatchDownload(activeDocCategory)}
-                  title={`下載所有${activeDocCategory === 'all' ? '' : documentCategories.find(c => c.id === activeDocCategory)?.name || ''}文件`}
-                >
-                  <FontAwesomeIcon icon={faFileDownload} className="me-1" />
-                  批量下載
-                </button>
+                <div className="d-flex align-items-center">
+                  {/* 類別選擇下拉選單 */}
+                  <select
+                    className="form-select form-select-sm me-2"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">選擇類別</option>
+                    {documentCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* 批量下載按鈕 */}
+                  <button
+                    className="btn btn-outline-primary px-3 flex-shrink-0"
+                    onClick={() => handleBatchDownload(selectedCategory)}
+                    title="批量下載該類別的所有文件"
+                  >
+                    <FontAwesomeIcon icon={faFileDownload} className="me-1" />
+                    批量下載
+                  </button>
+                </div>
                 <button className="btn btn-primary btn-sm" onClick={handleShowUploadModal}>
                   <FontAwesomeIcon icon={faUpload} className="me-1" />
                   上傳文件

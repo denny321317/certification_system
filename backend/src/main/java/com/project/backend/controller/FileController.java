@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.io.File;
+import java.io.FileOutputStream;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -144,6 +145,47 @@ public class FileController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    // 批量下載指定 category 的檔案 (ZIP)
+    @GetMapping("/download-category/{category}")
+    public ResponseEntity<Resource> downloadCategoryAsZip(@PathVariable String category, @RequestParam("projectId") Long projectId) {
+        try {
+            // 取得該專案 + 類別的所有檔案
+            List<FileEntity> files = fileRepository.findByCategoryAndProjectId(category, projectId);
+
+            if (files.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(null);
+            }
+
+            // 建立暫存 ZIP 檔
+            String zipFilename = category + "_files.zip";
+            Path zipPath = Files.createTempFile(category + "_", ".zip");
+
+            try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+                java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
+
+                for (FileEntity file : files) {
+                    Path filePath = fileStorageLocation.resolve(file.getFilename());
+                    if (Files.exists(filePath)) {
+                        zos.putNextEntry(new java.util.zip.ZipEntry(file.getOriginalFilename()));
+                        Files.copy(filePath, zos);
+                        zos.closeEntry();
+                    }
+                }
+            }
+
+            Resource resource = new org.springframework.core.io.UrlResource(zipPath.toUri());
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFilename + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
         }
     }
 
