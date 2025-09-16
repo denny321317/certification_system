@@ -412,7 +412,6 @@ const SystemSettings = () => {
                 <h5 className="card-title mb-4">通知設定</h5>
                 <form onSubmit={handleNotificationSave}>
                   <div className="mb-4">
-                    <label className="form-label">電子郵件通知</label>
                     <div className="form-check mb-2">
                       <input 
                         className="form-check-input" 
@@ -456,7 +455,6 @@ const SystemSettings = () => {
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">系統內通知</label>
                     <div className="form-check mb-2">
                      <input 
                         className="form-check-input" 
