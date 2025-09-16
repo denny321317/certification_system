@@ -61,6 +61,19 @@ const SystemSettings = () => {
   const [generalLoading, setGeneralLoading] = useState(false);
 
   /**
+   * 處理通知設定
+   */
+  const [notificationSettings, setNotificationSettings] = useState({
+    certificationExpireNotice: true,
+    daysBeforeExpirarySendNotice: 90,
+    newProjectNotice: true,
+    documentUpdateNotice: true,
+    missionAssignmentNotice: true,
+    commentAndReplyNotice: true
+  });
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
+  /**
    * 當前頁碼（用於稽核日誌分頁）
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
    */
@@ -108,6 +121,15 @@ const SystemSettings = () => {
           setGeneralLoading(false);
         })
         .catch(() => setGeneralLoading(false));
+    } else if (activeTab === 'notification') {
+      setNotificationLoading(true);
+      fetch(`http://localhost:8000/api/notification-settings/getSettings`)
+        .then(res => res.json())
+        .then(data => {
+          setNotificationSettings(data);
+          setNotificationLoading(false);
+        })
+        .catch(() => setNotificationLoading(false));
     }
   }, [activeTab])
 
@@ -150,6 +172,26 @@ const SystemSettings = () => {
         alert('儲存失敗');
       });
   };
+
+  const handleNotificationSave = (e) => {
+    e.preventDefault();
+    setNotificationLoading(true);
+    fetch(`http://localhost:8000/api/notification-settings/putSettings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notificationSettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setNotificationSettings(data);
+        setNotificationLoading(false);
+        alert('通知設定已儲存');
+      })
+      .catch(() => {
+        setNotificationLoading(false);
+        alert('儲存失敗')
+      });
+  }
 
 
   /**
@@ -368,46 +410,76 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">通知設定</h5>
-                <form>
+                <form onSubmit={handleNotificationSave}>
                   <div className="mb-4">
                     <label className="form-label">電子郵件通知</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.certificationExpireNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, certificationExpireNotice: e.target.checked }))} 
+                      />
                       <label className="form-check-label">認證到期提醒</label>
                     </div>
+                    <div className="mb-2">
+                      <label className="form-label">提前提醒天數</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={notificationSettings.daysBeforeExpirarySendNotice}
+                        min="1"
+                        onChange={e => setNotificationSettings(s => ({ ...s, daysBeforeExpirarySendNotice: Number(e.target.value) }))}
+                      />
+                    </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.newProjectNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, newProjectNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">新專案通知</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.documentUpdateNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, documentUpdateNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">文件更新通知</label>
                     </div>
                     <div className="form-check">
                       <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">系統維護通知</label>
+                      <label className="form-check-label">系統維護通知 (預計不實做)</label>
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">系統內通知</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                     <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.missionAssignmentNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, missionAssignmentNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">任務指派通知</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.commentAndReplyNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, commentAndReplyNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">評論與回覆通知</label>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <label className="form-label">提醒時間設定</label>
-                    <select className="form-select mb-3">
-                      <option selected>提前 30 天</option>
-                      <option>提前 15 天</option>
-                      <option>提前 7 天</option>
-                    </select>
-                  </div>
-                  <button type="submit" className="btn btn-primary">儲存設定</button>
+              
+                  <button type="submit" className="btn btn-primary" disabled={notificationLoading}>
+                    {notificationLoading ? '儲存中...' : '儲存設定'}
+                  </button>
                 </form>
               </div>
             </div>
