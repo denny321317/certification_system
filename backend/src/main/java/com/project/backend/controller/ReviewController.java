@@ -8,6 +8,7 @@ import com.project.backend.model.Project;
 import com.project.backend.model.ProjectTeam;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
+import com.project.backend.service.NotificationService;
 import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ReviewService;
 
@@ -15,6 +16,9 @@ import jakarta.transaction.Transactional;
 
 import com.project.backend.model.User;
 import lombok.RequiredArgsConstructor;
+
+import java.util.stream.Collectors;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +39,9 @@ public class ReviewController {
 
     @Autowired
     private ProjectRepository projectRepository;
+    
+    @Autowired
+    private NotificationService notificationService;
 
     @GetMapping("/projects/{projectId}/reviews")
     public ResponseEntity<ReviewFeedbackDTO> getProjectReviews(
@@ -57,11 +64,9 @@ public class ReviewController {
         Project project = projectRepository.findById(projectId).orElseThrow();
         NotificationSettings settings = notificationSettingsService.getSettings();
         if (settings.isCommentAndReplyNotice()) {
-            for (ProjectTeam pt : project.getTeam()) {
-                User user = pt.getUser();
-                user.addNotification("New review added to project: '" + project.getName() + "'.");
-                userRepository.save(user);
-            }
+            String message = "New review added to project: '" + project.getName() + "'.";
+            List<Long> userIds = project.getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
+            notificationService.createNotification(userIds, -1L,  "Project Update", message);
         }
 
         return ResponseEntity.ok(createdReview);

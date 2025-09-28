@@ -16,6 +16,7 @@ import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.ProjectTeamRepository;
 import com.project.backend.service.OperationHistoryService;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,12 +38,14 @@ public class ProjectService {
     private final ProjectTeamRepository projectTeamRepository;
     private final ObjectMapper objectMapper;
 
+
     public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository, ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.operationHistoryService = operationHistoryService;
         this.projectTeamRepository = projectTeamRepository;
         this.objectMapper = objectMapper;
+        
     }
 
     @Transactional

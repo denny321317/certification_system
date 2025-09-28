@@ -31,6 +31,7 @@ import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
+import com.project.backend.service.NotificationService;
 import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ProjectService;
 import com.project.backend.service.ReviewService;
@@ -51,6 +52,9 @@ public class ProjectController {
     
     @Autowired
     private NotificationSettingsService notificationSettingsService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private UserRepository userRepository;
@@ -116,8 +120,9 @@ public class ProjectController {
         // After adding the member (e.g., after projectTeamRepository.save(projectTeam);)
         NotificationSettings settings = notificationSettingsService.getSettings();
         if (settings.isNewProjectNotice()) {
-            user.addNotification("You have been added to project: '" + project.getName() + "'.");
-            userRepository.save(user);
+            String content = "您被加入到" + project.getName() + "中"; 
+
+            notificationService.createNotification(java.util.Arrays.asList(user.getId()), -1L, "專案加入通知", content);
         }
 
             return projectService.addTeamMember(projectId, userId, role, permission, duties);
@@ -126,6 +131,15 @@ public class ProjectController {
     @PostMapping("/{projectId}/remove-member")
     public List<TeamMemberDTO> removeTeamMember(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
         Long userId = Long.valueOf(body.get("userId").toString());
+        // Notification Logics
+        NotificationSettings settings = notificationSettingsService.getSettings();
+        if (settings.isNewProjectNotice()) {
+            Project project = projectRepository.findById(projectId).orElseThrow();
+            String content = "您被從" + project.getName() + "中移除"; 
+
+            notificationService.createNotification(java.util.Arrays.asList(userId), -1L, "專案移除通知", content);
+        }
+
         return projectService.removeTeamMember(projectId, userId);
     }
 

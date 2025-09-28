@@ -17,6 +17,8 @@ import com.project.backend.service.AuthService;
 import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.OperationHistoryService;
 import com.project.backend.model.ProjectTeam;
+import com.project.backend.model.Notification;
+import com.project.backend.service.NotificationService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -50,6 +52,9 @@ public class FileController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
 
 
@@ -105,14 +110,9 @@ public class FileController {
             // Add notification logic
             NotificationSettings settings = notificationSettingsService.getSettings();
             if (settings.isDocumentUpdateNotice()) {
-                String notificationMessage = "New document uploaded: '" + fileEntity.getOriginalFilename() + "' in project '" + project.getName() + "'.";
-                List<User> usersToUpdate = new ArrayList<>();
-                for (ProjectTeam pt : project.getTeam()) {
-                    User user = pt.getUser();
-                    user.addNotification(notificationMessage);
-                    usersToUpdate.add(user);
-                }
-                userRepository.saveAll(usersToUpdate);  // Batch save
+                String notificationMessage = "新文件 " + fileEntity.getOriginalFilename() + "' 被上傳到 '" + project.getName() + "'.";
+                List<Long> userIds = project.getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
+                notificationService.createNotification(userIds, -1L, "Project Update", notificationMessage);  // Batch save
             }
 
 
@@ -191,6 +191,13 @@ public class FileController {
             String operator = "admin";
             String details = String.format("刪除了文件 '%s'", file.getOriginalFilename());
             operationHistoryService.recordHistory(file.getProject().getId(), operator, "DELETE_DOCUMENT", details);
+
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String message = "文件刪除: '" + file.getOriginalFilename() + "' 被從 '" + file.getProject().getName() + "'中刪除";
+                List<Long> userIds = file.getProject().getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
+                notificationService.createNotification(userIds, -1L,  "Project Update", message);
+            }
 
             return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
         } catch (IOException e) {
