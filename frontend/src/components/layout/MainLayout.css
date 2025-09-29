@@ -1,3 +1,4 @@
+
 :root {
   --primary-color: #2563eb;
   --secondary-color: #10b981;
@@ -152,7 +153,19 @@ body {
   display: flex;
   align-items: center;
   position: relative;
+  padding-bottom: 10px; /* Add padding to the bottom */
+  margin-bottom: -10px; /* Negative margin to keep alignment */
   cursor: pointer;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  background-color: white; /* Add background if needed */
+  border: 1px solid #ccc; /* Add border if needed */
+  z-index: 1000; /* Ensure it's above other elements */
 }
 
 .user-menu:hover .user-dropdown {
@@ -193,9 +206,9 @@ body {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   min-width: 180px;
-  margin-top: 10px;
   display: none;
   z-index: 1000;
+  cursor: default;
 }
 
 .dropdown-item {
