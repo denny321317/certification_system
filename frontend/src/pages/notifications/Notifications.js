@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import './Notifications.css';
 import { AuthContext } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -61,17 +62,27 @@ const Notifications = () => {
 
   // Helper to get sender display
   const getSender = (senderId) => {
-    return senderId === -1 ? 'System Generated' : `User ${senderId}`;
+    return senderId === -1 ? '系統自動生成' : `User ${senderId}`;
   };
 
   if (loading) return <div>Loading notifications...</div>;
   if (error) return <div>Error: {error}</div>;
 
+  const isAdmin = currentUser && currentUser.roleDTO && currentUser.roleDTO.id === 1; 
+
+
   return (
     <div className="notifications-container">
       <div className="notifications-card">
         <div className="notifications-card-body">
-          <h2 className="notifications-title">您的通知</h2>
+          <div className='notification-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 className="notifications-title">您的通知</h2>
+            {isAdmin && (
+              <Link to="/send-notification" className="btn btn-primary">
+                傳送通知
+              </Link>
+            )}
+          </div>
           {notifications.length === 0 ? (
             <p className="no-notifications">目前沒有通知</p>
           ) : (

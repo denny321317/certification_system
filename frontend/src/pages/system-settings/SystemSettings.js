@@ -39,13 +39,16 @@ import './SystemSettings.css';
 import { AuthContext } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext'
-
+import { Link } from 'react-router-dom';
 
 /**
  * 系統設置組件
  * @returns {JSX.Element} 系統設置界面
  */
 const SystemSettings = () => {
+
+  const { currentUser } = useContext(AuthContext);
+
   /**
    * 當前選中的設置標籤
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -409,7 +412,14 @@ const SystemSettings = () => {
           {activeTab === 'notification' && (
             <div className="card">
               <div className="card-body">
-                <h5 className="card-title mb-4">通知設定</h5>
+                <div className='d-flex justify-content-between align-items-center mb-4'>
+                  <h5 className="card-title mb-4">通知設定</h5>
+                  {currentUser && currentUser.roleDTO && currentUser.roleDTO.id === 1 && (
+                    <Link to="/send-notification" className="btn btn-primary">
+                      傳送通知
+                    </Link>
+                  )}
+                </div>
                 <form onSubmit={handleNotificationSave}>
                   <div className="mb-4">
                     <div className="form-check mb-2">

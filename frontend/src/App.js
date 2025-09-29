@@ -36,6 +36,7 @@ import Notifications from './pages/notifications/Notifications';
 import MainLayout from './components/layout/MainLayout';
 import './App.css';
 import { SettingsProvider } from './contexts/SettingsContext';
+import SendNotification from './pages/notifications/SendNotification';
 
 /**
  * 受保護的路由組件
@@ -188,6 +189,16 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <Notifications />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/send-notification"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <SendNotification />
                   </MainLayout>
                 </ProtectedRoute>
               }
