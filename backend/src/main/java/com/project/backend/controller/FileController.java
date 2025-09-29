@@ -19,6 +19,7 @@ import com.project.backend.service.OperationHistoryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,6 +27,8 @@ import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 
 //TODO: Replace "admin" with actual logged-in user
@@ -206,6 +209,59 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+    // 下載所有文件 (打包 ZIP，用類別分資料夾)
+    @GetMapping("/download-category/all")
+    public ResponseEntity<?> downloadAllDocuments(@RequestParam("projectId") Long projectId) {
+        try {
+            List<FileEntity> files = fileRepository.findByProjectId(projectId);
+
+            if (files.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No documents found for this project.");
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ZipOutputStream zos = new ZipOutputStream(baos);
+
+            // 記錄壓縮檔裡已經用過的檔名，避免重複
+            Set<String> entryNames = new HashSet<>();
+            int counter = 1;
+
+            for (FileEntity fileEntity : files) {
+                // 使用絕對路徑，正確找到 uploads 目錄
+                Path filePath = fileStorageLocation.resolve(fileEntity.getFilename()).normalize();
+                File file = filePath.toFile();
+
+                if (file.exists()) {
+                    // 保留 category 資料夾結構
+                    String entryName = fileEntity.getFilename().replace("\\", "/"); // windows 路徑轉斜線
+
+                    // 如果已經出現過，加上流水號避免重複
+                    if (entryNames.contains(entryName)) {
+                        entryName = counter++ + "_" + entryName;
+                    }
+                    entryNames.add(entryName);
+
+                    zos.putNextEntry(new ZipEntry(entryName));
+                    Files.copy(file.toPath(), zos);
+                    zos.closeEntry();
+                }
+            }
+            zos.close();
+
+            byte[] zipBytes = baos.toByteArray();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=all_documents.zip")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(zipBytes);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error generating zip: " + e.getMessage());
+        }
+    }
 
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
@@ -284,36 +340,67 @@ public class FileController {
     }
 
     // 刪除類別資料夾
+    @Transactional
     @DeleteMapping("/delete-category")
     public ResponseEntity<?> deleteCategory(@RequestParam("category") String category,
                                             @RequestParam("projectId") Long projectId) {
         try {
+            // 1. 取得該類別所有檔案
             List<FileEntity> filesToDelete = fileRepository.findByCategoryAndProjectId(category, projectId);
 
+            // 2. 刪除檔案系統裡的檔案
             for (FileEntity file : filesToDelete) {
+                Path filePath = fileStorageLocation.resolve(file.getFilename()).normalize();
                 try {
-                    Path path = fileStorageLocation.resolve(file.getFilename());
-                    Files.deleteIfExists(path);
+                    Files.deleteIfExists(filePath);
                 } catch (IOException e) {
-                    System.err.println("Failed to delete file from filesystem: " + file.getFilename() + " - " + e.getMessage());
+                    System.err.println("Failed to delete file: " + file.getFilename() + " - " + e.getMessage());
                 }
             }
 
+            // 3. 刪除資料庫檔案紀錄
             fileRepository.deleteAll(filesToDelete);
 
-            Path categoryFolder = fileStorageLocation.resolve(category);
-            if (Files.exists(categoryFolder) && isDirEmpty(categoryFolder)) {
-                Files.delete(categoryFolder);
-            }
+            // 4. 刪除整個類別資料夾（遞迴刪除）
+            Path categoryFolder = fileStorageLocation.resolve(category).normalize();
+            deleteDirectoryRecursively(categoryFolder);
 
+            // 5. 操作紀錄
             String operator = "admin";
             String details = String.format("刪除了文件類別 '%s' 及其包含的 %d 個文件", category, filesToDelete.size());
             operationHistoryService.recordHistory(projectId, operator, "DELETE_CATEGORY", details);
 
+            // 6. 通知團隊
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String message = String.format("文件類別 '%s' 及其 %d 個文件已被刪除", category, filesToDelete.size());
+                List<Long> userIds = projectRepository.findById(projectId)
+                        .map(p -> p.getTeam().stream().map(pt -> pt.getUser().getId()).toList())
+                        .orElse(Collections.emptyList());
+                notificationService.createNotification(userIds, -1L, "Project Update", message);
+            }
+
             return ResponseEntity.ok(Map.of("success", true, "message", "類別與檔案刪除成功"));
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "error", "刪除失敗：" + e.getMessage()));
+        }
+    }
+
+    // 遞迴刪除資料夾工具
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        if (Files.exists(path)) {
+            Files.walk(path)
+                    .sorted(Comparator.reverseOrder()) // 先刪子檔案，再刪父資料夾
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            System.err.println("Failed to delete: " + p + " - " + e.getMessage());
+                        }
+                    });
         }
     }
 
