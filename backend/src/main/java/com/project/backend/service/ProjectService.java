@@ -97,8 +97,14 @@ public class ProjectService {
         if (updatedProject.getName() != null && !project.getName().equals(updatedProject.getName())) {
             changes.append(String.format("名稱從 '%s' 變更為 '%s'. ", project.getName(), updatedProject.getName()));
         }
-        if (updatedProject.getStatus() != null && !project.getStatus().equals(updatedProject.getStatus())) {
-            changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", project.getStatus(), updatedProject.getStatus()));
+        // Safely check for status change, handling nulls
+        if (updatedProject.getStatus() != null) {
+            if (project.getStatus() == null || !project.getStatus().equals(updatedProject.getStatus())) {
+                changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", 
+                    project.getStatus() == null ? "未設定" : project.getStatus(), 
+                    updatedProject.getStatus()
+                ));
+            }
         }
         // Add more fields to track as needed...
 
