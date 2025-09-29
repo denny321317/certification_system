@@ -562,6 +562,8 @@ const CertificationProjects = ({ canWrite }) => {
                 </div>
               </div>
             )}
+            
+
           </div>
         </div>
       </div>
