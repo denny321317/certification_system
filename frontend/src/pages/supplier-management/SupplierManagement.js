@@ -63,6 +63,14 @@ const SupplierManagement = ({ canWrite }) => {
   const [currentPage, setCurrentPage] = useState(1);
 const [loading, setLoading] = useState(true);
 const [error, setError] = useState(null);
+const [filters, setFilters] = useState({
+ category: 'ALL',
+  status: 'ALL',
+  risk: 'ALL',
+  region: 'ALL',
+});
+const [draftFilters, setDraftFilters] = useState(filters);
+
 
   
   /**
@@ -104,6 +112,10 @@ const [error, setError] = useState(null);
    * @returns {Array} 過濾後的供應商列表
    */
   const filteredSuppliers = suppliers.filter(supplier => {
+    // const totalSuppliers = suppliers.length;
+    // const certifiedCount = suppliers.filter(s => s.status === 'approved').length;
+    // const pendingCount   = suppliers.filter(s => s.status === 'pending').length;
+    // const highRiskCount  = suppliers.filter(s => s.riskLevel === 'high').length;
     // 標籤篩選
     if (activeTab === '已認證' && supplier.status !== 'approved') return false;
     if (activeTab === '待審核' && supplier.status !== 'pending') return false;
@@ -113,10 +125,32 @@ const [error, setError] = useState(null);
     if (searchTerm && !((supplier.name || '').toLowerCase()).includes(searchTerm.toLowerCase())) {
     return false;
     }
+    if (filters.category !== 'ALL') {
+    // 以 supplier.type 做為供應商類別比對
+      if ((supplier.type || '') !== filters.category) return false;
+    }
+    if (filters.status !== 'ALL') {
+      // filters.status 可能是 'APPROVED' / 'PENDING'
+      const want = filters.status.toLowerCase() === 'approved' ? 'approved' : 'pending';
+      if (supplier.status !== want) return false;
+    }
+    if (filters.risk !== 'ALL') {
+      // 'LOW' | 'MEDIUM' | 'HIGH'
+      if (supplier.riskLevel !== filters.risk.toLowerCase()) return false;
+    }
+    if (filters.region !== 'ALL') {
+      // 以 country code 或文字比對（ex: 'TW','CN','VN' 或 '台灣'…依你資料）
+      const loc = (supplier.location || '').toString().toUpperCase();
+      if (loc !== filters.region.toUpperCase()) return false;
+    }
 
     
     return true;
   });
+  const totalSuppliers = suppliers.length;
+  const certifiedCount = suppliers.filter(s => s.status === 'approved').length;
+  const pendingCount   = suppliers.filter(s => s.status === 'pending').length;
+  const highRiskCount  = suppliers.filter(s => s.riskLevel === 'high').length;
   
   /**
    * 根據風險等級渲染風險指示器
@@ -204,6 +238,7 @@ const [error, setError] = useState(null);
   const dtoToUi = (dto) => ({
   id: dto.id,
   name: dto.name || '',
+  type: dto.type || '',
   status: dto.certificateStatus === 'CERTIFICATED' ? 'approved' : 'pending',
   categories: [],
   location: dto.country || '',
@@ -354,19 +389,19 @@ const askDelete = async (id) => {
             <h6 className="mb-3">供應商總覽</h6>
             <div className="d-flex justify-content-between mb-3">
               <div>供應商總數</div>
-              <div className="fw-bold">68</div>
+              <div className="fw-bold">{totalSuppliers}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>已認證供應商</div>
-              <div className="fw-bold text-success">42</div>
+              <div className="fw-bold text-success">{certifiedCount}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>待審核供應商</div>
-              <div className="fw-bold text-warning">15</div>
+              <div className="fw-bold text-warning">{pendingCount}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>高風險供應商</div>
-              <div className="fw-bold text-danger">11</div>
+              <div className="fw-bold text-danger">{highRiskCount}</div>
             </div>
           </div>
           
@@ -374,46 +409,67 @@ const askDelete = async (id) => {
             <h6 className="mb-3">篩選條件</h6>
             <div className="mb-3">
               <label className="form-label">供應商類別</label>
-              <select className="form-select">
-                <option>全部類別</option>
-                <option>原材料供應商</option>
-                <option>零配件供應商</option>
-                <option>包裝材料供應商</option>
-                <option>服務提供商</option>
+              <select
+                className="form-select"
+                value={draftFilters.category}
+                onChange={(e) => setDraftFilters(d => ({ ...d, category: e.target.value }))}
+              > 
+              <option value="ALL">全部類別</option>
+                {/* 依照你的 dto.type 實際值調整 value */}
+                <option value="RAW_MATERIAL">原材料供應商</option>
+                <option value="PARTS">零配件供應商</option>
+                <option value="PACKAGING">包裝材料供應商</option>
+                <option value="SERVICE">服務提供商</option>
               </select>
+              
             </div>
             <div className="mb-3">
               <label className="form-label">認證狀態</label>
-              <select className="form-select">
-                <option>全部狀態</option>
-                <option>已通過認證</option>
-                <option>認證進行中</option>
-                <option>待認證</option>
-                <option>認證過期</option>
-              </select>
+              <select
+              className="form-select"
+              value={draftFilters.status}
+              onChange={(e) => setDraftFilters(d => ({ ...d, status: e.target.value }))}
+            >
+              <option value="ALL">全部狀態</option>
+              <option value="APPROVED">已通過認證</option>
+              <option value="UNDER_CERTIFICATION">認證進行中</option>
+              <option value="PENDING">待認證</option>
+              <option value="EXPIRED">認證過期</option>
+            </select>
             </div>
             <div className="mb-3">
               <label className="form-label">風險等級</label>
-              <select className="form-select">
-                <option>全部風險等級</option>
-                <option>低風險</option>
-                <option>中風險</option>
-                <option>高風險</option>
+              <select
+                className="form-select"
+                value={draftFilters.risk}
+                onChange={(e) => setDraftFilters(d => ({ ...d, risk: e.target.value }))}
+              >
+                <option value="ALL">全部風險等級</option>
+                <option value="LOW">低風險</option>
+                <option value="MEDIUM">中風險</option>
+                <option value="HIGH">高風險</option>
               </select>
             </div>
             <div className="mb-3">
               <label className="form-label">所在地區</label>
-              <select className="form-select">
-                <option>全部地區</option>
-                <option>台灣</option>
-                <option>中國大陸</option>
-                <option>東南亞</option>
-                <option>其他地區</option>
+              <select
+                className="form-select"
+                value={draftFilters.region}
+                onChange={(e) => setDraftFilters(d => ({ ...d, region: e.target.value }))}
+              >
+                <option value="ALL">全部地區</option>
+                <option value="TW">台灣</option>
+                <option value="CN">中國大陸</option>
+                <option value="SEA">東南亞</option>
+                <option value="OTHER">其他地區</option>
               </select>
             </div>
-            <button className="btn btn-outline-primary w-100">
-              <FontAwesomeIcon icon={faFilter} className="me-2" />套用篩選
-            </button>
+            <button
+                className="btn btn-outline-primary w-100"
+                onClick={() => { setFilters(draftFilters); setCurrentPage(1); }}
+              >
+                <FontAwesomeIcon icon={faFilter} className="me-2" />套用篩選
+              </button>
           </div>
         </div>
         
