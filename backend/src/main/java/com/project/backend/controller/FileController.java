@@ -150,10 +150,16 @@ public class FileController {
     }
 
     // 下載單檔
-    @GetMapping("/download/{filename:.+}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String filename, HttpServletRequest request) {
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id, HttpServletRequest request) {
         try {
-            Path filePath = fileStorageLocation.resolve(filename).normalize();
+            Optional<FileEntity> optionalFile = fileRepository.findById(id);
+            if (optionalFile.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            FileEntity fileEntity = optionalFile.get();
+            Path filePath = fileStorageLocation.resolve(fileEntity.getFilename()).normalize();
             Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
             if (!resource.exists()) {
                 return ResponseEntity.notFound().build();
@@ -164,20 +170,26 @@ public class FileController {
                 contentType = "application/octet-stream";
             }
 
+            // 支援中文檔名
+            String originalName = fileEntity.getOriginalFilename();
+            String encodedFilename = java.net.URLEncoder.encode(originalName, "UTF-8").replaceAll("\\+", "%20");
+
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + originalName + "\"; filename*=UTF-8''" + encodedFilename)
                     .body(resource);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // 下載多檔，利用類別分類下載 ZIP
+    // 下載分類 ZIP
     @GetMapping("/download-category/{category}")
     public ResponseEntity<Resource> downloadCategoryAsZip(@PathVariable String category,
-                                                          @RequestParam("projectId") Long projectId) {
+                                                        @RequestParam("projectId") Long projectId) {
         try {
             List<FileEntity> files = fileRepository.findByCategoryAndProjectId(category, projectId);
             if (files.isEmpty()) {
@@ -188,11 +200,13 @@ public class FileController {
             Path zipPath = Files.createTempFile(category + "_", ".zip");
 
             try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
-                 java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
+                java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
                 for (FileEntity file : files) {
                     Path filePath = fileStorageLocation.resolve(file.getFilename());
                     if (Files.exists(filePath)) {
-                        zos.putNextEntry(new java.util.zip.ZipEntry(file.getOriginalFilename()));
+                        // 使用原始檔名
+                        String entryName = file.getOriginalFilename();
+                        zos.putNextEntry(new java.util.zip.ZipEntry(entryName));
                         Files.copy(filePath, zos);
                         zos.closeEntry();
                     }
@@ -202,19 +216,21 @@ public class FileController {
             Resource resource = new org.springframework.core.io.UrlResource(zipPath.toUri());
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + zipFilename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + zipFilename + "\"")
                     .body(resource);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
-    // 下載所有文件 (打包 ZIP，用類別分資料夾)
+
+    // 下載所有檔案 ZIP (保留 category 資料夾)
     @GetMapping("/download-category/all")
     public ResponseEntity<?> downloadAllDocuments(@RequestParam("projectId") Long projectId) {
         try {
             List<FileEntity> files = fileRepository.findByProjectId(projectId);
-
             if (files.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("No documents found for this project.");
@@ -222,33 +238,28 @@ public class FileController {
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ZipOutputStream zos = new ZipOutputStream(baos);
-
-            // 記錄壓縮檔裡已經用過的檔名，避免重複
             Set<String> entryNames = new HashSet<>();
             int counter = 1;
 
             for (FileEntity fileEntity : files) {
-                // 使用絕對路徑，正確找到 uploads 目錄
                 Path filePath = fileStorageLocation.resolve(fileEntity.getFilename()).normalize();
-                File file = filePath.toFile();
+                if (!Files.exists(filePath)) continue;
 
-                if (file.exists()) {
-                    // 保留 category 資料夾結構
-                    String entryName = fileEntity.getFilename().replace("\\", "/"); // windows 路徑轉斜線
+                // 使用 category + 原始檔名
+                String entryName = fileEntity.getCategory() + "/" + fileEntity.getOriginalFilename();
 
-                    // 如果已經出現過，加上流水號避免重複
-                    if (entryNames.contains(entryName)) {
-                        entryName = counter++ + "_" + entryName;
-                    }
-                    entryNames.add(entryName);
-
-                    zos.putNextEntry(new ZipEntry(entryName));
-                    Files.copy(file.toPath(), zos);
-                    zos.closeEntry();
+                // 避免重複
+                if (entryNames.contains(entryName)) {
+                    entryName = counter++ + "_" + entryName;
                 }
-            }
-            zos.close();
+                entryNames.add(entryName);
 
+                zos.putNextEntry(new ZipEntry(entryName));
+                Files.copy(filePath, zos);
+                zos.closeEntry();
+            }
+
+            zos.close();
             byte[] zipBytes = baos.toByteArray();
 
             return ResponseEntity.ok()
@@ -261,8 +272,7 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error generating zip: " + e.getMessage());
         }
-    }
-
+    }  
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
     @Transactional
