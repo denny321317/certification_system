@@ -16,6 +16,7 @@ import java.util.List;
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     public Optional<Project> findById(Long id);
+    List<Project> findByStatus(String status);
     List<Project> findByEndDateBetween(LocalDate start, LocalDate end);
 
     @Query("SELECT new com.project.backend.dto.ProjectDeadlineDTO(p.id, p.name, p.endDate) " +

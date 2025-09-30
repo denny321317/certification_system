@@ -50,6 +50,9 @@ public class ProjectService {
 
     @Transactional
     public Project createProject(Project project) {
+        if (project.getStatus() == null || project.getStatus().isEmpty()) {
+            project.setStatus("planned"); // 設置默認狀態為 "計畫中"
+        }
         updateProgressByStatus(project);
         Project savedProject = projectRepository.save(project);
         // TODO: Replace "admin" with actual logged-in user
@@ -60,9 +63,13 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ShowProjectDTO> getAllProjects() {
-        List<Project> projects = projectRepository.findAll();
-
+    public List<ShowProjectDTO> getAllProjects(String status) {
+        List<Project> projects;
+        if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")) {
+            projects = projectRepository.findByStatus(status);
+        } else {
+            projects = projectRepository.findAll();
+        }
         return projects.stream().map(this::toShowProjectDTO).collect(Collectors.toList());
     }
 
@@ -90,8 +97,14 @@ public class ProjectService {
         if (updatedProject.getName() != null && !project.getName().equals(updatedProject.getName())) {
             changes.append(String.format("名稱從 '%s' 變更為 '%s'. ", project.getName(), updatedProject.getName()));
         }
-        if (updatedProject.getStatus() != null && !project.getStatus().equals(updatedProject.getStatus())) {
-            changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", project.getStatus(), updatedProject.getStatus()));
+        // Safely check for status change, handling nulls
+        if (updatedProject.getStatus() != null) {
+            if (project.getStatus() == null || !project.getStatus().equals(updatedProject.getStatus())) {
+                changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", 
+                    project.getStatus() == null ? "未設定" : project.getStatus(), 
+                    updatedProject.getStatus()
+                ));
+            }
         }
         // Add more fields to track as needed...
 

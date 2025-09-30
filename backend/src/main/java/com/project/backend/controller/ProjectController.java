@@ -74,8 +74,8 @@ public class ProjectController {
     }
 
     @GetMapping("/GetAllProject")
-    public List<ShowProjectDTO> getAllProjects() {
-        return projectService.getAllProjects();
+    public List<ShowProjectDTO> getAllProjects(@RequestParam(required = false) String status) {
+        return projectService.getAllProjects(status);
     }
 
     @DeleteMapping("/DeleteProject/{id}")

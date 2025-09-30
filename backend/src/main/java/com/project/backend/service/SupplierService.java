@@ -110,6 +110,34 @@ public class SupplierService {
 
         return Optional.of(supplierDTO);
     }
+    
+    public Supplier updateSupplier(Long id, SupplierDTO dto) {
+        Supplier supplier = supplierRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Supplier with ID: " + id + " not found"));
+
+        // 覆寫基本欄位（需要局部更新就改成判空再設值）
+        supplier.setName(dto.getName());
+        supplier.setType(dto.getType());
+        supplier.setProduct(dto.getProduct());
+        supplier.setCountry(dto.getCountry());
+        supplier.setAddress(dto.getAddress());
+        supplier.setTelephone(dto.getTelephone());
+        supplier.setEmail(dto.getEmail());
+        supplier.setCollabStart(dto.getCollabStart());
+        supplier.setCertificateStatus(dto.getCertificateStatus());
+        supplier.setRiskProfile(dto.getRiskProfile());
+
+        // 若前端有帶 projects，就整體替換關聯
+        if (dto.getProjects() != null) {
+            List<Project> projects = dto.getProjects().stream()
+                .map(p -> projectRepository.findById(p.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found: " + p.getId())))
+                .collect(Collectors.toList());
+            supplier.setProjects(projects);
+        }
+
+        return supplierRepository.save(supplier);
+    }
 
     
 }
