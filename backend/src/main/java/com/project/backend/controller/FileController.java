@@ -9,27 +9,29 @@ import org.springframework.web.multipart.MultipartFile;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
-import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
-import com.project.backend.service.AuthService;
 import com.project.backend.service.NotificationSettingsService;
-import com.project.backend.service.OperationHistoryService;
-import com.project.backend.model.ProjectTeam;
-import com.project.backend.model.Notification;
 import com.project.backend.service.NotificationService;
+import com.project.backend.service.OperationHistoryService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.io.File;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+
+//TODO: Replace "admin" with actual logged-in user
 
 @RestController
 @RequestMapping("/api/documents")
@@ -56,100 +58,108 @@ public class FileController {
     @Autowired
     private NotificationService notificationService;
 
-
-
     public FileController() throws IOException {
         Files.createDirectories(fileStorageLocation);
     }
 
+    // 支援多檔案上傳
     @PostMapping("/certification-projects/{projectId}/upload")
     @Transactional
-    public ResponseEntity<?> uploadFile(
-        @PathVariable("projectId") Long projectId,
-        @RequestParam("file") MultipartFile file,
-        @RequestParam("category") String category,
-        @RequestParam("description") String description
+    public ResponseEntity<?> uploadFiles(
+            @PathVariable("projectId") Long projectId,
+            @RequestParam("files") List<MultipartFile> files,
+            @RequestParam("category") String category,
+            @RequestParam("description") String description
     ) {
         try {
             Optional<Project> optionalProject = projectRepository.findById(projectId);
             if (optionalProject.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("success", false, "error", "找不到專案"));
+                        .body(Map.of("success", false, "error", "找不到專案"));
             }
 
             Project project = optionalProject.get();
-
-            String originalFilename = file.getOriginalFilename();
-            String extension = getExtension(originalFilename);
-            String filename = UUID.randomUUID().toString() + "." + extension;
-            // 新增分類資料夾邏輯
             Path categoryFolder = fileStorageLocation.resolve(category);
-            Files.createDirectories(categoryFolder); // 若不存在則自動建立
+            Files.createDirectories(categoryFolder);
 
-            // 將檔案存入 uploads/category/
-            Path targetPath = categoryFolder.resolve(filename);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            // Path targetPath = fileStorageLocation.resolve(filename);
-            // Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            List<Map<String, Object>> uploadedFiles = new ArrayList<>();
 
-            FileEntity fileEntity = new FileEntity();
-            // fileEntity.setFilename(filename);
-            fileEntity.setFilename(category + "/" + filename); // 儲存相對路徑，方便下載時定位
-            fileEntity.setOriginalFilename(originalFilename);
-            fileEntity.setFileType(extension);
-            fileEntity.setUploadTime(LocalDateTime.now());
-            fileEntity.setUploadedBy("admin");
-            fileEntity.setSizeInBytes(file.getSize());
-            fileEntity.setStatus("pending");
-            fileEntity.setCategory(category);
-            fileEntity.setDescription(description);
-            fileEntity.setProject(project); // 關聯專案
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) continue;
 
-            fileRepository.save(fileEntity);
+                String originalFilename = file.getOriginalFilename();
+                String extension = getExtension(originalFilename);
+                String filename = UUID.randomUUID().toString() + "." + extension;
 
-            // Add notification logic
-            NotificationSettings settings = notificationSettingsService.getSettings();
-            if (settings.isDocumentUpdateNotice()) {
-                String notificationMessage = "新文件 " + fileEntity.getOriginalFilename() + "' 被上傳到 '" + project.getName() + "'.";
-                List<Long> userIds = project.getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
-                notificationService.createNotification(userIds, -1L, "Project Update", notificationMessage);  // Batch save
+                Path targetPath = categoryFolder.resolve(filename);
+                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+                FileEntity fileEntity = new FileEntity();
+                fileEntity.setFilename(category + "/" + filename);
+                fileEntity.setOriginalFilename(originalFilename);
+                fileEntity.setFileType(extension);
+                fileEntity.setUploadTime(LocalDateTime.now());
+                fileEntity.setUploadedBy("admin"); // TODO: 實際登入使用者
+                fileEntity.setSizeInBytes(file.getSize());
+                fileEntity.setStatus("pending");
+                fileEntity.setCategory(category);
+                fileEntity.setDescription(description);
+                fileEntity.setProject(project);
+
+                fileRepository.save(fileEntity);
+
+                // 操作紀錄
+                String operator = "admin";
+                String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
+                operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
+
+                // 通知團隊成員
+                NotificationSettings settings = notificationSettingsService.getSettings();
+                if (settings.isDocumentUpdateNotice()) {
+                    String notificationMessage = "新文件 " + originalFilename + " 被上傳到 '" + project.getName() + "'專案.";
+                    List<Long> userIds = project.getTeam().stream()
+                            .map(pt -> pt.getUser().getId())
+                            .collect(Collectors.toList());
+                    notificationService.createNotification(userIds, -1L, "Project Update", notificationMessage);
+                }
+
+                Map<String, Object> fileResponse = new HashMap<>();
+                fileResponse.put("id", fileEntity.getId());
+                fileResponse.put("name", fileEntity.getOriginalFilename());
+                fileResponse.put("filename", fileEntity.getFilename());
+                fileResponse.put("category", fileEntity.getCategory());
+                fileResponse.put("type", fileEntity.getFileType());
+                fileResponse.put("uploadedBy", fileEntity.getUploadedBy());
+                fileResponse.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
+                fileResponse.put("description", fileEntity.getDescription());
+                fileResponse.put("status", fileEntity.getStatus());
+
+                uploadedFiles.add(fileResponse);
             }
 
-
-            // Record history
-            // TODO: Replace "admin" with actual logged-in user
-            String operator = "admin"; 
-            String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
-            operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", fileEntity.getId());
-            response.put("name", fileEntity.getOriginalFilename());
-            response.put("filename", fileEntity.getFilename());
-            response.put("category", fileEntity.getCategory());
-            response.put("type", fileEntity.getFileType());
-            response.put("uploadedBy", fileEntity.getUploadedBy());
-            response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
-            response.put("description", fileEntity.getDescription());
-            response.put("status", fileEntity.getStatus());
-
-
-
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "files", uploadedFiles
+            ));
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "error", "檔案上傳失敗"));
         }
     }
 
-
-    // 下載檔案
-    @GetMapping("/download/{filename:.+}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String filename, HttpServletRequest request) {
+    // 下載單檔
+    @GetMapping("/download/{id}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long id, HttpServletRequest request) {
         try {
-            Path filePath = fileStorageLocation.resolve(filename).normalize();
+            Optional<FileEntity> optionalFile = fileRepository.findById(id);
+            if (optionalFile.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            FileEntity fileEntity = optionalFile.get();
+            Path filePath = fileStorageLocation.resolve(fileEntity.getFilename()).normalize();
             Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
             if (!resource.exists()) {
                 return ResponseEntity.notFound().build();
@@ -160,53 +170,175 @@ public class FileController {
                 contentType = "application/octet-stream";
             }
 
+            // 支援中文檔名
+            String originalName = fileEntity.getOriginalFilename();
+            String encodedFilename = java.net.URLEncoder.encode(originalName, "UTF-8").replaceAll("\\+", "%20");
+
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + originalName + "\"; filename*=UTF-8''" + encodedFilename)
                     .body(resource);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    // 下載分類 ZIP
+    @GetMapping("/download-category/{category}")
+    public ResponseEntity<Resource> downloadCategoryAsZip(@PathVariable String category,
+                                                        @RequestParam("projectId") Long projectId) {
+        try {
+            List<FileEntity> files = fileRepository.findByCategoryAndProjectId(category, projectId);
+            if (files.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            String zipFilename = category + "_files.zip";
+            Path zipPath = Files.createTempFile(category + "_", ".zip");
+
+            try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+                java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(fos)) {
+                for (FileEntity file : files) {
+                    Path filePath = fileStorageLocation.resolve(file.getFilename());
+                    if (Files.exists(filePath)) {
+                        // 使用原始檔名
+                        String entryName = file.getOriginalFilename();
+                        zos.putNextEntry(new java.util.zip.ZipEntry(entryName));
+                        Files.copy(filePath, zos);
+                        zos.closeEntry();
+                    }
+                }
+            }
+
+            Resource resource = new org.springframework.core.io.UrlResource(zipPath.toUri());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + zipFilename + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // 下載所有檔案 ZIP (保留 category 資料夾)
+    @GetMapping("/download-category/all")
+    public ResponseEntity<?> downloadAllDocuments(@RequestParam("projectId") Long projectId) {
+        try {
+            List<FileEntity> files = fileRepository.findByProjectId(projectId);
+            if (files.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No documents found for this project.");
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ZipOutputStream zos = new ZipOutputStream(baos);
+            Set<String> entryNames = new HashSet<>();
+            int counter = 1;
+
+            for (FileEntity fileEntity : files) {
+                Path filePath = fileStorageLocation.resolve(fileEntity.getFilename()).normalize();
+                if (!Files.exists(filePath)) continue;
+
+                // 使用 category + 原始檔名
+                String entryName = fileEntity.getCategory() + "/" + fileEntity.getOriginalFilename();
+
+                // 避免重複
+                if (entryNames.contains(entryName)) {
+                    entryName = counter++ + "_" + entryName;
+                }
+                entryNames.add(entryName);
+
+                zos.putNextEntry(new ZipEntry(entryName));
+                Files.copy(filePath, zos);
+                zos.closeEntry();
+            }
+
+            zos.close();
+            byte[] zipBytes = baos.toByteArray();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=all_documents.zip")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(zipBytes);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error generating zip: " + e.getMessage());
+        }
+    }  
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
     @Transactional
     public ResponseEntity<?> deleteFile(@PathVariable Long id) {
-        Optional<FileEntity> optional = fileRepository.findById(id);
-        if (optional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("success", false, "error", "找不到文件"));
-        }
-
-        FileEntity file = optional.get();
         try {
+            // 先確認檔案是否存在
+            Optional<FileEntity> optional = fileRepository.findById(id);
+            if (optional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("success", false, "error", "找不到文件"));
+            }
+            FileEntity file = optional.get();
+            Project project = file.getProject();
+
+            // 刪除實體檔案
             Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
-            fileRepository.delete(file);
 
+            // 直接刪除 DB 紀錄
+            int deleted = fileRepository.deleteFileById(id); // 用自訂 @Modifying query
+            if (deleted == 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("success", false, "error", "資料庫刪除失敗"));
+            }
             
-
-            // Record history
-            // TODO: Replace "admin" with actual logged-in user
-            String operator = "admin";
-            String details = String.format("刪除了文件 '%s'", file.getOriginalFilename());
-            operationHistoryService.recordHistory(file.getProject().getId(), operator, "DELETE_DOCUMENT", details);
-
-            NotificationSettings settings = notificationSettingsService.getSettings();
-            if (settings.isDocumentUpdateNotice()) {
-                String message = "文件刪除: '" + file.getOriginalFilename() + "' 被從 '" + file.getProject().getName() + "'中刪除";
-                List<Long> userIds = file.getProject().getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
-                notificationService.createNotification(userIds, -1L,  "Project Update", message);
+            // ===== 操作紀錄 =====
+            if (project != null) {
+                Long projectId = project.getId();
+                String operator = "admin"; // TODO: 換成登入使用者
+                String details = String.format(
+                    "刪除了文件 '%s' (類別 '%s')，專案：'%s'",
+                    file.getOriginalFilename(),
+                    file.getCategory(),
+                    project.getName()
+                );
+                operationHistoryService.recordHistory(projectId, operator, "DELETE_DOCUMENT", details);
             }
 
+            // ===== 通知團隊 =====
+            if (project != null) {
+                NotificationSettings settings = notificationSettingsService.getSettings();
+                if (settings.isDocumentUpdateNotice()) {
+                    String message = String.format(
+                        "文件 '%s' 已從專案 '%s' 中刪除",
+                        file.getOriginalFilename(),
+                        project.getName()
+                    );
+
+                    List<Long> userIds = project.getTeam().stream()
+                            .map(pt -> pt.getUser().getId())
+                            .toList();
+
+                    notificationService.createNotification(userIds, -1L, "Project Update", message);
+                }
+            }
             return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
+
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "error", "檔案刪除失敗"));
         }
     }
 
-    @GetMapping("/project/{projectId}")    
+
+
+    // 查詢專案文件
+    @GetMapping("/project/{projectId}")
     public ResponseEntity<?> listDocumentsByProject(@PathVariable Long projectId) {
         List<FileEntity> files = fileRepository.findByProjectId(projectId);
 
@@ -226,34 +358,17 @@ public class FileController {
         return ResponseEntity.ok(responseList);
     }
 
-
-
-    // 工具：檔案大小格式化
-    private String formatFileSize(long sizeInBytes) {
-        double sizeInMB = sizeInBytes / (1024.0 * 1024.0);
-        return String.format("%.1f MB", sizeInMB);
-    }
-
-    // 工具：取得副檔名
-    private String getExtension(String filename) {
-        return filename.contains(".")
-                ? filename.substring(filename.lastIndexOf('.') + 1)
-                : "";
-    }
-
-    //新增類別資料夾
+    // 建立類別資料夾
     @PostMapping("/create-category")
-    public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category, @RequestParam(value = "projectId", required = false) Long projectId) {
+    public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category,
+                                                  @RequestParam(value = "projectId", required = false) Long projectId) {
         try {
-            // 建立 uploads/category 子資料夾
             Path categoryPath = fileStorageLocation.resolve(category).normalize();
             if (!Files.exists(categoryPath)) {
                 Files.createDirectories(categoryPath);
             }
 
-            // Record history - projectId might be null if it's a general category
             if (projectId != null) {
-                // TODO: Replace "admin" with actual logged-in user
                 String operator = "admin";
                 String details = String.format("新增了文件類別 '%s'", category);
                 operationHistoryService.recordHistory(projectId, operator, "CREATE_CATEGORY", details);
@@ -266,54 +381,74 @@ public class FileController {
         }
     }
 
-    //刪除類別資料夾
+    // 刪除類別資料夾
+    @Transactional
     @DeleteMapping("/delete-category")
-    public ResponseEntity<?> deleteCategory(@RequestParam("category") String category, @RequestParam(value = "projectId", required = true) Long projectId) {
+    public ResponseEntity<?> deleteCategory(@RequestParam("category") String category,
+                                            @RequestParam("projectId") Long projectId) {
         try {
-            // 1. 查找此類別下的所有檔案實體
+            // 1. 取得該類別所有檔案
             List<FileEntity> filesToDelete = fileRepository.findByCategoryAndProjectId(category, projectId);
 
-            // 2. 從檔案系統刪除實體檔案
+            // 2. 刪除檔案系統裡的檔案
             for (FileEntity file : filesToDelete) {
+                Path filePath = fileStorageLocation
+                    .resolve(category)
+                    .resolve(file.getFilename())
+                    .normalize();
                 try {
-                     Path path = fileStorageLocation.resolve(file.getFilename());
-                     Files.deleteIfExists(path);
+                    Files.deleteIfExists(filePath);
                 } catch (IOException e) {
-                    // Log error but continue trying to delete other files and records
-                    System.err.println("Failed to delete file from filesystem: " + file.getFilename() + " - " + e.getMessage());
+                    System.err.println("Failed to delete file: " + file.getFilename() + " - " + e.getMessage());
                 }
             }
 
-            // 3. 從資料庫刪除檔案紀錄
+            // 3. 刪除資料庫檔案紀錄
             fileRepository.deleteAll(filesToDelete);
-            
-            // 4. 刪除類別資料夾 (如果為空)
-            Path categoryFolder = fileStorageLocation.resolve(category);
-            if (Files.exists(categoryFolder) && isDirEmpty(categoryFolder)) {
-                 Files.delete(categoryFolder);
-            }
 
-            // Record history
-            // TODO: Replace "admin" with actual logged-in user
+            // 4. 刪除整個類別資料夾（遞迴刪除）
+            Path categoryFolder = fileStorageLocation.resolve(category).normalize();
+            deleteDirectoryRecursively(categoryFolder);
+
+            // 5. 操作紀錄
             String operator = "admin";
             String details = String.format("刪除了文件類別 '%s' 及其包含的 %d 個文件", category, filesToDelete.size());
             operationHistoryService.recordHistory(projectId, operator, "DELETE_CATEGORY", details);
 
+            // 6. 通知團隊
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String message = String.format("文件類別 '%s' 及其 %d 個文件已被刪除", category, filesToDelete.size());
+                List<Long> userIds = projectRepository.findById(projectId)
+                        .map(p -> p.getTeam().stream().map(pt -> pt.getUser().getId()).toList())
+                        .orElse(Collections.emptyList());
+                notificationService.createNotification(userIds, -1L, "Project Update", message);
+            }
 
             return ResponseEntity.ok(Map.of("success", true, "message", "類別與檔案刪除成功"));
+
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("success", false, "error", "刪除失敗：" + e.getMessage()));
         }
     }
 
-    private boolean isDirEmpty(final Path directory) throws IOException {
-        try(DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
-            return !dirStream.iterator().hasNext();
+    // 遞迴刪除資料夾工具
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        if (Files.exists(path)) {
+            Files.walk(path)
+                    .sorted(Comparator.reverseOrder()) // 先刪子檔案，再刪父資料夾
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            System.err.println("Failed to delete: " + p + " - " + e.getMessage());
+                        }
+                    });
         }
     }
 
-    //取得所有存在的類別資料夾名稱
     @GetMapping("/categories")
     public ResponseEntity<?> listCategories() {
         try {
@@ -339,7 +474,16 @@ public class FileController {
         }
     }
 
+    // 工具
+    private String getExtension(String filename) {
+        return filename.contains(".")
+                ? filename.substring(filename.lastIndexOf('.') + 1)
+                : "";
+    }
 
-
-
+    private boolean isDirEmpty(final Path directory) throws IOException {
+        try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
+            return !dirStream.iterator().hasNext();
+        }
+    }
 }

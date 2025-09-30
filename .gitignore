@@ -43,3 +43,5 @@ Thumbs.db
 # contain password
 ./backend/src/main/resources/application.properties
 
+
+/uploads/

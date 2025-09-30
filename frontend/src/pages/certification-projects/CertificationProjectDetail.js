@@ -547,7 +547,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
    */
   const handleShowUploadModal = () => {
     setUploadForm({
-      fileName: '',
+      files: [],
       category: 'plan',
       description: ''
     });
@@ -567,7 +567,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     if (type === 'file') {
       setUploadForm({
         ...uploadForm,
-        [name]: files[0] // 取得第一個檔案
+        [name]: Array.from(files) // ✅ FileList → 陣列
       });
     } else {
       setUploadForm({
@@ -585,49 +585,41 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const handleUploadFile = async (e) => {
     e.preventDefault();
 
-    // 建立 FormData，放入檔案及其他欄位
+    if (!uploadForm.files || uploadForm.files.length === 0) {
+      alert('請選擇檔案');
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('file', uploadForm.file); // 假設 uploadForm.file 是 File 物件
+    uploadForm.files.forEach(file => formData.append('files', file));
     formData.append('category', uploadForm.category);
     formData.append('description', uploadForm.description);
-    console.log(uploadForm.file);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/documents/certification-projects/${projectId}/upload`, {
-        method: 'POST',
-        body: formData
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/documents/certification-projects/${projectId}/upload`,
+        { method: 'POST', body: formData }
+      );
 
-      if (!response.ok) {
-        throw new Error('上傳失敗');
-      }
+      if (!response.ok) throw new Error('上傳失敗');
 
       const data = await response.json();
 
-      // 將後端回傳的資料加入文件列表
-      const newDoc = {
-        id: data.id,
-        name: data.name,
-        filename: data.filename,
-        category: data.category,
-        type: data.type,
-        uploadedBy: data.uploadedBy,
-        uploadDate: data.uploadDate,
-        description: data.description
-      };
-
-      setProjectDetail({
-        ...projectDetail,
-        documents: [...projectDetail.documents, newDoc]
-      });
-
-      setShowUploadModal(false);
-      alert('文件上傳成功');
-
+      if (data.success && Array.isArray(data.files)) {
+        setProjectDetail({
+          ...projectDetail,
+          documents: [...projectDetail.documents, ...data.files] // 加上多檔案
+        });
+        setShowUploadModal(false);
+        alert('文件上傳成功');
+      } else {
+        throw new Error(data.error || '上傳失敗');
+      }
     } catch (error) {
       alert(error.message);
     }
   };
+
 
 
   /**
@@ -796,25 +788,35 @@ const CertificationProjectDetail = ({ canWrite }) => {
   /**
    * 處理刪除類別
    */
-  const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (categoryId === 'all') {
+  const handleDeleteCategory = async (categoryId, categoryName, projectId) => {
+    if (['all', 'plan', 'audit', 'policy', 'procedure', 'record', 'certificate', 'other'].includes(categoryId)) {
       alert("預設類別無法刪除！");
       return;
     }
 
-    const confirmDelete = window.confirm(`確定要刪除類別「${categoryName}」嗎？該資料夾與檔案將一併刪除。`);
+    const confirmDelete = window.confirm(
+      `確定要刪除類別「${categoryName}」嗎？該資料夾與檔案將一併刪除。`
+    );
     if (!confirmDelete) return;
 
     try {
-      const response = await axios.delete("http://localhost:8000/api/documents/delete-category", {
-        params: { category: categoryId }
-      });
+      const response = await axios.delete(
+        "http://localhost:8000/api/documents/delete-category",
+        {
+          params: { 
+            category: categoryId,
+            projectId: projectId   // ✅ 把 projectId 帶上
+          }
+        }
+      );
 
       if (response.data.success) {
         alert("類別刪除成功");
 
         // 更新前端類別列表
-        setDocumentCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        setDocumentCategories(prev =>
+          prev.filter(cat => cat.id !== categoryId)
+        );
 
         // 更新文件清單，移除該類別下文件（如需要）
         setProjectDetail(prev => ({
@@ -824,9 +826,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
 
         // 若目前正選中該分類，重設為 all
         if (activeDocCategory === categoryId) {
-          setActiveDocCategory('all');
+          setActiveDocCategory("all");
         }
-
       } else {
         alert("刪除失敗：" + response.data.message);
       }
@@ -834,6 +835,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       alert("刪除失敗：" + (error.response?.data?.error || error.message));
     }
   };
+
 
   // //取得後端現存的資料夾
   // useEffect(() => {
@@ -1019,25 +1021,17 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * 處理批量下載當前分類的全部文件
    * @param {string} category - 文件分類ID
    */
+  const [selectedCategory, setSelectedCategory] = useState(activeDocCategory);
+
   const handleBatchDownload = (category) => {
-    // 在實際應用中，這裡應該調用後端API進行批量下載
-    // 模擬下載過程
-    const categoryName = documentCategories.find(c => c.id === category)?.name || '所選文件';
-    const categoryFiles = projectDetail.documents.filter(doc => 
-      category === 'all' || doc.category === category
-    );
-    
-    if (categoryFiles.length === 0) {
-      alert('沒有可下載的文件');
+    if (!category) {
+      alert("請先選擇一個類別");
       return;
     }
-    
-    alert(`正在準備下載${categoryFiles.length}個${categoryName}，請稍候...`);
-    console.log('下載文件列表:', categoryFiles.map(doc => doc.name).join(', '));
-    
-    // 如果是實際應用，可以使用以下程式碼創建一個下載任務
-    // const downloadUrl = `/api/projects/${projectId}/documents/download?category=${category}`;
-    // window.location.href = downloadUrl;
+
+    // 直接呼叫後端 API，觸發瀏覽器下載 ZIP
+    const downloadUrl = `http://localhost:8000/api/documents/download-category/${category}?projectId=${projectId}`;
+    window.location.href = downloadUrl;
   };
 
   /**
@@ -1139,12 +1133,31 @@ const CertificationProjectDetail = ({ canWrite }) => {
   /**
    * 處理刪除項目
    */
-  const handleDeleteProject = () => {
-    // 在實際應用中，這裡應該有API調用來刪除項目
-    
-    // 模擬刪除成功後返回項目列表頁面
-    navigate('/certification-projects');
-    alert('項目已刪除');
+  const [deleteInput, setDeleteInput] = useState('');
+  const [isChecked, setIsChecked] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const handleDeleteProject = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/projects/DeleteProject/${projectDetail.id}`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '刪除失敗');
+      }
+
+      setProjects(prev => prev.filter(p => p.id !== projectDetail.id));
+      alert('專案已刪除');
+      handleCloseDeleteConfirmModal();
+
+      // 清空 input 與勾選框
+      setDeleteInput('');
+      setIsChecked(false);
+    } catch (error) {
+      alert('刪除失敗: ' + error.message);
+    }
   };
 
   /**
@@ -1548,14 +1561,31 @@ const CertificationProjectDetail = ({ canWrite }) => {
             <div className="documents-header">
               <h5>項目文件管理</h5>
               <div className="documents-actions">
-                <button 
-                  className="btn btn-outline-primary btn-sm me-2" 
-                  onClick={() => handleBatchDownload(activeDocCategory)}
-                  title={`下載所有${activeDocCategory === 'all' ? '' : documentCategories.find(c => c.id === activeDocCategory)?.name || ''}文件`}
-                >
-                  <FontAwesomeIcon icon={faFileDownload} className="me-1" />
-                  批量下載
-                </button>
+                <div className="d-flex align-items-center">
+                  {/* 類別選擇下拉選單 */}
+                  <select
+                    className="form-select form-select-sm me-2"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    <option value="">選擇類別</option>
+                    {documentCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* 批量下載按鈕 */}
+                  <button
+                    className="btn btn-outline-primary px-3 flex-shrink-0"
+                    onClick={() => handleBatchDownload(selectedCategory)}
+                    title="批量下載該類別的所有文件"
+                  >
+                    <FontAwesomeIcon icon={faFileDownload} className="me-1" />
+                    批量下載
+                  </button>
+                </div>
                 <button className="btn btn-primary btn-sm" onClick={handleShowUploadModal}>
                   <FontAwesomeIcon icon={faUpload} className="me-1" />
                   上傳文件
@@ -1634,7 +1664,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                           className="delete-category-icon text-red-500 hover:text-red-700 ml-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCategory(category.id, category.name);
+                            handleDeleteCategory(category.id, category.name, projectId);
                           }}
                         />
                       </>
@@ -1785,7 +1815,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
                           type="file"
                           id="fileUpload"
                           className="form-control file-upload"
-                          name="file" 
+                          name="files" 
+                          multiple
                           onChange={handleUploadFormChange}
                         />
                       </div>
@@ -2023,27 +2054,9 @@ const CertificationProjectDetail = ({ canWrite }) => {
       case 'settings':
         return (
           <div className="project-settings">
-            <h5 className="settings-title">專案設定</h5>
+            <h5 className="settings-title">專案操作</h5>
             
             <div className="settings-section">
-              <div className="settings-card">
-                <div className="settings-card-header">
-                  <FontAwesomeIcon icon={faInfoCircle} className="settings-icon" />
-                  <h6>基本資訊</h6>
-                </div>
-                <div className="settings-card-body">
-                  <p>管理專案的基本資訊，包括名稱、時間範圍、負責人等。</p>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={handleShowEditProjectModal}
-                    disabled={ !canWrite }
-                  >
-                    <FontAwesomeIcon icon={faEdit} className="me-2" />
-                    修改專案資訊
-                  </button>
-                </div>
-              </div>
-              
               <div className="settings-card">
                 <div className="settings-card-header">
                   <FontAwesomeIcon icon={faFileExport} className="settings-icon" />
@@ -2108,13 +2121,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * @param {Object} doc - 要下載的文件對象
    */
   const handleDownloadDocument = async (doc) => {
-    if (!doc || !doc.filename) {
+    if (!doc || !doc.id) { // 改成 id
       alert('無效的文件資訊');
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/documents/download/${encodeURIComponent(doc.filename)}`);
+      const response = await fetch(`http://localhost:8000/api/documents/download/${doc.id}`);
 
       if (!response.ok) {
         alert('下載失敗：找不到文件或伺服器錯誤');
@@ -2127,7 +2140,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = doc.name || doc.filename;
+      a.download = doc.name || 'downloaded_file';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -2137,6 +2150,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       alert('下載過程發生錯誤');
     }
   };
+
 
 
   /**
@@ -2418,7 +2432,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
           onClick={() => setActiveTab('settings')}
         >
           <FontAwesomeIcon icon={faCog} className="me-2" />
-          專案設定
+          專案操作
         </div>
       </div>
       
@@ -2752,32 +2766,51 @@ const CertificationProjectDetail = ({ canWrite }) => {
                 </button>
               </div>
               <div className="modal-body">
-                <div className="alert-warning">
-                  <FontAwesomeIcon icon={faExclamationTriangle} />
-                  <div>警告：此操作將永久刪除專案「{projectDetail.name}」及其所有相關資料。此操作無法復原。</div>
+                <div className="alert-warning d-flex align-items-center mb-3">
+                  <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
+                  <div>
+                    警告：此操作將永久刪除專案「{projectDetail.name}」及其所有相關資料。此操作無法復原。
+                  </div>
                 </div>
-                
-                <div className="form-group">
+
+                <div className="form-group mb-3">
                   <label>請輸入專案名稱確認刪除：</label>
                   <input
                     type="text"
                     className="form-control"
                     placeholder={projectDetail.name}
+                    value={deleteInput}
+                    onChange={(e) => setDeleteInput(e.target.value)}
                   />
                 </div>
-                
+
                 <div className="form-check">
-                  <input type="checkbox" id="confirmDelete" className="form-check-input" />
+                  <input
+                    type="checkbox"
+                    id="confirmDelete"
+                    className="form-check-input"
+                    checked={isChecked}
+                    onChange={(e) => setIsChecked(e.target.checked)}
+                  />
                   <label htmlFor="confirmDelete" className="form-check-label">
                     我已閱讀並理解此操作的風險
                   </label>
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-outline-secondary" onClick={handleCloseDeleteConfirmModal}>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={handleCloseDeleteConfirmModal}
+                >
                   取消
                 </button>
-                <button type="button" className="btn btn-danger" onClick={handleDeleteProject}>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDeleteProject}
+                  disabled={deleteInput !== projectDetail.name || !isChecked} // ✨ 自動 disabled
+                >
                   <FontAwesomeIcon icon={faTrash} /> 確認刪除
                 </button>
               </div>
