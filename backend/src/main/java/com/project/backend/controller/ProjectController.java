@@ -26,12 +26,17 @@ import com.project.backend.dto.ExportSettingsDTO;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
+import com.project.backend.dto.ChecklistUpdateRequest;
+import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
 import com.project.backend.repository.ProjectRepository;
-import com.project.backend.service.AuthService;
+import com.project.backend.repository.UserRepository;
+import com.project.backend.service.NotificationService;
+import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ProjectService;
 import com.project.backend.service.ReviewService;
 import com.project.backend.utils.ProjectExcelGenerator;
+import com.project.backend.model.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,11 +47,20 @@ public class ProjectController {
 
     private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
 
-    @Autowired
-    private ProjectRepository projectRepository;
-
     private final ProjectService projectService;
     private final ReviewService reviewService;
+    
+    @Autowired
+    private NotificationSettingsService notificationSettingsService;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @Autowired
     public ProjectController(ProjectService projectService, ReviewService reviewService) {
@@ -56,13 +70,12 @@ public class ProjectController {
 
     @PostMapping("/CreateProject")
     public Project createProject(@RequestBody Project project) {
-        projectService.updateProgressByStatus(project);
-        return projectRepository.save(project);
+        return projectService.createProject(project);
     }
 
     @GetMapping("/GetAllProject")
-    public List<ShowProjectDTO> getAllProjects() {
-        return projectService.getAllProjects();
+    public List<ShowProjectDTO> getAllProjects(@RequestParam(required = false) String status) {
+        return projectService.getAllProjects(status);
     }
 
     @DeleteMapping("/DeleteProject/{id}")
@@ -99,12 +112,34 @@ public class ProjectController {
         String role = body.get("role") != null ? body.get("role").toString() : "";
         String permission = body.get("permission") != null ? body.get("permission").toString() : "view";
         java.util.List<String> duties = (java.util.List<String>) body.get("duties");
-        return projectService.addTeamMember(projectId, userId, role, permission, duties);
-    }
+
+        // Assuming you have the Project and User objects
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow();
+
+        // After adding the member (e.g., after projectTeamRepository.save(projectTeam);)
+        NotificationSettings settings = notificationSettingsService.getSettings();
+        if (settings.isNewProjectNotice()) {
+            String content = "您被加入到" + project.getName() + "中"; 
+
+            notificationService.createNotification(java.util.Arrays.asList(user.getId()), -1L, "專案加入通知", content);
+        }
+
+            return projectService.addTeamMember(projectId, userId, role, permission, duties);
+        }
 
     @PostMapping("/{projectId}/remove-member")
     public List<TeamMemberDTO> removeTeamMember(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
         Long userId = Long.valueOf(body.get("userId").toString());
+        // Notification Logics
+        NotificationSettings settings = notificationSettingsService.getSettings();
+        if (settings.isNewProjectNotice()) {
+            Project project = projectRepository.findById(projectId).orElseThrow();
+            String content = "您被從" + project.getName() + "中移除"; 
+
+            notificationService.createNotification(java.util.Arrays.asList(userId), -1L, "專案移除通知", content);
+        }
+
         return projectService.removeTeamMember(projectId, userId);
     }
 
@@ -137,6 +172,24 @@ public class ProjectController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("/save-checklist/{projectId}")
+    public ResponseEntity<?> saveChecklist(
+            @PathVariable Long projectId,
+            @RequestBody ChecklistUpdateRequest request) {
+        try {
+            projectService.saveChecklistState(
+                projectId, 
+                request.getSelectedTemplateId(), 
+                request.getChecklistState(), 
+                request.getProgress()
+            );
+            return ResponseEntity.ok().body("{\"message\": \"Checklist saved successfully\"}");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .body("{\"error\": \"Failed to save checklist: " + e.getMessage() + "\"}");
         }
     }
 

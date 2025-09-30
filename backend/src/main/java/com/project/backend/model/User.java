@@ -1,5 +1,6 @@
 package com.project.backend.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -60,6 +61,9 @@ public class User {
 
     private int failedLoginAttempts;
     private LocalDateTime accountLockedUntil;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<String> notifications = new ArrayList<>();
 
     // default constructor for JPA
 
@@ -149,6 +153,19 @@ public class User {
 
     public boolean isSuspended() {
         return suspended;
+    }
+
+        public List<String> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<String> notifications) {
+        this.notifications = notifications;
+    }
+
+    // Add a helper method to add notifications
+    public void addNotification(String notification) {
+        this.notifications.add(notification);
     }
 
 

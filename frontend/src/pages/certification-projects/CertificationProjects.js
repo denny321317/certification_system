@@ -36,25 +36,18 @@ import './CertificationProjects.css';
 // 狀態標籤輔助函數
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'preparing':
-      return (
-        <div className="status-badge preparing">
-          <FontAwesomeIcon icon={faUpload} className="me-1" />
-          準備中
-        </div>
-      );
-    case 'internal-review':
+    case 'in-progress':
       return (
         <div className="status-badge internal-review">
-          <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
-          內部審核中
+          <FontAwesomeIcon icon={faHourglassHalf} className="me-1" />
+          進行中
         </div>
       );
-    case 'external-review':
+    case 'planned':
       return (
-        <div className="status-badge external-review">
-          <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
-          外部審核中
+        <div className="status-badge preparing">
+          <FontAwesomeIcon icon={faClock} className="me-1" />
+          計畫中
         </div>
       );
     case 'completed':
@@ -65,7 +58,11 @@ const getStatusBadge = (status) => {
         </div>
       );
     default:
-      return null;
+      return (
+        <div className="status-badge">
+          {status}
+        </div>
+      );
   }
 };
 
@@ -154,7 +151,11 @@ const CertificationProjects = ({ canWrite }) => {
 
   // 1. 從後端拉資料
   useEffect(() => {
-    fetch('http://localhost:8000/api/projects/GetAllProject') // 你可以加上完整URL: http://localhost:8080/GetAllProject
+    let url = 'http://localhost:8000/api/projects/GetAllProject';
+    if (activeTab !== 'all') {
+      url += `?status=${activeTab}`;
+    }
+    fetch(url)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -168,18 +169,16 @@ const CertificationProjects = ({ canWrite }) => {
       .catch(error => {
         console.error('Error fetching project data:', error);
       });
-  }, []);
+  }, [activeTab]);
 
-  // 2. 根據 activeTab 和 searchQuery 過濾
+  // 2. 根據 searchQuery 過濾
   useEffect(() => {
     const filtered = projects.filter(project => {
-      const matchTab = activeTab === 'all' || project.status === activeTab;
-      const matchSearch = !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchTab && matchSearch;
+      return !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
     setFilteredProjects(filtered);
-  }, [projects, activeTab, searchQuery]);
+  }, [projects, searchQuery]);
   
   // 彈窗開啟時同步查詢團隊成員
   useEffect(() => {
@@ -248,15 +247,13 @@ const CertificationProjects = ({ canWrite }) => {
    */
   const handleEditProject = async () => {
     try {
+      const { managerName, ...projectToUpdate } = currentProject;
       const response = await fetch(
         `http://localhost:8000/api/projects/UpdateProject/${currentProject.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...currentProject,
-            // 不要傳 users/team/teamMembers 等欄位
-          })
+          body: JSON.stringify(projectToUpdate)
         }
       );
       if (!response.ok) {
@@ -428,9 +425,8 @@ const CertificationProjects = ({ canWrite }) => {
                       onChange={handleProjectInputChange}
                       className="form-control"
                     >
-                      <option value="preparing">準備中</option>
-                      <option value="internal-review">內部審核中</option>
-                      <option value="external-review">外部審核中</option>
+                      <option value="planned">計畫中</option>
+                      <option value="in-progress">進行中</option>
                       <option value="completed">已完成</option>
                     </select>
                   </div>

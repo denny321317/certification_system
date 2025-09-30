@@ -7,14 +7,21 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.project.backend.model.FileEntity;
+import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
 import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.UserRepository;
 import com.project.backend.service.AuthService;
+import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.OperationHistoryService;
+import com.project.backend.model.ProjectTeam;
+import com.project.backend.model.Notification;
+import com.project.backend.service.NotificationService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -40,11 +47,23 @@ public class FileController {
     @Autowired
     private OperationHistoryService operationHistoryService;
 
+    @Autowired
+    private NotificationSettingsService notificationSettingsService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+
+
     public FileController() throws IOException {
         Files.createDirectories(fileStorageLocation);
     }
 
     @PostMapping("/certification-projects/{projectId}/upload")
+    @Transactional
     public ResponseEntity<?> uploadFile(
         @PathVariable("projectId") Long projectId,
         @RequestParam("file") MultipartFile file,
@@ -88,6 +107,15 @@ public class FileController {
 
             fileRepository.save(fileEntity);
 
+            // Add notification logic
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String notificationMessage = "新文件 " + fileEntity.getOriginalFilename() + "' 被上傳到 '" + project.getName() + "'.";
+                List<Long> userIds = project.getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
+                notificationService.createNotification(userIds, -1L, "Project Update", notificationMessage);  // Batch save
+            }
+
+
             // Record history
             // TODO: Replace "admin" with actual logged-in user
             String operator = "admin"; 
@@ -104,6 +132,9 @@ public class FileController {
             response.put("uploadDate", fileEntity.getUploadTime().toLocalDate().toString());
             response.put("description", fileEntity.getDescription());
             response.put("status", fileEntity.getStatus());
+
+
+
 
             return ResponseEntity.ok(response);
 
@@ -141,6 +172,7 @@ public class FileController {
 
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
+    @Transactional
     public ResponseEntity<?> deleteFile(@PathVariable Long id) {
         Optional<FileEntity> optional = fileRepository.findById(id);
         if (optional.isEmpty()) {
@@ -152,11 +184,20 @@ public class FileController {
             Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
             fileRepository.delete(file);
 
+            
+
             // Record history
             // TODO: Replace "admin" with actual logged-in user
             String operator = "admin";
             String details = String.format("刪除了文件 '%s'", file.getOriginalFilename());
             operationHistoryService.recordHistory(file.getProject().getId(), operator, "DELETE_DOCUMENT", details);
+
+            NotificationSettings settings = notificationSettingsService.getSettings();
+            if (settings.isDocumentUpdateNotice()) {
+                String message = "文件刪除: '" + file.getOriginalFilename() + "' 被從 '" + file.getProject().getName() + "'中刪除";
+                List<Long> userIds = file.getProject().getTeam().stream().map(pt -> pt.getUser().getId()).collect(Collectors.toList());
+                notificationService.createNotification(userIds, -1L,  "Project Update", message);
+            }
 
             return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
         } catch (IOException e) {

@@ -30,11 +30,13 @@ import NotFound from './pages/not-found/NotFound';
 import PrivateRoute from './components/common/PrivateRoute';
 import UserManagement from './pages/user-management/UserManagement';
 import SystemSettings from './pages/system-settings/SystemSettings';
+import Notifications from './pages/notifications/Notifications';
 
 // 共用組件
 import MainLayout from './components/layout/MainLayout';
 import './App.css';
 import { SettingsProvider } from './contexts/SettingsContext';
+import SendNotification from './pages/notifications/SendNotification';
 
 /**
  * 受保護的路由組件
@@ -179,6 +181,27 @@ function App() {
                   </MainLayout>
                 </ProtectedRoute>
               } 
+            />
+            {/* 通知模組 */}
+            <Route 
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Notifications />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route 
+              path="/send-notification"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <SendNotification />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </Router>

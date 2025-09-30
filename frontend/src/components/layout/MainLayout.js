@@ -141,8 +141,10 @@ const MainLayout = ({ children }) => {
           <div className="header-right">
             {/* 通知中心 */}
             <div className="notification-bell">
-              <FontAwesomeIcon icon={faBell} />
-              <span className="notification-badge">3</span>
+              <Link to="/notifications" className='nav-links'>
+                <FontAwesomeIcon icon={faBell} />
+                <span className="notification-badge">3</span>
+              </Link>
             </div>
 
             {/* 用戶菜單 */}

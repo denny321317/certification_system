@@ -94,6 +94,12 @@ public class TemplateService {
         templateRepository.deleteById(id);
     }
 
+    public CertificationTemplateDTO getTemplateById(String id) {
+        CertificationTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Template not found with id: " + id));
+        return convertToDto(template);
+    }
+
     private CertificationTemplateDTO convertToDto(CertificationTemplate template) {
         return new CertificationTemplateDTO(
                 template.getId(),
