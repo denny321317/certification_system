@@ -116,7 +116,7 @@ public class FileController {
                 // 通知團隊成員
                 NotificationSettings settings = notificationSettingsService.getSettings();
                 if (settings.isDocumentUpdateNotice()) {
-                    String notificationMessage = "新文件 " + originalFilename + " 被上傳到 '" + project.getName() + "'.";
+                    String notificationMessage = "新文件 " + originalFilename + " 被上傳到 '" + project.getName() + "'專案.";
                     List<Long> userIds = project.getTeam().stream()
                             .map(pt -> pt.getUser().getId())
                             .collect(Collectors.toList());
@@ -264,35 +264,66 @@ public class FileController {
     }
 
     // 刪除檔案
-@DeleteMapping("/delete/{id}")
-@Transactional
-public ResponseEntity<?> deleteFile(@PathVariable Long id) {
-    try {
-        // 先確認檔案是否存在
-        Optional<FileEntity> optional = fileRepository.findById(id);
-        if (optional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("success", false, "error", "找不到文件"));
-        }
-        FileEntity file = optional.get();
+    @DeleteMapping("/delete/{id}")
+    @Transactional
+    public ResponseEntity<?> deleteFile(@PathVariable Long id) {
+        try {
+            // 先確認檔案是否存在
+            Optional<FileEntity> optional = fileRepository.findById(id);
+            if (optional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("success", false, "error", "找不到文件"));
+            }
+            FileEntity file = optional.get();
+            Project project = file.getProject();
 
-        // 刪除實體檔案
-        Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
+            // 刪除實體檔案
+            Files.deleteIfExists(fileStorageLocation.resolve(file.getFilename()));
 
-        // 直接刪除 DB 紀錄
-        int deleted = fileRepository.deleteFileById(id); // 用自訂 @Modifying query
-        if (deleted == 0) {
+            // 直接刪除 DB 紀錄
+            int deleted = fileRepository.deleteFileById(id); // 用自訂 @Modifying query
+            if (deleted == 0) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Map.of("success", false, "error", "資料庫刪除失敗"));
+            }
+            
+            // ===== 操作紀錄 =====
+            if (project != null) {
+                Long projectId = project.getId();
+                String operator = "admin"; // TODO: 換成登入使用者
+                String details = String.format(
+                    "刪除了文件 '%s' (類別 '%s')，專案：'%s'",
+                    file.getOriginalFilename(),
+                    file.getCategory(),
+                    project.getName()
+                );
+                operationHistoryService.recordHistory(projectId, operator, "DELETE_DOCUMENT", details);
+            }
+
+            // ===== 通知團隊 =====
+            if (project != null) {
+                NotificationSettings settings = notificationSettingsService.getSettings();
+                if (settings.isDocumentUpdateNotice()) {
+                    String message = String.format(
+                        "文件 '%s' 已從專案 '%s' 中刪除",
+                        file.getOriginalFilename(),
+                        project.getName()
+                    );
+
+                    List<Long> userIds = project.getTeam().stream()
+                            .map(pt -> pt.getUser().getId())
+                            .toList();
+
+                    notificationService.createNotification(userIds, -1L, "Project Update", message);
+                }
+            }
+            return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
+
+        } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "error", "資料庫刪除失敗"));
+                    .body(Map.of("success", false, "error", "檔案刪除失敗"));
         }
-
-        return ResponseEntity.ok(Map.of("success", true, "message", "刪除成功"));
-
-    } catch (IOException e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "error", "檔案刪除失敗"));
     }
-}
 
 
 
