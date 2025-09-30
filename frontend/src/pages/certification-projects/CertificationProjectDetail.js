@@ -2121,13 +2121,13 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * @param {Object} doc - 要下載的文件對象
    */
   const handleDownloadDocument = async (doc) => {
-    if (!doc || !doc.filename) {
+    if (!doc || !doc.id) { // 改成 id
       alert('無效的文件資訊');
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/documents/download/${encodeURIComponent(doc.filename)}`);
+      const response = await fetch(`http://localhost:8000/api/documents/download/${doc.id}`);
 
       if (!response.ok) {
         alert('下載失敗：找不到文件或伺服器錯誤');
@@ -2140,7 +2140,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = doc.name || doc.filename;
+      a.download = doc.name || 'downloaded_file';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -2150,6 +2150,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       alert('下載過程發生錯誤');
     }
   };
+
 
 
   /**
