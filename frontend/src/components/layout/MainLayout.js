@@ -143,7 +143,7 @@ const MainLayout = ({ children }) => {
             <div className="notification-bell">
               <Link to="/notifications" className='nav-links'>
                 <FontAwesomeIcon icon={faBell} />
-                <span className="notification-badge">3</span>
+                
               </Link>
             </div>
 
