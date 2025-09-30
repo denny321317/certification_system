@@ -788,25 +788,35 @@ const CertificationProjectDetail = ({ canWrite }) => {
   /**
    * 處理刪除類別
    */
-  const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (categoryId === 'all') {
+  const handleDeleteCategory = async (categoryId, categoryName, projectId) => {
+    if (['all', 'plan', 'audit', 'policy', 'procedure', 'record', 'certificate', 'other'].includes(categoryId)) {
       alert("預設類別無法刪除！");
       return;
     }
 
-    const confirmDelete = window.confirm(`確定要刪除類別「${categoryName}」嗎？該資料夾與檔案將一併刪除。`);
+    const confirmDelete = window.confirm(
+      `確定要刪除類別「${categoryName}」嗎？該資料夾與檔案將一併刪除。`
+    );
     if (!confirmDelete) return;
 
     try {
-      const response = await axios.delete("http://localhost:8000/api/documents/delete-category", {
-        params: { category: categoryId }
-      });
+      const response = await axios.delete(
+        "http://localhost:8000/api/documents/delete-category",
+        {
+          params: { 
+            category: categoryId,
+            projectId: projectId   // ✅ 把 projectId 帶上
+          }
+        }
+      );
 
       if (response.data.success) {
         alert("類別刪除成功");
 
         // 更新前端類別列表
-        setDocumentCategories(prev => prev.filter(cat => cat.id !== categoryId));
+        setDocumentCategories(prev =>
+          prev.filter(cat => cat.id !== categoryId)
+        );
 
         // 更新文件清單，移除該類別下文件（如需要）
         setProjectDetail(prev => ({
@@ -816,9 +826,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
 
         // 若目前正選中該分類，重設為 all
         if (activeDocCategory === categoryId) {
-          setActiveDocCategory('all');
+          setActiveDocCategory("all");
         }
-
       } else {
         alert("刪除失敗：" + response.data.message);
       }
@@ -826,6 +835,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       alert("刪除失敗：" + (error.response?.data?.error || error.message));
     }
   };
+
 
   // //取得後端現存的資料夾
   // useEffect(() => {
@@ -1654,7 +1664,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                           className="delete-category-icon text-red-500 hover:text-red-700 ml-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCategory(category.id, category.name);
+                            handleDeleteCategory(category.id, category.name, projectId);
                           }}
                         />
                       </>

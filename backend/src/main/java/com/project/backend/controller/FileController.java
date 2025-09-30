@@ -351,7 +351,10 @@ public ResponseEntity<?> deleteFile(@PathVariable Long id) {
 
             // 2. 刪除檔案系統裡的檔案
             for (FileEntity file : filesToDelete) {
-                Path filePath = fileStorageLocation.resolve(file.getFilename()).normalize();
+                Path filePath = fileStorageLocation
+                    .resolve(category)
+                    .resolve(file.getFilename())
+                    .normalize();
                 try {
                     Files.deleteIfExists(filePath);
                 } catch (IOException e) {
