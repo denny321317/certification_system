@@ -4,8 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.project.backend.repository.NotificationRepository;
+import com.project.backend.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.project.backend.dto.NotificationDTO;
 import com.project.backend.model.Notification;
+import com.project.backend.model.User;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,10 +21,19 @@ public class NotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    public long getUnreadCountForUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        return notificationRepository.countUnreadByUserId(user.getId());
+    }
+
     public List<NotificationDTO> getNotificationsForUser(Long userId) {
         List<Notification> nots = notificationRepository.findByUserIdInUserIdsOrderByTimestampDesc(userId);
         List<NotificationDTO> dtos = nots.stream()
-            .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isRead()))
+            .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isReadByUser(userId)))
             .collect(Collectors.toList());
         return dtos;
     }
@@ -27,7 +41,7 @@ public class NotificationService {
     public List<NotificationDTO> getUnreadNotificationsForUser(Long userId) {
         List<Notification> nots = notificationRepository.findByUserIdInUserIdsAndIsReadFalse(userId); 
         List<NotificationDTO> dtos = nots.stream()
-            .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isRead()))
+            .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isReadByUser(userId)))
             .collect(Collectors.toList());
         return dtos;
     }
@@ -45,18 +59,18 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    public void markAsRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow();
-        notification.setRead(true);
-        notificationRepository.save(notification);
-    }
+    @Transactional
+    public void markNotificationsAsRead(Long userId, List<Long> notificationIds) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
-    public void markAllAsReadForUser(Long userId) {
-        List<Notification> unread = notificationRepository.findByUserIdInUserIdsAndIsReadFalse(userId);
-        for (Notification n : unread) {
-            n.setRead(true);
+        List<Notification> notifications = notificationRepository.findAllById(notificationIds);
+        for (Notification notification : notifications) {
+            if (notification.getReadStatus().containsKey(userId)) {
+                notification.getReadStatus().put(userId, true);
+            }
         }
-        notificationRepository.saveAll(unread);
+        notificationRepository.saveAll(notifications);
     }
     
 
