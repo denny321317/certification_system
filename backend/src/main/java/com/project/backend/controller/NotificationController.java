@@ -13,9 +13,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.project.backend.service.NotificationService;
 import com.project.backend.dto.NotificationDTO;
+import com.project.backend.dto.UserDetailDTO;
 import com.project.backend.model.Notification;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -36,17 +39,31 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    @PutMapping("/{notificationId}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
-        notificationService.markAsRead(notificationId);
+    @GetMapping("/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadNotificationCount(UserDetailDTO userDetails) {
+        // This endpoint logic does not need to change
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = userDetails.getId();
+        long count = notificationService.getUnreadCountForUser(userId);
+        Map<String, Long> response = Collections.singletonMap("count", count);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{userId}/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long userId ,@PathVariable Long notificationId) {
+        notificationService.markNotificationsAsRead(userId, Collections.singletonList(notificationId));
         return ResponseEntity.ok().build();
     }
 
+    /*
     @PutMapping("/user/{userId}/read-all")
     public ResponseEntity<Void> markAllAsReadForUser(@PathVariable Long userId) {
         notificationService.markAllAsReadForUser(userId);
         return ResponseEntity.ok().build();
     }
+    */
 
     /**
      * 

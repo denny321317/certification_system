@@ -37,7 +37,7 @@ const Notifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`http://localhost:8000/api/notifications/${currentUser.id}/${notificationId}/read`, {
         method: 'PUT',
       });
       if (response.ok) {
