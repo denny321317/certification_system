@@ -48,9 +48,9 @@ public class Notification {
     private LocalDateTime timestamp;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "notification_read+status", joinColumns = @JoinColumn(name = "notification_id"))
+    @CollectionTable(name = "notification_read_status", joinColumns = @JoinColumn(name = "notification_id"))
     @MapKeyColumn(name = "user_id")
-    @Column(name = "is_read")
+    @Column(name = "readStatus")
     private Map<Long, Boolean> readStatus = new HashMap<>();
 
     @Column(nullable = false)

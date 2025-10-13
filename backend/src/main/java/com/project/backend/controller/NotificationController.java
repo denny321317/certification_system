@@ -52,7 +52,7 @@ public class NotificationController {
     }
 
     @PutMapping("/{userId}/{notificationId}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long userId ,@PathVariable Long notificationId) {
+    public ResponseEntity<Void> markAsRead(@PathVariable Long userId, @PathVariable Long notificationId) {
         notificationService.markNotificationsAsRead(userId, Collections.singletonList(notificationId));
         return ResponseEntity.ok().build();
     }
