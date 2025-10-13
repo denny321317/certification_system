@@ -9,6 +9,8 @@ const Notifications = () => {
   const [error, setError] = useState(null);
   const { currentUser } = useContext(AuthContext);
 
+  console.log(currentUser)
+
   useEffect(() => {
     fetchNotifications();
   }, [currentUser]);

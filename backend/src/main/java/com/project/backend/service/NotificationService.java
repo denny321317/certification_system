@@ -31,7 +31,7 @@ public class NotificationService {
     }
 
     public List<NotificationDTO> getNotificationsForUser(Long userId) {
-        List<Notification> nots = notificationRepository.findByUserIdInUserIdsOrderByTimestampDesc(userId);
+        List<Notification> nots = notificationRepository.findNotificationsForUser(userId);
         List<NotificationDTO> dtos = nots.stream()
             .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isReadByUser(userId)))
             .collect(Collectors.toList());
@@ -39,7 +39,7 @@ public class NotificationService {
     }
 
     public List<NotificationDTO> getUnreadNotificationsForUser(Long userId) {
-        List<Notification> nots = notificationRepository.findByUserIdInUserIdsAndIsReadFalse(userId); 
+        List<Notification> nots = notificationRepository.findUnreadByUserId(userId); 
         List<NotificationDTO> dtos = nots.stream()
             .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), n.isReadByUser(userId)))
             .collect(Collectors.toList());
@@ -67,11 +67,16 @@ public class NotificationService {
         List<Notification> notifications = notificationRepository.findAllById(notificationIds);
         for (Notification notification : notifications) {
             if (notification.getReadStatus().containsKey(userId)) {
-                notification.getReadStatus().put(userId, true);
+                notification.setIsReadForUser(userId, true);
             }
         }
         notificationRepository.saveAll(notifications);
     }
     
+    public void properDeleteNotification(Long notificationId) {
+        Notification n = notificationRepository.findById(notificationId).get();
+        
+
+    }
 
 }
