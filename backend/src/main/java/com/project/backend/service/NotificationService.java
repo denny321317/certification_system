@@ -14,6 +14,7 @@ import com.project.backend.model.User;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class NotificationService {
@@ -46,6 +47,14 @@ public class NotificationService {
         return dtos;
     }
 
+    public List<NotificationDTO> getAllNotifications() {
+        List<Notification> nots = notificationRepository.findAll(Sort.by(Sort.Direction.DESC, "timestamp"));
+        // For an admin view, 'read' status is not specific to one user, so we default to false.
+        return nots.stream()
+            .map(n -> new NotificationDTO(n.getId(), n.getUserIds(), n.getSenderId(), n.getTopic(), n.getContent(), n.getTimestamp(), false))
+            .collect(Collectors.toList());
+    }
+
     /**
      * 
      * @param userIds
@@ -73,8 +82,12 @@ public class NotificationService {
         notificationRepository.saveAll(notifications);
     }
     
+    @Transactional
     public void properDeleteNotification(Long notificationId) {
-        Notification n = notificationRepository.findById(notificationId).get();
+        if (!notificationRepository.existsById(notificationId)) {
+            throw new RuntimeException("Notification not found with id: " + notificationId);
+        }
+        notificationRepository.deleteById(notificationId);
         
 
     }

@@ -31,12 +31,14 @@ import PrivateRoute from './components/common/PrivateRoute';
 import UserManagement from './pages/user-management/UserManagement';
 import SystemSettings from './pages/system-settings/SystemSettings';
 import Notifications from './pages/notifications/Notifications';
+import SendNotification from './pages/notifications/SendNotification';
+import DeleteNotification from './pages/notifications/DeleteNotifications';
 
 // 共用組件
 import MainLayout from './components/layout/MainLayout';
 import './App.css';
 import { SettingsProvider } from './contexts/SettingsContext';
-import SendNotification from './pages/notifications/SendNotification';
+
 
 /**
  * 受保護的路由組件
@@ -199,6 +201,16 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <SendNotification />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="delete-notification"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <DeleteNotification />
                   </MainLayout>
                 </ProtectedRoute>
               }

@@ -80,9 +80,14 @@ const Notifications = () => {
           <div className='notification-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 className="notifications-title">您的通知</h2>
             {isAdmin && (
-              <Link to="/send-notification" className="btn btn-primary">
-                傳送通知
-              </Link>
+              <div className="admin-notification-actions">
+                <Link to="/send-notification" className="btn btn-primary">
+                  傳送通知
+                </Link>
+                <Link to="/delete-notification" className="btn btn-danger" style={{marginLeft: '10px'}}>
+                  刪除通知
+                </Link>
+              </div>
             )}
           </div>
           {notifications.length === 0 ? (

@@ -2,6 +2,7 @@ package com.project.backend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +47,15 @@ public class NotificationController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<NotificationDTO>> getAllNotifications() {
+        List<NotificationDTO> notifications = notificationService.getAllNotifications();
+        return ResponseEntity.ok(notifications);
+    }
+
+
+    // PUTs
+
     @PutMapping("/{userId}/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long userId, @PathVariable Long notificationId) {
         notificationService.markNotificationsAsRead(userId, Collections.singletonList(notificationId));
@@ -60,6 +70,9 @@ public class NotificationController {
     }
     */
 
+
+    // POSTs
+
     /**
      * 
      * @param userIds
@@ -71,6 +84,21 @@ public class NotificationController {
     @PostMapping("/post") 
     public ResponseEntity<Void> postNewNotification(@RequestBody NotificationDTO dto) {
         notificationService.createNotification(dto.getUserIds(), dto.getSenderId(), dto.getTopic(), dto.getContent());
+        return ResponseEntity.ok().build();
+    }
+
+
+    // DELETEs
+
+    /**
+     * Delete the Notification Entity entirely. This means the notification will be deleted from the 
+     * database and users will no longer be able to see the notification.
+     * @param notificationId
+     * @return
+     */
+    @DeleteMapping("/{notificationId}/proper-delete")
+    public ResponseEntity<Void> properDeleteNotification(@PathVariable Long notificationId) {
+        notificationService.properDeleteNotification(notificationId);
         return ResponseEntity.ok().build();
     }
 
