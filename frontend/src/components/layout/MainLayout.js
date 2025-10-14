@@ -9,7 +9,7 @@
  * - 通知系統
  */
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -28,8 +28,9 @@ import './MainLayout.css';
 const MainLayout = ({ children }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { currentUser, logout } = useContext(AuthContext);
+  const { currentUser, logout, token } = useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   /**
    * 導航菜單項目配置
@@ -89,6 +90,33 @@ const MainLayout = ({ children }) => {
     console.log('搜索: ', searchQuery);
   };
 
+  /**
+   * 處理通知數顯示
+   */
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!currentUser) return;
+      try {
+        const response = await fetch(`http://localhost:8000/api/notifications/user/${currentUser.id}/unread-count`);
+        if (response.ok) {
+          const data = await response.json();
+          setUnreadCount(data.count);
+        } else {
+          console.log('Failed to fetch unread notification count');
+        }
+
+      } catch (error) {
+        console.error('Error fetching unread notification count:', error);
+      }
+      
+    };
+
+    fetchUnreadCount();
+    const intervalId = setInterval(fetchUnreadCount, 60000); // 每 60 秒刷新一次
+
+    return () => clearInterval(intervalId);
+  }, [currentUser, pathname]);
+
   return (
     <div className="layout-container">
       {/* 側邊導航欄 */}
@@ -143,6 +171,7 @@ const MainLayout = ({ children }) => {
             <div className="notification-bell">
               <Link to="/notifications" className='nav-links'>
                 <FontAwesomeIcon icon={faBell} />
+                {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
                 
               </Link>
             </div>

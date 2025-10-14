@@ -39,13 +39,8 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    @GetMapping("/unread-count")
-    public ResponseEntity<Map<String, Long>> getUnreadNotificationCount(UserDetailDTO userDetails) {
-        // This endpoint logic does not need to change
-        if (userDetails == null) {
-            return ResponseEntity.status(401).build();
-        }
-        Long userId = userDetails.getId();
+    @GetMapping("/user/{userId}/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadNotificationCount(@PathVariable Long userId) {
         long count = notificationService.getUnreadCountForUser(userId);
         Map<String, Long> response = Collections.singletonMap("count", count);
         return ResponseEntity.ok(response);
