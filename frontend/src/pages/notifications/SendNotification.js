@@ -4,7 +4,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 
 const SendNotification = () => {
   const { currentUser } = useContext(AuthContext);
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [formData, setFormData] = useState({
     userIds: [],
     topic: '',
@@ -12,19 +12,11 @@ const SendNotification = () => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [userList, setUserList] = useState([]);  
-  const [selectedUserId, setSelectedUserId] = useState('');  // For the dropdown
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
 
-  // 取得所有用戶
-  useEffect(() => {
-    fetch('http://localhost:8000/api/user-management/allUsers')
-      .then(res => res.json())
-      .then(data => {
-        setUserList(Array.isArray(data) ? data : []);
-      })
-      .catch(() => setUserList([]));
-  }, []);
-
+  // Fetch all users once on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -33,38 +25,73 @@ const SendNotification = () => {
           throw new Error('Failed to fetch users');
         }
         const data = await response.json();
-        setUsers(data);
+        setAllUsers(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Error fetching users:', err);
       }
     };
     fetchUsers();
-  }, [userList]);
+  }, []);
+
+  // Handle search query changes
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query) {
+      const filtered = allUsers.filter(user =>
+        user.name.toLowerCase().includes(query.toLowerCase()) &&
+        !formData.userIds.includes(user.id) // Exclude already selected users
+      );
+      setSearchResults(filtered);
+      setShowResults(true);
+    } else {
+      setShowResults(false);
+    }
+  };
+
+  // Add a user to the selection
+  const handleSelectUser = (user) => {
+    setFormData(prev => ({
+      ...prev,
+      userIds: [...prev.userIds, user.id]
+    }));
+    setSearchQuery('');
+    setShowResults(false);
+  };
+
+  // Remove a user from the selection
+  const handleRemoveUser = (userId) => {
+    setFormData(prev => ({
+      ...prev,
+      userIds: prev.userIds.filter(id => id !== userId)
+    }));
+  };
+
+  // Select all users
+  const handleSelectAll = () => {
+    setFormData(prev => ({
+      ...prev,
+      userIds: allUsers.map(user => user.id)
+    }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'userIds') {
-      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-      if (selectedOptions.includes('all')) {
-        // If "All Users" is selected, set to all user IDs
-        setFormData({ ...formData, userIds: users.map(user => user.id) });
-      } else {
-        // Otherwise, set to selected IDs
-        setFormData({ ...formData, userIds: selectedOptions.map(id => parseInt(id)) });
-      }
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.userIds.length === 0) {
+      setMessage('Please select at least one recipient.');
+      return;
+    }
     setLoading(true);
     setMessage('');
 
     const payload = {
       userIds: formData.userIds,
-      senderId: currentUser.id,  // Automatically set to current user's ID
+      senderId: currentUser.id,
       topic: formData.topic,
       content: formData.content,
     };
@@ -91,6 +118,8 @@ const SendNotification = () => {
     }
   };
 
+  const selectedUsers = allUsers.filter(user => formData.userIds.includes(user.id));
+
   return (
     <div className="send-notification-container">
       <div className="send-notification-card">
@@ -98,33 +127,51 @@ const SendNotification = () => {
           <h2 className="send-notification-title">傳送通知</h2>
           <form onSubmit={handleSubmit} className="send-notification-form">
             <div className="form-group">
-              <label>發送人 ID:</label>
+              <label>發送人:</label>
               <input
                 type="text"
-                value={currentUser.id}
+                value={`${currentUser.name} (ID: ${currentUser.id})`}
                 readOnly
                 className="form-control-plaintext"
               />
             </div>
+            
             <div className="form-group">
-            <label htmlFor="userIds">選擇收訊人:</label>
-                <select
-                    id="userIds"
-                    name="userIds"
-                    multiple
-                    value={formData.userIds}
-                    onChange={handleChange}
-                    required
-                    className="form-select"  // Changed from form-control to form-select for consistency
-                >
-                    <option value="all">所有使用者</option>
-                    {users.map(user => (
-                        <option key={user.id} value={user.id}>
-                            {user.name} (ID: {user.id})  
-                        </option>
+              <label htmlFor="userSearch">選擇收訊人:</label>
+              <div className="recipient-pills">
+                {selectedUsers.map(user => (
+                  <div key={user.id} className="pill">
+                    {user.name}
+                    <button type="button" onClick={() => handleRemoveUser(user.id)}>&times;</button>
+                  </div>
+                ))}
+              </div>
+              <div className="search-container">
+                <input
+                  type="text"
+                  id="userSearch"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchQuery && setShowResults(true)}
+                  onBlur={() => setTimeout(() => setShowResults(false), 150)}
+                  placeholder="搜尋使用者名稱..."
+                  autoComplete="off"
+                />
+                {showResults && searchResults.length > 0 && (
+                  <ul className="search-results">
+                    {searchResults.map(user => (
+                      <li key={user.id} onClick={() => handleSelectUser(user)}>
+                        {user.name} (ID: {user.id})
+                      </li>
                     ))}
-                </select>
+                  </ul>
+                )}
+              </div>
+              <button type="button" className="btn-select-all" onClick={handleSelectAll}>
+                選擇所有使用者
+              </button>
             </div>
+
             <div className="form-group">
               <label htmlFor="topic">標題:</label>
               <input
