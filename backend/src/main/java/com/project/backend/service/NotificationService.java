@@ -93,7 +93,16 @@ public class NotificationService {
     }
 
     public void deleteNotificationForUserOnly(Long notificationId, Long userId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
 
+        // Remove the user from the list of recipients
+        notification.getUserIds().remove(userId);
+
+        // Also remove the user from the read status map
+        notification.getReadStatus().remove(userId);
+
+        notificationRepository.save(notification);
     }
 
 }

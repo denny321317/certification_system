@@ -102,4 +102,19 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * "Delete" the notification for the user. By "delete" it means that the user is no longer in the list
+     * of receivers in the Notification entity. The Notification entity WILL STAY in the database. If you want 
+     * to actually delete the entire notification, use "/{notificationId}/proper-delete" instead.
+     * @param userId
+     * @param notificationId
+     * @return
+     */
+    @DeleteMapping("/user/{userId}/{notificationId}")
+    public ResponseEntity<Void> deleteNotificationForUser(@PathVariable Long userId, @PathVariable Long notificationId) {
+        notificationService.deleteNotificationForUserOnly(notificationId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+
 }
