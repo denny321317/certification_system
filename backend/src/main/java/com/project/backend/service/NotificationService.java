@@ -66,7 +66,7 @@ public class NotificationService {
 
         List<Notification> notifications = notificationRepository.findAllById(notificationIds);
         for (Notification notification : notifications) {
-            if (notification.getReadStatus().containsKey(userId)) {
+            if (notification.getUserIds().contains(userId)) {
                 notification.setIsReadForUser(userId, true);
             }
         }
@@ -76,6 +76,10 @@ public class NotificationService {
     public void properDeleteNotification(Long notificationId) {
         Notification n = notificationRepository.findById(notificationId).get();
         
+
+    }
+
+    public void deleteNotificationForUserOnly(Long notificationId, Long userId) {
 
     }
 
