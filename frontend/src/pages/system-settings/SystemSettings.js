@@ -237,6 +237,9 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faBell} className="me-2" />
                   通知設定
                 </div>
+                
+                {/* TODO: 還沒做好的功能 */}
+                {/*
                 <div 
                   className={`settings-tab ${activeTab === 'backup' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('backup')}
@@ -258,6 +261,7 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faBook} className="me-2" />
                   稽核日誌
                 </div>
+                */}
               </div>
             </div>
           </div>
@@ -390,7 +394,8 @@ const SystemSettings = () => {
 
                     </div>
                   </div>
-                  <div className="mb-4">
+                  {/* TODO: 還沒做好的功能 */}
+                  {/*<div className="mb-4">
                     <label className="form-label">Session 設定 (尚未實作)</label>
                     <select
                       className="form-select mb-3"
@@ -401,7 +406,7 @@ const SystemSettings = () => {
                       <option>1 小時後自動登出</option>
                       <option>2 小時後自動登出</option>
                     </select>
-                  </div>
+                  </div>*/}
                   <button type="submit" className="btn btn-primary">儲存設定</button>
                 </form>
               </div>
