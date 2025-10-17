@@ -19,6 +19,12 @@ public class BackupController {
     @Autowired
     private BackupService backupService;
 
+    /**
+     * Dump the Database into a .sql file that can be used to restore the database.
+     * To use this API, you need to have "mysqldump" installed in your system 
+     * and include it in system PATH. The backup file will be putted into a directory named "backups".
+     * @return
+     */
     @PostMapping("/create")
     public ResponseEntity<Map<String, String>> createBackup() {
         try {
