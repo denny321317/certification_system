@@ -138,8 +138,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
    */
   const statusOptions = [
     { value: 'preparing', label: '準備中' },
-    { value: 'internal-review', label: '內部審核中' },
-    { value: 'external-review', label: '外部審核中' },
+    { value: 'in-progress', label: '進行中' },
     { value: 'completed', label: '已完成' }
   ];
 
@@ -463,18 +462,11 @@ const CertificationProjectDetail = ({ canWrite }) => {
             準備中
           </div>
         );
-      case 'internal-review':
+      case 'in-progress':
         return (
           <div className="status-badge internal-review">
             <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
-            內部審核中
-          </div>
-        );
-      case 'external-review':
-        return (
-          <div className="status-badge external-review">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
-            外部審核中
+            進行中
           </div>
         );
       case 'completed':
@@ -1267,8 +1259,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                   {getStatusBadge(projectDetail.status)}
                   <div className="status-description">
                     {projectDetail.status === 'preparing' && '團隊正在準備認證所需的文件和流程。'}
-                    {projectDetail.status === 'internal-review' && '內部團隊正在進行審核，找出需要改善的地方。'}
-                    {projectDetail.status === 'external-review' && '外部認證機構正在進行正式審核。'}
+                    {projectDetail.status === 'in-progress' && '內部團隊正在進行審核，找出需要改善的地方。'}
                     {projectDetail.status === 'completed' && '認證已完成，已取得認證證書。'}
                   </div>
                 </div>
@@ -1282,12 +1273,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     <div className="status-detail-value">團隊正在收集資料、準備文件及安排內部訓練</div>
                   </div>
                   <div className="status-detail-item">
-                    <div className="status-detail-label">內部審核中</div>
-                    <div className="status-detail-value">企業內部稽核團隊進行自我評估和前置審核</div>
-                  </div>
-                  <div className="status-detail-item">
-                    <div className="status-detail-label">外部審核中</div>
-                    <div className="status-detail-value">認證機構派員進行現場審核和文件審查</div>
+                    <div className="status-detail-label">進行中</div>
+                    <div className="status-detail-value">企業內部稽核團隊進行評估和審核</div>
                   </div>
                   <div className="status-detail-item">
                     <div className="status-detail-label">已完成</div>
@@ -1306,18 +1293,11 @@ const CertificationProjectDetail = ({ canWrite }) => {
                     <div className="status-step-label">準備中</div>
                   </div>
                   <div className="status-line"></div>
-                  <div className={`status-step ${projectDetail.status === 'internal-review' || projectDetail.status === 'external-review' || projectDetail.status === 'completed' ? 'active' : ''}`}>
+                  <div className={`status-step ${projectDetail.status === 'in-progress' || projectDetail.status === 'external-review' || projectDetail.status === 'completed' ? 'active' : ''}`}>
                     <div className="status-step-icon">
                       <FontAwesomeIcon icon={faClipboardCheck} />
                     </div>
-                    <div className="status-step-label">內部審核中</div>
-                  </div>
-                  <div className="status-line"></div>
-                  <div className={`status-step ${projectDetail.status === 'external-review' || projectDetail.status === 'completed' ? 'active' : ''}`}>
-                    <div className="status-step-icon">
-                      <FontAwesomeIcon icon={faExclamationTriangle} />
-                    </div>
-                    <div className="status-step-label">外部審核中</div>
+                    <div className="status-step-label">進行中</div>
                   </div>
                   <div className="status-line"></div>
                   <div className={`status-step ${projectDetail.status === 'completed' ? 'active' : ''}`}>
