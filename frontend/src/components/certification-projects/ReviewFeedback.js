@@ -136,41 +136,74 @@ const ReviewFeedback = ({ projectId, projectName }) => {
         }
         const data = await response.json();
         setReviewData(data);
-
-        // 設置待調整問題清單
-        let allIssues = [];
-        if (data && data.reviews) {
-            data.reviews.forEach(review => {
-                if (review.issues && review.issues.length > 0) {
-                    review.issues.forEach(issue => {
-                        if (issue.status === 'open') {
-                            allIssues.push({
-                                ...issue,
-                                reviewer: review.reviewer,
-                                reviewerDepartment: review.reviewerDepartment,
-                                reviewDate: review.date,
-                                completed: false
-                            });
-                        }
-                    });
-                }
-            });
-        }
-        setAdjustmentIssues(allIssues);
-
       } catch (error) {
         console.error("獲取審核數據失敗:", error);
-        // 可以設置錯誤狀態來顯示錯誤訊息
-        setReviewData({ reviews: [] }); // 發生錯誤時，清空舊資料避免顯示錯誤資訊
+        setReviewData({ reviews: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // 當 employeeView 為 true 時，獲取所有待辦事項
+    const fetchAllAdjustmentIssues = async () => {
+      setLoading(true);
+      try {
+        const [internalResponse, externalResponse] = await Promise.all([
+          fetch(`http://localhost:8000/api/projects/${projectId}/reviews?type=internal`),
+          fetch(`http://localhost:8000/api/projects/${projectId}/reviews?type=external`)
+        ]);
+
+        if (!internalResponse.ok || !externalResponse.ok) {
+          throw new Error('無法獲取待調整事項');
+        }
+
+        const internalData = await internalResponse.json();
+        const externalData = await externalResponse.json();
+
+        const processIssues = (data, type) => {
+          let issues = [];
+          if (data && data.reviews) {
+            data.reviews.forEach(review => {
+              if (review.issues && review.issues.length > 0) {
+                review.issues.forEach(issue => {
+                  if (issue.status === 'open') {
+                    issues.push({
+                      ...issue,
+                      reviewer: review.reviewer,
+                      reviewerDepartment: review.reviewerDepartment,
+                      reviewDate: review.date,
+                      completed: false,
+                      source: type // 添加來源標記
+                    });
+                  }
+                });
+              }
+            });
+          }
+          return issues;
+        };
+
+        const internalIssues = processIssues(internalData, 'internal');
+        const externalIssues = processIssues(externalData, 'external');
+        
+        setAdjustmentIssues([...internalIssues, ...externalIssues]);
+
+      } catch (error) {
+        console.error("獲取待調整事項失敗:", error);
+        setAdjustmentIssues([]);
       } finally {
         setLoading(false);
       }
     };
 
     if (projectId) {
-      fetchReviewData();
+      if (employeeView) {
+        fetchAllAdjustmentIssues();
+      } else {
+        fetchReviewData();
+      }
     }
-  }, [activeTab, projectId]);
+  }, [activeTab, projectId, employeeView]);
 
   /**
    * 處理審核標籤切換
@@ -407,52 +440,71 @@ const ReviewFeedback = ({ projectId, projectName }) => {
         </div>
       );
     }
+
+    const internalIssues = adjustmentIssues.filter(issue => issue.source === 'internal');
+    const externalIssues = adjustmentIssues.filter(issue => issue.source === 'external');
+
+    const renderIssueList = (issues) => {
+      return issues.map((issue, index) => (
+        <div key={`${issue.source}-${index}`} className="adjustment-item">
+          <div className="adjustment-header">
+            <div className="form-check">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id={`issue-${issue.source}-${index}`}
+                checked={issue.completed}
+                onChange={() => handleToggleIssueCompletion(index)}
+              />
+              <label className="form-check-label" htmlFor={`issue-${issue.source}-${index}`}>
+                <span className={`issue-title ${issue.completed ? 'completed' : ''}`}>
+                  {issue.title}
+                  <span className={`issue-badge issue-${issue.severity}`}>
+                    {issue.severity === 'high' && '重要'}
+                    {issue.severity === 'medium' && '一般'}
+                    {issue.severity === 'low' && '輕微'}
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div className="adjustment-details">
+            <div className="adjustment-meta">
+              <span className="reviewer-info">審核人: {issue.reviewer} ({issue.reviewerDepartment})</span>
+              <span className="review-date">審核日期: {formatDate(issue.reviewDate)}</span>
+              {issue.deadline && (
+                <span className={`deadline-info deadline-${getDeadlineStatus(issue.deadline)}`}>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
+                  改善期限: {formatDateTime(issue.deadline, issue.deadlineTime)}
+                </span>
+              )}
+            </div>
+            {issue.completed && (
+              <div className="completion-status">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-success me-1" />
+                已完成調整
+              </div>
+            )}
+          </div>
+        </div>
+      ));
+    };
     
     return (
       <div className="adjustment-checklist">
-        {adjustmentIssues.map((issue, index) => (
-          <div key={index} className="adjustment-item">
-            <div className="adjustment-header">
-              <div className="form-check">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id={`issue-${index}`}
-                  checked={issue.completed}
-                  onChange={() => handleToggleIssueCompletion(index)}
-                />
-                <label className="form-check-label" htmlFor={`issue-${index}`}>
-                  <span className={`issue-title ${issue.completed ? 'completed' : ''}`}>
-                    {issue.title}
-                    <span className={`issue-badge issue-${issue.severity}`}>
-                      {issue.severity === 'high' && '重要'}
-                      {issue.severity === 'medium' && '一般'}
-                      {issue.severity === 'low' && '輕微'}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </div>
-            <div className="adjustment-details">
-              <div className="adjustment-meta">
-                <span className="reviewer-info">審核人: {issue.reviewer} ({issue.reviewerDepartment})</span>
-                <span className="review-date">審核日期: {formatDate(issue.reviewDate)}</span>
-                {issue.deadline && (
-                  <span className={`deadline-info deadline-${getDeadlineStatus(issue.deadline)}`}>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                    改善期限: {formatDateTime(issue.deadline, issue.deadlineTime)}
-                  </span>
-                )}
-              </div>
-              {issue.completed && (
-                <div className="completion-status">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-success me-1" />
-                  已完成調整
-                </div>
-              )}
-            </div>
+        {internalIssues.length > 0 && (
+          <div className="issue-group">
+            <h6 className="issue-group-title">內部團隊審核問題</h6>
+            {renderIssueList(internalIssues)}
           </div>
-        ))}
+        )}
+
+        {externalIssues.length > 0 && (
+          <div className="issue-group">
+            <h6 className="issue-group-title">外部認證機構審核問題</h6>
+            {renderIssueList(externalIssues)}
+          </div>
+        )}
         
         <button 
           className="btn btn-primary mt-3"
