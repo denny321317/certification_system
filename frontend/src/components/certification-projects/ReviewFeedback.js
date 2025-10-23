@@ -166,16 +166,14 @@ const ReviewFeedback = ({ projectId, projectName }) => {
             data.reviews.forEach(review => {
               if (review.issues && review.issues.length > 0) {
                 review.issues.forEach(issue => {
-                  if (issue.status === 'open') {
-                    issues.push({
-                      ...issue,
-                      reviewer: review.reviewer,
-                      reviewerDepartment: review.reviewerDepartment,
-                      reviewDate: review.date,
-                      completed: false,
-                      source: type // 添加來源標記
-                    });
-                  }
+                  issues.push({
+                    ...issue,
+                    reviewer: review.reviewer,
+                    reviewerDepartment: review.reviewerDepartment,
+                    reviewDate: review.date,
+                    completed: issue.status === 'closed', // 根據後端狀態設定是否勾選
+                    source: type // 添加來源標記
+                  });
                 });
               }
             });
@@ -318,21 +316,43 @@ const ReviewFeedback = ({ projectId, projectName }) => {
 
   /**
    * 切換問題完成狀態
-   * @param {number} index - 問題索引
+   * @param {number} issueId - 問題ID
    */
-  const handleToggleIssueCompletion = (index) => {
-    const updatedIssues = [...adjustmentIssues];
-    updatedIssues[index].completed = !updatedIssues[index].completed;
-    setAdjustmentIssues(updatedIssues);
+  const handleToggleIssueCompletion = (issueId) => {
+    setAdjustmentIssues(prevIssues =>
+      prevIssues.map(issue =>
+        issue.id === issueId ? { ...issue, completed: !issue.completed } : issue
+      )
+    );
   };
 
   /**
    * 提交問題完成狀態
    */
-  const handleSubmitCompletedIssues = () => {
-    // 這裡應該有API調用來保存完成狀態
-    console.log("儲存完成狀態:", adjustmentIssues);
-    alert("已儲存調整進度");
+  const handleSubmitCompletedIssues = async () => {
+    const issuesToUpdate = adjustmentIssues.map(issue => ({
+      id: issue.id,
+      completed: issue.completed
+    }));
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${projectId}/issues/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(issuesToUpdate),
+      });
+
+      if (!response.ok) {
+        throw new Error('儲存調整進度失敗');
+      }
+
+      alert("已儲存調整進度");
+    } catch (error) {
+      console.error("儲存調整進度失敗:", error);
+      alert(error.message);
+    }
   };
 
   /**
@@ -446,17 +466,17 @@ const ReviewFeedback = ({ projectId, projectName }) => {
 
     const renderIssueList = (issues) => {
       return issues.map((issue, index) => (
-        <div key={`${issue.source}-${index}`} className="adjustment-item">
+        <div key={issue.id} className="adjustment-item">
           <div className="adjustment-header">
             <div className="form-check">
               <input
                 type="checkbox"
                 className="form-check-input"
-                id={`issue-${issue.source}-${index}`}
+                id={`issue-${issue.id}`}
                 checked={issue.completed}
-                onChange={() => handleToggleIssueCompletion(index)}
+                onChange={() => handleToggleIssueCompletion(issue.id)}
               />
-              <label className="form-check-label" htmlFor={`issue-${issue.source}-${index}`}>
+              <label className="form-check-label" htmlFor={`issue-${issue.id}`}>
                 <span className={`issue-title ${issue.completed ? 'completed' : ''}`}>
                   {issue.title}
                   <span className={`issue-badge issue-${issue.severity}`}>

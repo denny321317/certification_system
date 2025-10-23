@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.project.backend.repository.ReviewIssueRepository;
+
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -22,6 +24,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
     private final OperationHistoryService operationHistoryService;
+    private final ReviewIssueRepository reviewIssueRepository;
 
     @Transactional(readOnly = true)
     public ReviewFeedbackDTO getReviewFeedback(Long projectId, String reviewType) {
@@ -42,6 +45,16 @@ public class ReviewService {
         return new ReviewFeedbackDTO(status, progress, reviewSteps, reviewDTOs);
     }
     
+    @Transactional
+    public void updateIssueStatuses(List<IssueStatusUpdateDTO> issues) {
+        for (IssueStatusUpdateDTO dto : issues) {
+            ReviewIssue issue = reviewIssueRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Issue not found with id: " + dto.getId()));
+            issue.setStatus(dto.isCompleted() ? "closed" : "open");
+            reviewIssueRepository.save(issue);
+        }
+    }
+
     @Transactional
     public ReviewDTO createReview(Long projectId, SubmitFeedbackDTO submitFeedbackDTO) {
         Project project = projectRepository.findById(projectId)
