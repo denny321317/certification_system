@@ -328,8 +328,22 @@ const ReviewFeedback = ({ projectId, projectName }) => {
    */
   const formatDate = (dateString) => {
     if (!dateString) return '未設定';
+
+    let date;
+    if (Array.isArray(dateString)) {
+      // 處理 [年, 月, 日, 時, 分] 格式
+      const [year, month, day] = dateString;
+      // JavaScript 的月份是 0-11，所以需要 month - 1
+      date = new Date(year, month - 1, day);
+    } else {
+      date = new Date(dateString);
+    }
+
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return '無效日期';
+    }
     
-    const date = new Date(dateString);
     return date.toLocaleDateString('zh-TW', {
       year: 'numeric',
       month: 'long',
@@ -422,7 +436,7 @@ const ReviewFeedback = ({ projectId, projectName }) => {
             <div className="adjustment-details">
               <div className="adjustment-meta">
                 <span className="reviewer-info">審核人: {issue.reviewer} ({issue.reviewerDepartment})</span>
-                <span className="review-date">審核日期: {issue.reviewDate}</span>
+                <span className="review-date">審核日期: {formatDate(issue.reviewDate)}</span>
                 {issue.deadline && (
                   <span className={`deadline-info deadline-${getDeadlineStatus(issue.deadline)}`}>
                     <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
@@ -528,7 +542,7 @@ const ReviewFeedback = ({ projectId, projectName }) => {
                           <div className="reviewer-dept">{review.reviewerDepartment}</div>
                         </div>
                         <div className="review-meta">
-                          <div className="review-date">{review.date}</div>
+                          <div className="review-date">{formatDate(review.date)}</div>
                           <div className={`review-status ${review.status}`}>
                             {review.status === 'approved' && '已核准'}
                             {review.status === 'rejected' && '未核准'}
