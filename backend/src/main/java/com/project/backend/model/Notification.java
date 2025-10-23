@@ -38,6 +38,9 @@ public class Notification {
     @Column(name = "user_id")
     private List<Long> userIds = new ArrayList<>();  // the user Id of the receiver
     
+    @Column(name="is_read")
+    private boolean isRead = false;
+
     @Column(nullable = false)
     private String topic;
 
