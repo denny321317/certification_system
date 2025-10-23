@@ -222,6 +222,12 @@ const ReviewFeedback = ({ projectId, projectName }) => {
       return;
     }
     
+    // 驗證邏輯：如果存在問題，則不允許審核通過
+    if (reviewDecision === 'approved' && newIssues.length > 0) {
+      alert('尚有未解決的問題，無法核准通過。');
+      return;
+    }
+
     setSubmitting(true);
 
     const feedbackData = {
@@ -257,14 +263,11 @@ const ReviewFeedback = ({ projectId, projectName }) => {
 
       const newReview = await response.json();
 
-      // 提交成功後，樂觀更新前端狀態
-      setReviewData(prevData => {
-          const updatedReviews = prevData && prevData.reviews ? [...prevData.reviews, newReview] : [newReview];
-          return {
-            ...prevData,
-            reviews: updatedReviews
-          }
-      });
+      // 提交成功後，直接使用後端返回的數據更新狀態，確保ID和Date的正確性
+      setReviewData(prevData => ({
+        ...prevData,
+        reviews: [...(prevData?.reviews || []), newReview]
+      }));
 
       // 清空表單
       setNewFeedback('');
