@@ -25,6 +25,7 @@ public class FileEntity {
     private String status;
     private String category;
     private String description;
+    private Integer version;
     @ManyToOne
     @JoinColumn(name = "project_id")
     private Project project;

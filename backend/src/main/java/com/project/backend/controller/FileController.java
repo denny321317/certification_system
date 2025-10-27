@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -89,14 +91,37 @@ public class FileController {
 
                 String originalFilename = file.getOriginalFilename();
                 String extension = getExtension(originalFilename);
-                String filename = UUID.randomUUID().toString() + "." + extension;
+                String baseName = getBaseNameWithoutVersion(originalFilename);
 
-                Path targetPath = categoryFolder.resolve(filename);
+                // 取得同一 project + category 下的所有檔案來比對（repository method 已存在 findByCategoryAndProjectId）
+                List<FileEntity> sameCategoryFiles = fileRepository.findByCategoryAndProjectId(category, projectId);
+
+                int maxVersion = findMaxExistingVersion(sameCategoryFiles, baseName);
+
+                // 如果找到同名，newVersion = maxVersion + 1；否則 newVersion = 0（表示沒有版本字尾）
+                int newVersion = (maxVersion > 0) ? (maxVersion + 1) : (sameCategoryFiles.stream()
+                        .anyMatch(f -> stripExtension(f.getOriginalFilename()).equals(baseName) ) ? 2 : 0);
+
+                // 決定要存入 DB 的 originalFilename（顯示名稱）
+                String displayOriginalName;
+                if (newVersion == 0) {
+                    displayOriginalName = originalFilename; // 沒有衝突
+                } else {
+                    // 若原始檔名已包含 extension，保留副檔名在最後
+                    String extPart = extension.isEmpty() ? "" : "." + extension;
+                    displayOriginalName = baseName + " v" + newVersion + extPart;
+                }
+
+                // 產生系統檔名（避免覆蓋）: UUID_vN.ext (放在 category 資料夾下)
+                String uuid = UUID.randomUUID().toString();
+                String systemFilename = generateSystemFilename(category, uuid, newVersion, extension);
+
+                Path targetPath = fileStorageLocation.resolve(systemFilename);
                 Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
                 FileEntity fileEntity = new FileEntity();
-                fileEntity.setFilename(category + "/" + filename);
-                fileEntity.setOriginalFilename(originalFilename);
+                fileEntity.setFilename(systemFilename);
+                fileEntity.setOriginalFilename(displayOriginalName);
                 fileEntity.setFileType(extension);
                 fileEntity.setUploadTime(LocalDateTime.now());
                 fileEntity.setUploadedBy("admin"); // TODO: 實際登入使用者
@@ -105,18 +130,19 @@ public class FileController {
                 fileEntity.setCategory(category);
                 fileEntity.setDescription(description);
                 fileEntity.setProject(project);
+                fileEntity.setVersion(newVersion == 0 ? 1 : newVersion); // 如果沒有 newVersion，仍可設 1
 
                 fileRepository.save(fileEntity);
 
                 // 操作紀錄
                 String operator = "admin";
-                String details = String.format("上傳了文件 '%s' 到類別 '%s'", originalFilename, category);
+                String details = String.format("上傳了文件 '%s' 到類別 '%s'", displayOriginalName, category);
                 operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
 
-                // 通知團隊成員
+                // 通知...
                 NotificationSettings settings = notificationSettingsService.getSettings();
                 if (settings.isDocumentUpdateNotice()) {
-                    String notificationMessage = "新文件 " + originalFilename + " 被上傳到 '" + project.getName() + "'專案.";
+                    String notificationMessage = "新文件 " + displayOriginalName + " 被上傳到 '" + project.getName() + "'專案.";
                     List<Long> userIds = project.getTeam().stream()
                             .map(pt -> pt.getUser().getId())
                             .collect(Collectors.toList());
@@ -273,6 +299,7 @@ public class FileController {
                     .body("Error generating zip: " + e.getMessage());
         }
     }  
+    
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
     @Transactional
@@ -334,8 +361,6 @@ public class FileController {
                     .body(Map.of("success", false, "error", "檔案刪除失敗"));
         }
     }
-
-
 
     // 查詢專案文件
     @GetMapping("/project/{projectId}")
@@ -475,15 +500,71 @@ public class FileController {
     }
 
     // 工具
-    private String getExtension(String filename) {
-        return filename.contains(".")
-                ? filename.substring(filename.lastIndexOf('.') + 1)
-                : "";
-    }
-
     private boolean isDirEmpty(final Path directory) throws IOException {
         try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory)) {
             return !dirStream.iterator().hasNext();
         }
     }
+
+    //for紀錄版本工具
+    private String stripExtension(String filename) {
+        int idx = filename.lastIndexOf('.');
+        return idx >= 0 ? filename.substring(0, idx) : filename;
+    }
+
+    private String getExtension(String filename) {
+        return filename != null && filename.contains(".")
+                ? filename.substring(filename.lastIndexOf('.') + 1)
+                : "";
+    }
+
+    /**
+     * 取得 base name，不含已存在的 " vN" 後綴。
+     * 例如 "report v2.pdf" -> "report"
+     * 會檢查像 " name v1" / " name v12" 的情形
+     */
+    private String getBaseNameWithoutVersion(String filename) {
+        String name = stripExtension(filename);
+        // 用 regex 找 " v<digits>" 在尾巴
+        return name.replaceFirst("\\s+v\\d+$", "");
+    }
+
+    /**
+     * 找到目前同一專案 & 同一類別下，與 baseName 相同（考慮有 / 沒有 vN）的最大版本數。
+     * 如果沒有相符則回傳 0。
+     */
+    private int findMaxExistingVersion(List<FileEntity> files, String baseName) {
+        int max = 0;
+        for (FileEntity f : files) {
+            String orig = f.getOriginalFilename();
+            if (orig == null) continue;
+            String origNameNoExt = stripExtension(orig);
+            // 如果完全相同（沒有任何 vN），視為版本 1 (但我們這邊為了簡化，視為 1 或 0，請參考說明)
+            if (origNameNoExt.equals(baseName)) {
+                // treat as version 1 candidate
+                max = Math.max(max, 1);
+                continue;
+            }
+            // 否則檢查是否符合 "baseName vN"
+            String pattern = "^" + Pattern.quote(baseName) + "\\s+v(\\d+)$";
+            Matcher m = Pattern.compile(pattern).matcher(origNameNoExt);
+            if (m.find()) {
+                try {
+                    int v = Integer.parseInt(m.group(1));
+                    max = Math.max(max, v);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return max;
+    }
+
+    /**
+     * 產生系統存放的檔名（UUID + _vN + .ext）
+     */
+    private String generateSystemFilename(String category, String uuid, int version, String extension) {
+        String verSuffix = version > 0 ? "_v" + version : "";
+        String fname = uuid + verSuffix + (extension.isEmpty() ? "" : "." + extension);
+        return category + "/" + fname;
+    }
+
 }
