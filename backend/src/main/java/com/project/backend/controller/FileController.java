@@ -91,30 +91,28 @@ public class FileController {
 
                 String originalFilename = file.getOriginalFilename();
                 String extension = getExtension(originalFilename);
-                String baseName = getBaseNameWithoutVersion(originalFilename);
+                String baseName = getBaseNameWithoutVersion(originalFilename); // Base name 不含 _vN 和副檔名
 
-                // 取得同一 project + category 下的所有檔案來比對（repository method 已存在 findByCategoryAndProjectId）
+                // 取得同一 project + category 下的所有檔案來比對
                 List<FileEntity> sameCategoryFiles = fileRepository.findByCategoryAndProjectId(category, projectId);
 
+                // 尋找同 BaseName + Extension 的最大版本 (此方法已假設配合 _vN 格式調整)
                 int maxVersion = findMaxExistingVersion(sameCategoryFiles, baseName);
 
-                // 如果找到同名，newVersion = maxVersion + 1；否則 newVersion = 0（表示沒有版本字尾）
-                int newVersion = (maxVersion > 0) ? (maxVersion + 1) : (sameCategoryFiles.stream()
-                        .anyMatch(f -> stripExtension(f.getOriginalFilename()).equals(baseName) ) ? 2 : 0);
-
+                // 計算新的版本號：如果找到現有版本，則 +1；否則從 1 開始
+                int actualVersion = maxVersion + 1;
+                
                 // 決定要存入 DB 的 originalFilename（顯示名稱）
                 String displayOriginalName;
-                if (newVersion == 0) {
-                    displayOriginalName = originalFilename; // 沒有衝突
-                } else {
-                    // 若原始檔名已包含 extension，保留副檔名在最後
-                    String extPart = extension.isEmpty() ? "" : "." + extension;
-                    displayOriginalName = baseName + " v" + newVersion + extPart;
-                }
+                String extPart = extension.isEmpty() ? "" : "." + extension;
+                
+                // 【已修正】統一使用 "_vN" 格式，包括 V1 (例如: abc_v1.xlsx)
+                displayOriginalName = baseName + "_v" + actualVersion + extPart;
 
                 // 產生系統檔名（避免覆蓋）: UUID_vN.ext (放在 category 資料夾下)
                 String uuid = UUID.randomUUID().toString();
-                String systemFilename = generateSystemFilename(category, uuid, newVersion, extension);
+                // generateSystemFilename 必須使用 actualVersion
+                String systemFilename = generateSystemFilename(category, uuid, actualVersion, extension); 
 
                 Path targetPath = fileStorageLocation.resolve(systemFilename);
                 Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
@@ -130,7 +128,7 @@ public class FileController {
                 fileEntity.setCategory(category);
                 fileEntity.setDescription(description);
                 fileEntity.setProject(project);
-                fileEntity.setVersion(newVersion == 0 ? 1 : newVersion); // 如果沒有 newVersion，仍可設 1
+                fileEntity.setVersion(actualVersion); // 儲存 actualVersion
 
                 fileRepository.save(fileEntity);
 
@@ -174,7 +172,7 @@ public class FileController {
                     .body(Map.of("success", false, "error", "檔案上傳失敗"));
         }
     }
-
+        
     // 下載單檔
     @GetMapping("/download/{id}")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id, HttpServletRequest request) {
@@ -362,12 +360,23 @@ public class FileController {
         }
     }
 
-    // 查詢專案文件
+    // 查詢專案文件 (只列出最新版本)
     @GetMapping("/project/{projectId}")
     public ResponseEntity<?> listDocumentsByProject(@PathVariable Long projectId) {
-        List<FileEntity> files = fileRepository.findByProjectId(projectId);
+        // 1. 取得專案所有文件
+        List<FileEntity> allFiles = fileRepository.findByProjectId(projectId);
 
-        List<Map<String, Object>> responseList = files.stream().map(file -> {
+        // 2. 按 BaseName + Extension 分組
+        Map<String, List<FileEntity>> groupedFiles = groupFilesByBaseName(allFiles); // 使用修正後的 groupFilesByBaseName
+
+        // 3. 提取每個組的最新版本
+        List<FileEntity> latestVersions = groupedFiles.values().stream()
+                .map(this::getLatestVersion)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // 4. 轉換為 Response 格式
+        List<Map<String, Object>> responseList = latestVersions.stream().map(file -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", file.getId());
             map.put("name", file.getOriginalFilename());
@@ -377,12 +386,76 @@ public class FileController {
             map.put("uploadDate", file.getUploadTime().toLocalDate().toString());
             map.put("description", file.getDescription());
             map.put("status", file.getStatus());
+            map.put("version", file.getVersion()); // 增加版本號
             return map;
         }).toList();
 
         return ResponseEntity.ok(responseList);
     }
-
+        
+    // 返回同名檔案的所有版本文件
+    @GetMapping("/versions/{fileId}")
+    public ResponseEntity<?> listAllVersionsOfFile(@PathVariable Long fileId) {
+        // 1. 找到指定的檔案作為基準
+        Optional<FileEntity> optionalBaseFile = fileRepository.findById(fileId);
+        if (optionalBaseFile.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "error", "找不到該文件"));
+        }
+        FileEntity baseFile = optionalBaseFile.get();
+        
+        // 檢查 project 關聯是否存在
+        if (baseFile.getProject() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "error", "文件未與專案關聯"));
+        }
+        
+        Long projectId = baseFile.getProject().getId();
+        
+        // 2. 取得該檔案的 BaseName (不含版本號和副檔名) - 此處依賴修正後的 getBaseNameWithoutVersion
+        String baseName = getBaseNameWithoutVersion(baseFile.getOriginalFilename());
+        
+        // 2.1 取得該檔案的副檔名 (這是關鍵，要確保類型也相同)
+        String baseExtension = baseFile.getFileType(); 
+        
+        // 3. 取得專案下所有文件
+        List<FileEntity> allFiles = fileRepository.findByProjectId(projectId);
+        
+        // 4. 過濾出 BaseName 和 副檔名 都相同的版本
+        List<FileEntity> allVersions = allFiles.stream()
+                .filter(file -> 
+                    // 條件一：BaseName 相同 (使用修正後的 getBaseNameWithoutVersion)
+                    baseName.equals(getBaseNameWithoutVersion(file.getOriginalFilename())) &&
+                    // 條件二：副檔名相同
+                    baseExtension.equalsIgnoreCase(file.getFileType())
+                )
+                .sorted(Comparator.comparing(FileEntity::getVersion, Comparator.nullsLast(Comparator.reverseOrder()))) // 按版本降序
+                .toList();
+        
+        // 5. 轉換為 Response 格式
+        List<Map<String, Object>> responseList = allVersions.stream().map(file -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", file.getId());
+            map.put("name", file.getOriginalFilename());
+            map.put("category", file.getCategory());
+            map.put("type", file.getFileType());
+            map.put("uploadedBy", file.getUploadedBy());
+            map.put("uploadDate", file.getUploadTime().toLocalDate().toString());
+            map.put("description", file.getDescription());
+            map.put("status", file.getStatus());
+            map.put("version", file.getVersion());
+            return map;
+        }).toList();
+        
+        // 回傳 baseName 最好包含副檔名，以明確區分版本系列
+        String displayName = baseName + "." + baseExtension;
+        
+        return ResponseEntity.ok(Map.of(
+            "baseName", displayName,
+            "allVersions", responseList
+        ));
+    }
+        
     // 建立類別資料夾
     @PostMapping("/create-category")
     public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category,
@@ -519,45 +592,44 @@ public class FileController {
     }
 
     /**
-     * 取得 base name，不含已存在的 " vN" 後綴。
-     * 例如 "report v2.pdf" -> "report"
-     * 會檢查像 " name v1" / " name v12" 的情形
+     * 取得 base name，不含已存在的 "_vN" 後綴。
+     * 例如 "report_v2.pdf" -> "report"
      */
     private String getBaseNameWithoutVersion(String filename) {
         String name = stripExtension(filename);
-        // 用 regex 找 " v<digits>" 在尾巴
-        return name.replaceFirst("\\s+v\\d+$", "");
+        // 用 regex 找 "_v<digits>" 在尾巴
+        return name.replaceFirst("_v\\d+$", ""); 
     }
 
     /**
-     * 找到目前同一專案 & 同一類別下，與 baseName 相同（考慮有 / 沒有 vN）的最大版本數。
-     * 如果沒有相符則回傳 0。
+     * 找到目前同一專案 & 同一類別下，與 baseName 相同（考慮有 _vN）的最大版本數。
+     * 僅依賴 _vN 格式來計算版本。
      */
     private int findMaxExistingVersion(List<FileEntity> files, String baseName) {
         int max = 0;
         for (FileEntity f : files) {
             String orig = f.getOriginalFilename();
             if (orig == null) continue;
+            
             String origNameNoExt = stripExtension(orig);
-            // 如果完全相同（沒有任何 vN），視為版本 1 (但我們這邊為了簡化，視為 1 或 0，請參考說明)
-            if (origNameNoExt.equals(baseName)) {
-                // treat as version 1 candidate
-                max = Math.max(max, 1);
-                continue;
-            }
-            // 否則檢查是否符合 "baseName vN"
-            String pattern = "^" + Pattern.quote(baseName) + "\\s+v(\\d+)$";
+            
+            // 檢查是否符合 "baseName_vN"
+            String pattern = "^" + Pattern.quote(baseName) + "_v(\\d+)$"; 
             Matcher m = Pattern.compile(pattern).matcher(origNameNoExt);
+            
             if (m.find()) {
                 try {
                     int v = Integer.parseInt(m.group(1));
                     max = Math.max(max, v);
                 } catch (NumberFormatException ignored) {}
             }
+            
+            // 刪除舊的 V1 兼容邏輯，現在所有版本都應該是 _vN
         }
         return max;
     }
-
+    
+    
     /**
      * 產生系統存放的檔名（UUID + _vN + .ext）
      */
@@ -565,6 +637,45 @@ public class FileController {
         String verSuffix = version > 0 ? "_v" + version : "";
         String fname = uuid + verSuffix + (extension.isEmpty() ? "" : "." + extension);
         return category + "/" + fname;
+    }
+
+    //輔助方法: 將文件列表按 BaseName + Extension 分組
+    private Map<String, List<FileEntity>> groupFilesByBaseName(List<FileEntity> files) {
+        Map<String, List<FileEntity>> groupedFiles = new HashMap<>();
+
+        for (FileEntity file : files) {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null) continue;
+
+            // 1. 取得不含 "_vN" 的 BaseName (使用修正後的 getBaseNameWithoutVersion)
+            String baseNameNoExt = getBaseNameWithoutVersion(originalFilename);
+            
+            // 2. 取得副檔名
+            String extension = file.getFileType(); // 使用 file.getFileType() 比從檔名解析更安全
+            
+            // 3. 組合 Key: baseNameNoExt + "." + extension
+            String groupingKey = baseNameNoExt + "." + extension;
+
+            if (baseNameNoExt == null) continue; 
+            
+            groupedFiles.computeIfAbsent(groupingKey, k -> new ArrayList<>()).add(file);
+        }
+        
+        // 確保每個組內的文件都按版本號降序排列 
+        groupedFiles.values().forEach(list -> 
+            list.sort(Comparator.comparing(FileEntity::getVersion, Comparator.nullsLast(Comparator.reverseOrder())))
+        );
+        
+        return groupedFiles;
+    }
+    
+    // 輔助方法: 提取最新版本
+    private FileEntity getLatestVersion(List<FileEntity> files) {
+        if (files == null || files.isEmpty()) return null;
+        // 尋找版本號最大的文件
+        return files.stream()
+                .max(Comparator.comparing(FileEntity::getVersion, Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(null);
     }
 
 }
