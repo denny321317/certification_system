@@ -611,7 +611,21 @@ const CertificationProjectDetail = ({ canWrite }) => {
       alert(error.message);
     }
   };
+  
+  //文件顯示
+  const [documents, setDocuments] = useState('');
 
+  async function loadDocuments(projectId) {
+    try {
+      const response = await fetch(`http://localhost:8000/api/documents/project/${projectId}`);
+      const data = await response.json();
+
+      // data 就是只包含最新版本的文件列表
+      setDocuments(data);
+    } catch (error) {
+      console.error('載入文件失敗', error);
+    }
+  }
 
 
   /**
@@ -645,10 +659,16 @@ const CertificationProjectDetail = ({ canWrite }) => {
    * 過濾並排序文件
    * @returns {Array} 過濾和排序後的文件列表
    */
-  const getFilteredDocuments = () => {
-    if (!projectDetail || !projectDetail.documents) return [];
-    
-    let filtered = [...projectDetail.documents];
+  useEffect(() => {
+    if (activeTab === 'documents' && projectDetail?.id) {
+      loadDocuments(projectDetail.id);
+    }
+  }, [activeTab, projectDetail]);
+
+  const getFilteredDocuments = () => { 
+    if (!documents || documents.length === 0) return [];
+
+    let filtered = [...documents];
     
     // 分類過濾
     if (activeDocCategory !== 'all') {
@@ -688,6 +708,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     
     return filtered;
   };
+
 
   /**
    * 按分類分組文件
