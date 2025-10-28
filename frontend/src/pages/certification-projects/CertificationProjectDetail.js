@@ -28,6 +28,7 @@ import {
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
   faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faTrash, faUpload, faSearch, faSortAmountDown, faSortAmountUp, faTimes, faPlus, faHistory } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjectDetail.css';
 
 // 引入審核與回饋組件
@@ -614,7 +615,6 @@ const CertificationProjectDetail = ({ canWrite }) => {
   
   //文件顯示
   const [documents, setDocuments] = useState('');
-
   async function loadDocuments(projectId) {
     try {
       const response = await fetch(`http://localhost:8000/api/documents/project/${projectId}`);
@@ -708,7 +708,6 @@ const CertificationProjectDetail = ({ canWrite }) => {
     
     return filtered;
   };
-
 
   /**
    * 按分類分組文件
@@ -849,33 +848,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   };
 
-
-  // //取得後端現存的資料夾
-  // useEffect(() => {
-  //   // 取得後端存在的資料夾名稱
-  //   const fetchCategoriesFromServer = async () => {
-  //     try {
-  //       const res = await axios.get('http://localhost:8000/api/documents/categories');
-  //       const serverCategories = res.data;
-
-  //       // 把回傳的類別整合到現有的 documentCategories（避免重複）
-  //       const newCategories = serverCategories
-  //         .filter(cat => !documentCategories.some(c => c.id === cat))
-  //         .map(cat => ({
-  //           id: cat,
-  //           name: cat,
-  //           icon: faFile // 或依照類別自訂 icon
-  //         }));
-
-  //       setDocumentCategories(prev => [...prev, ...newCategories]);
-  //     } catch (err) {
-  //       console.error("無法載入類別", err);
-  //     }
-  //   };
-
-  //   fetchCategoriesFromServer();
-  // }, []);
-  
+  //顯示類別
   useEffect(() => {
     fetch('http://localhost:8000/api/documents/categories')
       .then(res => res.json())
@@ -897,9 +870,6 @@ const CertificationProjectDetail = ({ canWrite }) => {
         });
       });
   }, []);
-
-
-
 
   /**
    * 獲取當前頁面的文件
@@ -2152,8 +2122,6 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   };
 
-
-
   /**
    * 處理刪除文件
    * @param {Object} doc - 要刪除的文件對象
@@ -2304,6 +2272,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
       .catch(() => setUserList([]));
   }, []);
 
+  //刪除成員
   const handleRemoveMember = async (userId) => {
     if (!window.confirm('確定要移除此成員？')) return;
     try {
@@ -2319,7 +2288,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   };
 
-
+  //成員狀態編輯
   const handleUpdateMember = async () => {
     const member = projectDetail.team[selectedMemberIndex];
     try {
@@ -2945,6 +2914,8 @@ const CertificationProjectDetail = ({ canWrite }) => {
           </div>
         </div>
       )}
+
+      {/* 團隊成員操作對話框 */}
       {showPermissionModal && selectedMemberIndex !== null &&(
         <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
           <div className="modal-dialog">
