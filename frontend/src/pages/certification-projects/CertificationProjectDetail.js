@@ -28,7 +28,6 @@ import {
   faChevronLeft, faChevronRight, faEllipsisH, faFileDownload, faCog, faTrashAlt,
   faFileExport, faInfoCircle, faSave, faTrash, faCalendarAlt, faChartLine, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
-import { faDownload, faTrash, faUpload, faSearch, faSortAmountDown, faSortAmountUp, faTimes, faPlus, faHistory } from '@fortawesome/free-solid-svg-icons';
 import './CertificationProjectDetail.css';
 
 // 引入審核與回饋組件
@@ -1686,12 +1685,20 @@ const CertificationProjectDetail = ({ canWrite }) => {
                                 </div>
                               </div>
                               <div className="document-card-actions" onClick={(e) => e.stopPropagation()}>
-                                <button className="btn btn-sm btn-icon" title="下載" onClick={() => handleDownloadDocument(doc)}>
-                                  <FontAwesomeIcon icon={faDownload} />
-                                </button>
-                                <button className="btn btn-sm btn-icon btn-icon-danger" title="刪除" onClick={() => handleDeleteDocument(doc)}>
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
+                                  {/* 新增歷史版本按鈕 */}
+                                  <button 
+                                      className="btn btn-sm btn-icon btn-icon-secondary me-1" 
+                                      title="歷史版本" 
+                                      onClick={() => handleShowHistory(doc)} // 呼叫新的處理函式
+                                  >
+                                      <FontAwesomeIcon icon={faHistory} />
+                                  </button> 
+                                  <button className="btn btn-sm btn-icon" title="下載" onClick={() => handleDownloadDocument(doc)}>
+                                      <FontAwesomeIcon icon={faDownload} />
+                                  </button>
+                                  <button className="btn btn-sm btn-icon btn-icon-danger" title="刪除" onClick={() => handleDeleteDocument(doc)}>
+                                      <FontAwesomeIcon icon={faTrash} />
+                                  </button>
                               </div>
                             </div>
                           ))}
@@ -1720,12 +1727,20 @@ const CertificationProjectDetail = ({ canWrite }) => {
                             </div>
                           </div>
                           <div className="document-card-actions" onClick={(e) => e.stopPropagation()}>
-                            <button className="btn btn-sm btn-icon" title="下載" onClick={() => handleDownloadDocument(doc)}>
-                              <FontAwesomeIcon icon={faDownload} />
-                            </button>
-                            <button className="btn btn-sm btn-icon btn-icon-danger" title="刪除" onClick={() => handleDeleteDocument(doc)}>
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
+                              {/* 新增歷史版本按鈕 */}
+                              <button 
+                                  className="btn btn-sm btn-icon btn-icon-secondary me-1" 
+                                  title="歷史版本" 
+                                  onClick={() => handleShowHistory(doc)} // 呼叫新的處理函式
+                              >
+                                  <FontAwesomeIcon icon={faHistory} />
+                              </button> 
+                              <button className="btn btn-sm btn-icon" title="下載" onClick={() => handleDownloadDocument(doc)}>
+                                  <FontAwesomeIcon icon={faDownload} />
+                              </button>
+                              <button className="btn btn-sm btn-icon btn-icon-danger" title="刪除" onClick={() => handleDeleteDocument(doc)}>
+                                  <FontAwesomeIcon icon={faTrash} />
+                              </button>
                           </div>
                         </div>
                       ))}
@@ -2085,6 +2100,48 @@ const CertificationProjectDetail = ({ canWrite }) => {
     // 或者使用更複雜的模態對話框顯示預覽
     // setPreviewDocument(doc);
     // setShowPreviewModal(true);
+  };
+
+  /**
+   * 處理查看文件歷史版本
+   * @param {Object} doc - 要查看的文件對象
+   */
+  const [showHistoryfiles, setShowHistoryfiles] = useState(false);
+  const [historyFiles, setHistoryFiles] = useState([]);
+  const [historyBaseName, setHistoryBaseName] = useState('');
+
+  // 處理顯示歷史版本文件
+  const handleShowHistory = async (doc) => {
+      try {
+          const response = await fetch(`http://localhost:8000/api/documents/versions/${doc.id}`);
+          
+          if (!response.ok) {
+              throw new Error('無法取得歷史版本文件');
+          }
+
+          const data = await response.json();
+          
+          if (data.allVersions) {
+              setHistoryBaseName(data.baseName);
+              setHistoryFiles(data.allVersions);
+              setShowHistoryfiles(true); // 顯示歷史版本小視窗
+          } else {
+              console.error("API 回傳格式錯誤:", data);
+              // 可以加入一個 alert 或 toast 提示使用者
+              alert("獲取歷史版本失敗，請檢查主控台。"); 
+          }
+
+      } catch (error) {
+          console.error("取得文件歷史版本失敗:", error);
+          alert(`取得文件歷史版本失敗: ${error.message}`);
+      }
+  };
+
+  // 處理關閉歷史版本小視窗
+  const handleCloseHistoryModal = () => {
+      setShowHistoryfiles(false);
+      setHistoryFiles([]);
+      setHistoryBaseName('');
   };
 
   /**
@@ -3003,6 +3060,55 @@ const CertificationProjectDetail = ({ canWrite }) => {
             </div>
           </div>
         </div>
+      )}
+      {/* 歷史版本文件對話框 */}
+      {showHistoryfiles && (
+          <div className="modal-overlay">
+              <div className="upload-modal" style={{ maxWidth: '600px' }}> {/* 調整樣式以適應內容 */}
+                  <div className="upload-modal-header">
+                      <h5>{historyBaseName} - 歷史版本</h5>
+                      <button className="btn-close" onClick={handleCloseHistoryModal}>
+                          <FontAwesomeIcon icon={faTimes} />
+                      </button>
+                  </div>
+                  <div className="modal-body" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                      {historyFiles.length === 0 ? (
+                          <p className="text-center text-muted">目前沒有其他歷史版本。</p>
+                      ) : (
+                          <ul className="list-group">
+                              {historyFiles.map((versionDoc) => (
+                                  <li 
+                                      key={versionDoc.id} 
+                                      className="list-group-item d-flex justify-content-between align-items-center"
+                                  >
+                                      <div className="me-auto">
+                                          <div className="fw-bold">{versionDoc.name}</div>
+                                          <small className="text-muted">
+                                              版本: **v{versionDoc.version || 1}** | 
+                                              上傳者: {versionDoc.uploadedBy} | 
+                                              日期: {versionDoc.uploadDate}
+                                          </small>
+                                      </div>
+                                      <button 
+                                          className="btn btn-sm btn-primary" 
+                                          onClick={() => handleDownloadDocument(versionDoc)} // 下載按鈕
+                                          title="下載此版本"
+                                      >
+                                          <FontAwesomeIcon icon={faDownload} className="me-1" />
+                                          下載
+                                      </button>
+                                  </li>
+                              ))}
+                          </ul>
+                      )}
+                  </div>
+                  <div className="upload-modal-footer">
+                      <button type="button" className="btn btn-outline" onClick={handleCloseHistoryModal}>
+                          關閉
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );
