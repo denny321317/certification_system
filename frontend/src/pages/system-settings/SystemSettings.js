@@ -23,7 +23,7 @@
  * ```
  */
 
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSave, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
@@ -202,6 +202,7 @@ const SystemSettings = () => {
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMessage, setBackupMessage] = useState('');
   const [backupMessageType, setBackupMessageType] = useState('info');
+  const fileInputRef = useRef(null);
 
   const handleCreateBackup = async () => {
     setBackupLoading(true);
@@ -225,6 +226,48 @@ const SystemSettings = () => {
       setBackupMessageType('danger');
     } finally {
       setBackupLoading(false);
+    }
+  };
+
+  const handleRestoreClick = () => {
+    // Trigger the hidden file input
+    fileInputRef.current.click();
+  };
+
+  const handleFileSelected = async (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    setBackupLoading(true);
+    setBackupMessage('正在上傳並還原備份檔案...');
+    setBackupMessageType('info');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/backup/restore', {
+        method: 'POST',
+        body: formData,
+        // Note: Do not set 'Content-Type' header for multipart/form-data
+        // The browser will set it automatically with the correct boundary.
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || '還原失敗');
+      }
+      setBackupMessage(data.message);
+      setBackupMessageType('success');
+    } catch (error) {
+      setBackupMessage(`還原失敗: ${error.message}`);
+      setBackupMessageType('danger');
+    } finally {
+      setBackupLoading(false);
+      // Reset the file input so the same file can be selected again
+      event.target.value = null;
     }
   };
 
@@ -563,8 +606,16 @@ const SystemSettings = () => {
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />
                     {backupLoading ? '備份中...' : '立即備份'}
                   </button>
-                  <button className="btn btn-outline-primary">
-                    <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" rotation={180} />還原系統
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelected}
+                    style={{ display: 'none' }}
+                    accept=".sql"
+                  />
+                  <button className="btn btn-outline-primary" onClick={handleRestoreClick} disabled={backupLoading}>
+                    <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" rotation={180} />
+                    {backupLoading ? '處理中...' : '還原系統'}
                   </button>
                 </div>
                  {backupMessage && <div className={`mt-3 alert alert-${backupMessageType}`}>{backupMessage}</div>}
