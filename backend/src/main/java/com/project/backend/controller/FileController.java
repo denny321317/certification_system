@@ -97,8 +97,7 @@ public class FileController {
                 List<FileEntity> sameCategoryFiles = fileRepository.findByCategoryAndProjectId(category, projectId);
 
                 // 尋找同 BaseName + Extension 的最大版本 (此方法已假設配合 _vN 格式調整)
-                int maxVersion = findMaxExistingVersion(sameCategoryFiles, baseName);
-
+                int maxVersion = findMaxExistingVersion(sameCategoryFiles, baseName, extension);
                 // 計算新的版本號：如果找到現有版本，則 +1；否則從 1 開始
                 int actualVersion = maxVersion + 1;
                 
@@ -602,29 +601,39 @@ public class FileController {
     }
 
     /**
-     * 找到目前同一專案 & 同一類別下，與 baseName 相同（考慮有 _vN）的最大版本數。
-     * 僅依賴 _vN 格式來計算版本。
-     */
-    private int findMaxExistingVersion(List<FileEntity> files, String baseName) {
+     * 找到目前同一專案 & 同一類別下，與 baseName + extension 相同（考慮有 _vN）的最大版本數。
+    * 僅依賴 _vN 格式來計算版本。
+    */
+    private int findMaxExistingVersion(List<FileEntity> files, String baseName, String extension) {
         int max = 0;
+        String targetExt = extension.isEmpty() ? "" : "." + extension; // 處理副檔名有無的情況
+        
         for (FileEntity f : files) {
             String orig = f.getOriginalFilename();
             if (orig == null) continue;
             
+            // 1. 檢查副檔名是否相符
+            String fileExt = getExtension(orig); // 取得檔案的副檔名
+            if (!fileExt.equalsIgnoreCase(extension)) {
+                continue; // 副檔名不符，跳過
+            }
+            
             String origNameNoExt = stripExtension(orig);
             
-            // 檢查是否符合 "baseName_vN"
+            // 2. 檢查是否符合 "baseName_vN"
+            // 這裡的 pattern 仍然只匹配 baseName，但我們已經在前面過濾了 extension
             String pattern = "^" + Pattern.quote(baseName) + "_v(\\d+)$"; 
             Matcher m = Pattern.compile(pattern).matcher(origNameNoExt);
             
             if (m.find()) {
                 try {
-                    int v = Integer.parseInt(m.group(1));
+                    // 這裡也可以直接使用 f.getVersion()，前提是 DB 儲存的版本是正確的
+                    int v = Integer.parseInt(m.group(1)); 
                     max = Math.max(max, v);
                 } catch (NumberFormatException ignored) {}
-            }
-            
-            // 刪除舊的 V1 兼容邏輯，現在所有版本都應該是 _vN
+            } 
+            // 另外檢查 V1 的情況：如果原始檔名剛好就是 baseName + ext（且它被 DB 存成了 V1）
+            // 由於您的新邏輯已經強制 V1 也是 _v1，所以只需要檢查 _vN 即可。
         }
         return max;
     }
