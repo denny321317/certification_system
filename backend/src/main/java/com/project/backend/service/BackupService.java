@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.text.SimpleDateFormat;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Date;
@@ -34,6 +35,8 @@ public class BackupService {
     @Value("${spring.datasource.password}")
     private String dbPassword;
 
+    @Autowired
+    private BackupSettingsService backupSettingsService;
     
     private static final String BACKUP_DIR = "backups";
     private static final String RESTORE_DIR = "restores_temp";
@@ -95,6 +98,7 @@ public class BackupService {
         errorGobbler.join();
 
         if (exitCode == 0) {
+            backupSettingsService.updateLastBackupTime();
             return backupFile.getAbsolutePath();
         } else {
             // In a real application, you would log the contents of the backupFile for error details
