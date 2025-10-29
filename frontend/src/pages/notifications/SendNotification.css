@@ -28,92 +28,114 @@
   flex-direction: column;
 }
 
-.form-group {
-  margin-bottom: 1rem;
+.send-notification-form .form-group {
+  margin-bottom: 20px;
 }
 
-.form-group label {
+.send-notification-form label {
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #495057;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
 }
 
-.form-group input,
-.form-group textarea {
+.send-notification-form input[type="text"],
+.send-notification-form textarea,
+.send-notification-form .form-select {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   font-size: 1rem;
 }
 
-.form-group textarea {
-  resize: vertical;
-}
-
-.form-control-plaintext {
-  background-color: transparent;
+.send-notification-form .form-control-plaintext {
+  padding: 10px 0;
   border: none;
-  padding: 0.5rem 0;
+  background: none;
   font-size: 1rem;
-  color: #6c757d;
+  color: #333;
 }
 
-.form-control {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  font-size: 1rem;
-  height: auto; /* For multi-select */
+.search-container {
+  position: relative;
 }
 
-.form-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   background-color: #fff;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.form-select:focus {
-  border-color: #80bdff;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* For multi-select, ensure height adjusts */
-.form-select[multiple] {
-  height: auto;
-  min-height: 120px; /* Adjust as needed for better UX */
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.25rem;
-  font-size: 1rem;
+.search-results li {
+  padding: 10px;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.btn-primary {
-  background-color: #007bff;
-  color: white;
+.search-results li:hover {
+  background-color: #f0f0f0;
 }
 
-.btn-primary:hover {
-  background-color: #0056b3;
+.recipient-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 40px;
 }
 
-.btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+.pill {
+  display: flex;
+  align-items: center;
+  background-color: #e0e0e0;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
 }
 
+.pill button {
+  background: none;
+  border: none;
+  margin-left: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  color: #666;
+}
+
+.pill button:hover {
+  color: #333;
+}
+
+.btn-select-all {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 5px 0;
+  margin-top: 5px;
+}
+
+.btn-select-all:hover {
+  color: #0056b3;
+}
 .message {
   margin-top: 1rem;
   padding: 0.5rem;

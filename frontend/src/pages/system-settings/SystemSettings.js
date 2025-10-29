@@ -26,7 +26,7 @@
 import React, { useContext, useState } from 'react';
 import { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
   faGear, faShieldHalved, faBell, faCloudArrowUp, 
   faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash
@@ -244,6 +244,10 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />
                   備份與還原
                 </div>
+                
+                {/* TODO: 還沒做好的功能 */}
+                {/*
+                
                 <div 
                   className={`settings-tab ${activeTab === 'api' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('api')}
@@ -258,6 +262,7 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faBook} className="me-2" />
                   稽核日誌
                 </div>
+                */}
               </div>
             </div>
           </div>
@@ -390,7 +395,8 @@ const SystemSettings = () => {
 
                     </div>
                   </div>
-                  <div className="mb-4">
+                  {/* TODO: 還沒做好的功能 */}
+                  {/*<div className="mb-4">
                     <label className="form-label">Session 設定 (尚未實作)</label>
                     <select
                       className="form-select mb-3"
@@ -401,7 +407,7 @@ const SystemSettings = () => {
                       <option>1 小時後自動登出</option>
                       <option>2 小時後自動登出</option>
                     </select>
-                  </div>
+                  </div>*/}
                   <button type="submit" className="btn btn-primary">儲存設定</button>
                 </form>
               </div>
@@ -519,6 +525,9 @@ const SystemSettings = () => {
                   </select>
                 </div>
                 <div className="d-flex gap-2">
+                  <button className="btn btn-primary">
+                    <FontAwesomeIcon icon={faSave} className="me-2" />儲存設定
+                  </button>
                   <button className="btn btn-primary">
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />立即備份
                   </button>

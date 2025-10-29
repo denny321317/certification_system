@@ -2,6 +2,7 @@ package com.project.backend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,9 +14,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import com.project.backend.service.NotificationService;
 import com.project.backend.dto.NotificationDTO;
+import com.project.backend.dto.UserDetailDTO;
 import com.project.backend.model.Notification;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -36,17 +40,38 @@ public class NotificationController {
         return ResponseEntity.ok(notifications);
     }
 
-    @PutMapping("/{notificationId}/read")
-    public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
-        notificationService.markAsRead(notificationId);
+    @GetMapping("/user/{userId}/unread-count")
+    public ResponseEntity<Map<String, Long>> getUnreadNotificationCount(@PathVariable Long userId) {
+        long count = notificationService.getUnreadCountForUser(userId);
+        Map<String, Long> response = Collections.singletonMap("count", count);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<NotificationDTO>> getAllNotifications() {
+        List<NotificationDTO> notifications = notificationService.getAllNotifications();
+        return ResponseEntity.ok(notifications);
+    }
+
+
+    // PUTs
+
+    @PutMapping("/{userId}/{notificationId}/read")
+    public ResponseEntity<Void> markAsRead(@PathVariable Long userId, @PathVariable Long notificationId) {
+        notificationService.markNotificationsAsRead(userId, Collections.singletonList(notificationId));
         return ResponseEntity.ok().build();
     }
 
+    /*
     @PutMapping("/user/{userId}/read-all")
     public ResponseEntity<Void> markAllAsReadForUser(@PathVariable Long userId) {
         notificationService.markAllAsReadForUser(userId);
         return ResponseEntity.ok().build();
     }
+    */
+
+
+    // POSTs
 
     /**
      * 
@@ -61,5 +86,35 @@ public class NotificationController {
         notificationService.createNotification(dto.getUserIds(), dto.getSenderId(), dto.getTopic(), dto.getContent());
         return ResponseEntity.ok().build();
     }
+
+
+    // DELETEs
+
+    /**
+     * Delete the Notification Entity entirely. This means the notification will be deleted from the 
+     * database and users will no longer be able to see the notification.
+     * @param notificationId
+     * @return
+     */
+    @DeleteMapping("/{notificationId}/proper-delete")
+    public ResponseEntity<Void> properDeleteNotification(@PathVariable Long notificationId) {
+        notificationService.properDeleteNotification(notificationId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * "Delete" the notification for the user. By "delete" it means that the user is no longer in the list
+     * of receivers in the Notification entity. The Notification entity WILL STAY in the database. If you want 
+     * to actually delete the entire notification, use "/{notificationId}/proper-delete" instead.
+     * @param userId
+     * @param notificationId
+     * @return
+     */
+    @DeleteMapping("/user/{userId}/{notificationId}")
+    public ResponseEntity<Void> deleteNotificationForUser(@PathVariable Long userId, @PathVariable Long notificationId) {
+        notificationService.deleteNotificationForUserOnly(notificationId, userId);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

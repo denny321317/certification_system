@@ -1664,9 +1664,10 @@ textarea.form-control {
 }
 
 .status-details {
-  display: grid;
+  display: flex;
+  justify-content: center; /* 整排置中 */
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
+  gap: 16px; 
 }
 
 .status-detail-item {

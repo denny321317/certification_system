@@ -1,41 +1,34 @@
 package com.project.backend.controller;
 
+import com.project.backend.dto.IssueStatusUpdateDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.ReviewFeedbackDTO;
 import com.project.backend.dto.SubmitFeedbackDTO;
-import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
-import com.project.backend.model.ProjectTeam;
+import com.project.backend.model.NotificationSettings;
 import com.project.backend.repository.ProjectRepository;
-import com.project.backend.repository.UserRepository;
 import com.project.backend.service.NotificationService;
 import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ReviewService;
-
-import jakarta.transaction.Transactional;
-
-import com.project.backend.model.User;
 import lombok.RequiredArgsConstructor;
-
-import java.util.stream.Collectors;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.transaction.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
 public class ReviewController {
 
     private final ReviewService reviewService;
-
+    
     @Autowired
     private NotificationSettingsService notificationSettingsService;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -60,7 +53,6 @@ public class ReviewController {
         
         ReviewDTO createdReview = reviewService.createReview(projectId, submitFeedbackDTO);
 
-        // Add notification logic
         Project project = projectRepository.findById(projectId).orElseThrow();
         NotificationSettings settings = notificationSettingsService.getSettings();
         if (settings.isCommentAndReplyNotice()) {
@@ -70,5 +62,13 @@ public class ReviewController {
         }
 
         return ResponseEntity.ok(createdReview);
+    }
+
+    @PutMapping("/projects/{projectId}/issues/status")
+    public ResponseEntity<Void> updateIssueStatuses(
+            @PathVariable Long projectId,
+            @RequestBody List<IssueStatusUpdateDTO> issues) {
+        reviewService.updateIssueStatuses(issues);
+        return ResponseEntity.ok().build();
     }
 } 

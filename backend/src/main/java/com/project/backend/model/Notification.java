@@ -10,12 +10,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Data
 @Entity
@@ -32,6 +38,9 @@ public class Notification {
     @Column(name = "user_id")
     private List<Long> userIds = new ArrayList<>();  // the user Id of the receiver
     
+    @Column(name="is_read")
+    private boolean isRead = false;
+
     @Column(nullable = false)
     private String topic;
 
@@ -41,8 +50,11 @@ public class Notification {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
-    @Column(nullable = false)
-    private boolean isRead = false;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "notification_read_status", joinColumns = @JoinColumn(name = "notification_id"))
+    @MapKeyColumn(name = "user_id")
+    @Column(name = "readStatus")
+    private Map<Long, Boolean> readStatus = new HashMap<>();
 
     @Column(nullable = false)
     private Long senderId;  // The user Id of the sender, -1 means sent automatically by the system
@@ -60,6 +72,9 @@ public class Notification {
         this.topic = topic;
         this.content = content;
         this.timestamp = LocalDateTime.now();
+        if (userIds != null) {
+            this.readStatus = userIds.stream().collect(Collectors.toMap(id -> id, id -> false, (a, b) -> b));
+        }
     }
 
      // Getters
@@ -87,9 +102,14 @@ public class Notification {
         return timestamp;
     }
 
-    public boolean isRead() {
-        return isRead;
+    public Map<Long, Boolean> getReadStatus() {
+        return readStatus;
     }
+
+    public boolean isReadByUser(Long userId) {
+        return readStatus.getOrDefault(userId, false);
+    }
+    
 
     // Setters
     public void setId(Long id) {
@@ -116,10 +136,12 @@ public class Notification {
         this.timestamp = timestamp;
     }
 
-    public void setRead(boolean read) {
-        isRead = read;
+    public void setReadStatus(Map<Long, Boolean> readStatus) {
+        this.readStatus = readStatus;
     }
-    
 
+    public void setIsReadForUser(Long userId, boolean isRead) {
+        this.readStatus.put(userId, isRead);
+    }
 
 }

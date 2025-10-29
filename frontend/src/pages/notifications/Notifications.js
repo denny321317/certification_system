@@ -2,12 +2,16 @@ import React, { useState, useEffect, useContext } from 'react';
 import './Notifications.css';
 import { AuthContext } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { currentUser } = useContext(AuthContext);
+
+  console.log(currentUser)
 
   useEffect(() => {
     fetchNotifications();
@@ -37,7 +41,7 @@ const Notifications = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`http://localhost:8000/api/notifications/${currentUser.id}/${notificationId}/read`, {
         method: 'PUT',
       });
       if (response.ok) {
@@ -52,6 +56,27 @@ const Notifications = () => {
       console.error('Error marking as read:', err);
     }
   };
+
+  const handleDelete = async (e, notificationId) => {
+    e.stopPropagation(); // Prevent the card's onClick from firing
+    if (window.confirm('您確定要刪除這則通知嗎?')) {
+      try {
+        const response = await fetch(`http://localhost:8000/api/notifications/user/${currentUser.id}/${notificationId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          // Remove the notification from the local state
+          setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        } else {
+          throw new Error('Failed to delete notification');
+        }
+      } catch (err) {
+        console.error('Error deleting notification:', err);
+        alert(err.message);
+      }
+    }
+  };  
 
   // Helper to format timestamp array into a readable string
   const formatTimestamp = (timestampArray) => {
@@ -78,9 +103,14 @@ const Notifications = () => {
           <div className='notification-header' style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 className="notifications-title">您的通知</h2>
             {isAdmin && (
-              <Link to="/send-notification" className="btn btn-primary">
-                傳送通知
-              </Link>
+              <div className="admin-notification-actions">
+                <Link to="/send-notification" className="btn btn-primary">
+                  傳送通知
+                </Link>
+                <Link to="/delete-notification" className="btn btn-danger" style={{marginLeft: '10px'}}>
+                  刪除通知
+                </Link>
+              </div>
             )}
           </div>
           {notifications.length === 0 ? (
@@ -99,6 +129,13 @@ const Notifications = () => {
                   </div>
                   <div className="notification-content">{notification.content}</div>
                   <div className="notification-sender">Sender: {getSender(notification.senderId)}</div>
+                  <button
+                    className="delete-icon"
+                    onClick={(e) => handleDelete(e, notification.id)}
+                    title="Delete this notification"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
                 </div>
               ))}
             </div>
