@@ -33,6 +33,9 @@ public class BackupService {
             throw new IOException("Could not parse database name from JDBC URL.");
         }
 
+        String host = getHostFromUrl(dbUrl);
+        String port = getPortFromUrl(dbUrl);
+
         File backupDir = new File(BACKUP_DIR);
         if (!backupDir.exists()) {
             backupDir.mkdirs();
@@ -45,8 +48,13 @@ public class BackupService {
         // Ensure mysqldump is in the system's PATH or provide a full path to it.
         ProcessBuilder processBuilder = new ProcessBuilder(
                 "mysqldump",
+                "--host=" + host,
+                "--port=" + port,
                 "--user=" + dbUsername,
                 "--password=" + dbPassword,
+                "--no-tablespaces",
+                "--set-gtid-purged=OFF",
+                "--column-statistics=0",
                 dbName);
 
         processBuilder.redirectOutput(backupFile);
@@ -63,6 +71,8 @@ public class BackupService {
         }
     }
 
+    // Helper Methods
+
     private String getDatabaseNameFromUrl(String url) {
         // Extracts database name from a JDBC URL like "jdbc:mysql://localhost:3306/db_name?..."
         Pattern pattern = Pattern.compile("://[^/]+/(.*?)(?:\\?|$)");
@@ -72,6 +82,28 @@ public class BackupService {
         }
         return null;
     }
+
+    private String getHostFromUrl(String url) {
+        // Extracts hostname from a JDBC URL
+        Pattern pattern = Pattern.compile("://(?:.*@)?([^:/]+)");
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String getPortFromUrl(String url) {
+        // Extracts port from a JDBC URL
+        Pattern pattern = Pattern.compile(":([0-9]+)/");
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return "3306"; // Default MySQL port if not found
+    }
+
+
 
 
 

@@ -196,6 +196,37 @@ const SystemSettings = () => {
       });
   }
 
+  /**
+   * 處理備份相關事宜
+   */
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupMessage, setBackupMessage] = useState('');
+  const [backupMessageType, setBackupMessageType] = useState('info');
+
+  const handleCreateBackup = async () => {
+    setBackupLoading(true);
+    setBackupMessage('正在建立備份...');
+    try {
+      const response = await fetch('http://localhost:8000/api/backup/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || '建立備份失敗');
+      }
+     // On success, display the path returned from the backend.
+      setBackupMessage(`備份成功！檔案已儲存於伺服器路徑： ${data.message.split(': ')[1]}`);
+      setBackupMessageType('success');
+    } catch (error) {
+      setBackupMessage(`備份失敗: ${error.message}`);
+      setBackupMessageType('danger');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
 
   /**
  * 處理用戶登出
@@ -528,13 +559,15 @@ const SystemSettings = () => {
                   <button className="btn btn-primary">
                     <FontAwesomeIcon icon={faSave} className="me-2" />儲存設定
                   </button>
-                  <button className="btn btn-primary">
-                    <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />立即備份
+                  <button className="btn btn-primary" onClick={handleCreateBackup} disabled={backupLoading}>
+                    <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />
+                    {backupLoading ? '備份中...' : '立即備份'}
                   </button>
                   <button className="btn btn-outline-primary">
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" rotation={180} />還原系統
                   </button>
                 </div>
+                 {backupMessage && <div className={`mt-3 alert alert-${backupMessageType}`}>{backupMessage}</div>}
               </div>
             </div>
           )}
