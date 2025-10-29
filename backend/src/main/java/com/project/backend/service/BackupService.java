@@ -3,6 +3,7 @@ package com.project.backend.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -15,11 +16,16 @@ import java.text.SimpleDateFormat;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.project.backend.model.BackupSettings;
 
 
 
@@ -156,6 +162,38 @@ public class BackupService {
         // 5. Clean up the temporary file and return the new DB name
         Files.delete(tempFilePath);
         return newDbName;
+    }
+
+    /**
+     * Scheduled task to automatically back up the database.
+     * This runs at the top of every hour.
+     */
+    @Scheduled(cron = "0 0 2 * * ?") // Runs daily at 2:00 AM
+    public void scheduledBackup() {
+        System.out.println("Running scheduled backup check...");
+        try {
+            BackupSettings settings = backupSettingsService.getBackupSettings();
+            LocalDateTime lastBackupTime = settings.getLastBackupTime();
+            int autoBackupInterval = settings.getAutoBackupInterval();
+
+            if (lastBackupTime == null) {
+                System.out.println("No last backup time found. Skipping automatic backup.");
+                return;
+            }
+
+            long daysSinceLastBackup = ChronoUnit.DAYS.between(lastBackupTime, LocalDateTime.now());
+
+            if (daysSinceLastBackup >= autoBackupInterval) {
+                System.out.println("Backup interval of " + autoBackupInterval + " days has passed. Starting automatic backup.");
+                createBackup();
+                System.out.println("Automatic backup completed successfully.");
+            } else {
+                System.out.println("Backup not yet due. Days since last backup: " + daysSinceLastBackup);
+            }
+        } catch (Exception e) {
+            System.err.println("Scheduled backup failed: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     // Helper Methods
