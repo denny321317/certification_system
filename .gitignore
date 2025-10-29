@@ -41,7 +41,9 @@ Thumbs.db
 /node_modules
 
 # contain password
+
 ./backend/src/main/resources/application.properties
 
 
 /uploads/
+

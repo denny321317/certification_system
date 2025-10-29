@@ -5,7 +5,9 @@ import java.util.List;
 
 import com.project.backend.model.Supplier.CertificateStatus;
 import com.project.backend.model.Supplier.RiskProfile;
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SupplierDTO {
     private Long id;
     private String name;
@@ -19,6 +21,12 @@ public class SupplierDTO {
     private CertificateStatus certificateStatus;
     private RiskProfile riskProfile;
     private List<ProjectDetailDTO> projects;
+    @JsonProperty("commonCerts")
+    private List<String> commonCerts;
+
+    @JsonProperty("otherCertification")
+    private String otherCertification;
+
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -56,4 +64,20 @@ public class SupplierDTO {
 
     public List<ProjectDetailDTO> getProjects() { return projects; }
     public void setProjects(List<ProjectDetailDTO> projects) { this.projects = projects; }
+        public List<String> getCommonCerts() {
+        return commonCerts;
+    }
+
+    public void setCommonCerts(List<String> commonCerts) {
+        this.commonCerts = commonCerts;
+    }
+
+    public String getOtherCertification() {
+        return otherCertification;
+    }
+
+    public void setOtherCertification(String otherCertification) {
+        this.otherCertification = otherCertification;
+    }
+
 }
