@@ -105,6 +105,14 @@ const SystemSettings = () => {
   });
   const [securityLoading, setSecurityLoading] = useState(false);
 
+  /** 處理備份設定 */
+  const [backupSettings, setBackupSettings] = useState({
+    autoBackupInterval: 1,
+    daysBeforeDelete: 30,
+    lastBackupTime: null
+  });
+  const [backupSettingsLoading, setBackupSettingsLoading] = useState(false);
+
   useEffect(() => {
     if (activeTab === 'security') {
       setSecurityLoading(true);
@@ -133,6 +141,15 @@ const SystemSettings = () => {
           setNotificationLoading(false);
         })
         .catch(() => setNotificationLoading(false));
+    } else if (activeTab === 'backup') {
+      setBackupSettingsLoading(true);
+      fetch(`http://localhost:8000/api/settings/backup`)
+        .then(res => res.json())
+        .then(data => {
+          setBackupSettings(data);
+          setBackupSettingsLoading(false);
+        })
+        .catch(() => setBackupSettingsLoading(false));
     }
   }, [activeTab])
 
@@ -195,6 +212,42 @@ const SystemSettings = () => {
         alert('儲存失敗')
       });
   }
+
+  const handleBackupSettingsSave = (e) => {
+    e.preventDefault();
+    setBackupSettingsLoading(true);
+    fetch(`http://localhost:8000/api/settings/backup`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        autoBackupInterval: backupSettings.autoBackupInterval,
+        daysBeforeDelete: backupSettings.daysBeforeDelete
+      })
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('儲存失敗，請檢查網路連線或稍後再試。');
+      }
+      return res.json();
+    })
+    .then(data => {
+      setBackupSettings(data);
+      setBackupSettingsLoading(false);
+      // Set success message
+      setBackupMessage('備份設定已成功儲存！');
+      setBackupMessageType('success');
+      // Clear message after 5 seconds
+      setTimeout(() => setBackupMessage(''), 5000);
+    })
+    .catch((error) => {
+      setBackupSettingsLoading(false);
+      // Set error message
+      setBackupMessage(error.message);
+      setBackupMessageType('danger');
+      // Clear message after 5 seconds
+      setTimeout(() => setBackupMessage(''), 5000);
+    });
+  };
 
   /**
    * 處理備份相關事宜
@@ -578,29 +631,49 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">備份與還原</h5>
+                <form onSubmit={handleBackupSettingsSave}>
                 <div className="backup-status">
                   <FontAwesomeIcon icon={faCheckCircle} className="me-2" />
-                  最後備份時間：2024-01-20 15:30:00
+                  最後備份時間：{
+                    (() => {
+                      if (!backupSettings.lastBackupTime || !Array.isArray(backupSettings.lastBackupTime)) {
+                        return '尚未備份';
+                      }
+                      const dt = backupSettings.lastBackupTime;
+                      // new Date(year, monthIndex (0-11), day, hours, minutes, seconds)
+                      const date = new Date(dt[0], dt[1] - 1, dt[2], dt[3], dt[4], dt[5]);
+                      return date.toLocaleString();
+                    })()
+                  }
                 </div>
                 <div className="mb-4">
-                  <label className="form-label">自動備份設定</label>
-                  <select className="form-select mb-3">
-                    <option selected>每日備份</option>
-                    <option>每週備份</option>
-                    <option>每月備份</option>
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label className="form-label">備份保留時間</label>
-                  <select className="form-select mb-3">
-                    <option selected>保留 30 天</option>
-                    <option>保留 60 天</option>
-                    <option>保留 90 天</option>
-                  </select>
-                </div>
+                    <label className="form-label">自動備份設定</label>
+                    <select 
+                      className="form-select mb-3"
+                      value={backupSettings.autoBackupInterval}
+                      onChange={e => setBackupSettings(s => ({ ...s, autoBackupInterval: Number(e.target.value) }))}
+                    >
+                      <option value="1">每日備份</option>
+                      <option value="7">每週備份</option>
+                      <option value="30">每月備份</option>
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label className="form-label">備份保留時間</label>
+                    <select 
+                      className="form-select mb-3"
+                      value={backupSettings.daysBeforeDelete}
+                      onChange={e => setBackupSettings(s => ({ ...s, daysBeforeDelete: Number(e.target.value) }))}
+                    >
+                      <option value="30">保留 30 天</option>
+                      <option value="60">保留 60 天</option>
+                      <option value="90">保留 90 天</option>
+                    </select>
+                  </div>
                 <div className="d-flex gap-2">
-                  <button className="btn btn-primary">
-                    <FontAwesomeIcon icon={faSave} className="me-2" />儲存設定
+                  <button type="submit" className="btn btn-primary" disabled={backupSettingsLoading}>
+                    <FontAwesomeIcon icon={faSave} className="me-2" />
+                    {backupSettingsLoading ? '儲存中...' : '儲存設定'}
                   </button>
                   <button className="btn btn-primary" onClick={handleCreateBackup} disabled={backupLoading}>
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />
@@ -618,6 +691,7 @@ const SystemSettings = () => {
                     {backupLoading ? '處理中...' : '還原系統'}
                   </button>
                 </div>
+              </form>
                  {backupMessage && <div className={`mt-3 alert alert-${backupMessageType}`}>{backupMessage}</div>}
               </div>
             </div>
