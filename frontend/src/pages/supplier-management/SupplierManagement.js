@@ -49,7 +49,7 @@ const SupplierManagement = ({ canWrite }) => {
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
    */
   const [activeTab, setActiveTab] = useState('全部');
-  const PAGE_SIZE = 10;
+
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -147,11 +147,6 @@ const [draftFilters, setDraftFilters] = useState(filters);
     
     return true;
   });
-  const totalPages = Math.max(1, Math.ceil(filteredSuppliers.length / PAGE_SIZE));
-  const safePage   = Math.min(Math.max(currentPage, 1), totalPages);
-  const startIdx   = (safePage - 1) * PAGE_SIZE;
-  const endIdx     = startIdx + PAGE_SIZE;
-  const pagedSuppliers = filteredSuppliers.slice(startIdx, endIdx);
   const totalSuppliers = suppliers.length;
   const certifiedCount = suppliers.filter(s => s.status === 'approved').length;
   const pendingCount   = suppliers.filter(s => s.status === 'pending').length;
@@ -244,32 +239,16 @@ const [draftFilters, setDraftFilters] = useState(filters);
   id: dto.id,
   name: dto.name || '',
   type: dto.type || '',
-
-  // 卡片顯示用
   status: dto.certificateStatus === 'CERTIFICATED' ? 'approved' : 'pending',
   categories: [],
   location: dto.country || '',
   since: dto.collabStart ? String(new Date(dto.collabStart).getFullYear()) : '',
   certifications: 0,
   riskLevel: (dto.riskProfile || 'MEDIUM').toLowerCase(),
-
   latestCertification: undefined,
   ongoingCertification: undefined,
   expirationReminder: undefined,
   actionNeeded: undefined,
-
-  
-  product: (dto.product || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
-  address: (dto.address || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
-  telephone: (dto.telephone || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
-  email: (dto.email || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
-  
-  collabStart: dto.collabStart ? new Date(dto.collabStart).toISOString().slice(0, 10) : '',
-  
-  certificateStatus: (dto.certificateStatus || 'UNDER_CERTIFICATION').toUpperCase(),
-  riskProfile: (dto.riskProfile || 'MEDIUM').toUpperCase(),
-  commonCerts: Array.isArray(dto.commonCerts) ? dto.commonCerts : [],
-  otherCertification: dto.otherCertification || '',
 });
 // ---- 下方新增：把 UI 的表單資料轉成後端 DTO ----
 const uiToDto = (form) => {
@@ -285,10 +264,7 @@ const uiToDto = (form) => {
     email: form.email ?? null,
     certificateStatus: toEnum(form.certificateStatus ?? 'UNDER_CERTIFICATION'),
     riskProfile: toEnum(form.riskProfile ?? 'MEDIUM'),
-    // ★ yyyy-MM-dd → epoch 毫秒；空值回傳 null
-    collabStart: form.collabStart ? new Date(form.collabStart).getTime() : null,
-    commonCerts: Array.isArray(form.selectedCerts) ? [...new Set(form.selectedCerts)] : [],
-    otherCertification: (form.otherCert || '').trim(),
+    collabStart: form.collabStart ? new Date(form.collabStart).toISOString() : null,
   };
 };
 
@@ -296,27 +272,16 @@ const uiToDto = (form) => {
 const reload = async () => {
   try {
     setLoading(true);
+    setError(null);
     const data = await supplierApi.listSuppliers();
-    setSuppliers(prev => {
-      const prevMap = new Map(prev.map(s => [s.id, s]));
-      return (Array.isArray(data) ? data.map(dtoToUi) : []).map(next => {
-        const old = prevMap.get(next.id);
-        return {
-          ...next,
-          commonCerts: (Array.isArray(next.commonCerts) && next.commonCerts.length)
-            ? next.commonCerts
-            : (old?.commonCerts || []),
-          otherCertification: (next.otherCertification ?? '') !== ''
-            ? next.otherCertification
-            : (old?.otherCertification || ''),
-        };
-      });
-    });
+    setSuppliers(Array.isArray(data) ? data.map(dtoToUi) : []);
+  } catch (err) {
+    setError(err?.message || '載入失敗');
+    setSuppliers([]);
   } finally {
     setLoading(false);
   }
 };
-
 
 
 React.useEffect(() => {
@@ -360,24 +325,11 @@ const handleCreate = () => {
 const handleSave = async (form) => {
   try {
     const dto = uiToDto(form);
-    
     if (modalMode === 'create') {
       await supplierApi.createSupplier(dto);
     } else if (modalMode === 'edit' && form.id != null) {
       await supplierApi.updateSupplier(form.id, dto);
     }
-    setSuppliers(prev =>
-      prev.map(s =>
-        s.id === (form.id ?? null)
-          ? {
-              ...s,
-              // 把表單的選擇直接寫回列表物件（後端若尚未實作也能顯示）
-              commonCerts: Array.isArray(form.selectedCerts) ? [...new Set(form.selectedCerts)] : [],
-              otherCertification: (form.otherCert || '').trim(),
-            }
-          : s
-      )
-    );
     await reload();      // 成功後重抓列表
     setModalOpen(false); // 關閉 Modal
   } catch (e) {
@@ -533,7 +485,7 @@ const askDelete = async (id) => {
             </div>
           ) : (
             <>
-              {pagedSuppliers.map((supplier) => (
+              {filteredSuppliers.map((supplier) => (
                 <div className="supplier-card" key={supplier.id}>
                   <div className="d-flex justify-content-between">
                     <div className="d-flex">
@@ -563,22 +515,10 @@ const askDelete = async (id) => {
                             <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
                             合作自 {supplier.since}
                           </span>
-                          {(() => {
-                              const completedCerts = [
-                                ...(Array.isArray(supplier.commonCerts) ? supplier.commonCerts : []),
-                                ...(supplier.otherCertification ? [supplier.otherCertification] : []),
-                              ].filter(Boolean);
-
-                              return (
-                                <span className="d-inline-flex align-items-center flex-wrap gap-2">
-                                  <FontAwesomeIcon icon={faCheckSquare} className="me-1" />
-                                  <span className="me-1">{completedCerts.length} 項已完成認證</span>
-
-                                  
-                                </span>
-                              );
-                            })()}
-
+                          <span>
+                            <FontAwesomeIcon icon={faCheckSquare} className="me-1" />
+                            {supplier.certifications} 項已完成認證
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -620,7 +560,7 @@ const askDelete = async (id) => {
                           ? '進行中認證'
                           : supplier.latestCertification
                           ? '最近認證'
-                          : '已完成認證：'}
+                          : '最近狀態'}
                       </div>
                       <div>
                         {supplier.riskReason ? (
@@ -640,83 +580,88 @@ const askDelete = async (id) => {
                             </span>
                           </>
                         ) : (
-                          (() => {
-                      const items = [
-                        ...(Array.isArray(supplier.commonCerts) ? supplier.commonCerts : []),
-                        ...(supplier.otherCertification ? [supplier.otherCertification] : []),
-                      ].filter(Boolean);
-
-                      if (items.length === 0) {
-                        return <span className="text-muted small">無資料</span>;
-                      }
-
-                      return (
-                        <div className="d-flex flex-wrap gap-2">
-                          {items.map((cert, i) => (
-                            <span
-                              key={`${supplier.id}-cert-${i}`}
-                              className="badge rounded-pill bg-primary-subtle text-primary fs-5"
-                            >
-                              {cert}
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })()
-
+                          <span className="text-muted small">無資料</span>
                         )}
                       </div>
                     </div>
 
-                    
+                    <div className="col-md-4">
+                      <div className="mb-1">
+                        {supplier.actionNeeded
+                          ? '需要行動'
+                          : supplier.expirationReminder && supplier.expirationReminder.name
+                          ? '認證到期提醒'
+                          : supplier.latestCertification
+                          ? '最近認證'
+                          : '最近狀態'}
+                      </div>
+                      <div>
+                        {supplier.actionNeeded ? (
+                          <>
+                            {supplier.actionNeeded.name}{' '}
+                            <span className="text-danger small">
+                              逾期 {supplier.actionNeeded.overdueDays} 天
+                            </span>
+                          </>
+                        ) : supplier.expirationReminder && supplier.expirationReminder.name ? (
+                          <>
+                            {supplier.expirationReminder.name}{' '}
+                            <span className="text-warning small">
+                              剩餘{supplier.expirationReminder.daysLeft}天
+                            </span>
+                          </>
+                        ) : supplier.latestCertification ? (
+                          <>
+                            {supplier.latestCertification.name}{' '}
+                            <span className="text-muted small">
+                              ({supplier.latestCertification.date})
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-muted small">無資料</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
 
               <nav aria-label="供應商分頁">
-                  <ul className="pagination justify-content-center mt-4">
-                    {/* 上一頁 */}
-                    <li className={`page-item ${safePage === 1 ? 'disabled' : ''}`}>
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={safePage === 1}
-                      >
-                        上一頁
-                      </button>
-                    </li>
-
-                    {/* 動態頁碼（最多顯示 7 個） */}
-                    {Array.from({ length: totalPages })
-                      .slice(
-                        Math.max(0, safePage - 4),
-                        Math.max(0, safePage - 4) + Math.min(7, totalPages)
-                      )
-                      .map((_, i) => {
-                        const first = Math.max(1, safePage - 3);
-                        const page = first + i;
-                        return (
-                          <li key={page} className={`page-item ${page === safePage ? 'active' : ''}`}>
-                            <button className="page-link" onClick={() => setCurrentPage(page)}>
-                              {page}
-                            </button>
-                          </li>
-                        );
-                      })}
-
-                    {/* 下一頁 */}
-                    <li className={`page-item ${safePage === totalPages ? 'disabled' : ''}`}>
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={safePage === totalPages}
-                      >
-                        下一頁
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-
+                <ul className="pagination justify-content-center mt-4">
+                  <li className="page-item disabled">
+                    <button
+                      className="page-link"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled
+                    >
+                      上一頁
+                    </button>
+                  </li>
+                  <li className="page-item active">
+                    <button className="page-link" onClick={() => handlePageChange(1)}>
+                      1
+                    </button>
+                  </li>
+                  <li className="page-item">
+                    <button className="page-link" onClick={() => handlePageChange(2)}>
+                      2
+                    </button>
+                  </li>
+                  <li className="page-item">
+                    <button className="page-link" onClick={() => handlePageChange(3)}>
+                      3
+                    </button>
+                  </li>
+                  <li className="page-item">
+                    <button
+                      className="page-link"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      下一頁
+                    </button>
+                  </li>
+                </ul>
+              </nav>
             </>
           )}
         </div>
