@@ -549,8 +549,17 @@ const UserManagement = ({ canWrite }) => {
 
   const handleSaveUserChanges = async (updatedUserData) => {
     console.log("Attemping to save user data (projects not editable here): ", updatedUserData);
+    
+    const payload = {
+      name: updatedUserData.name,
+      email: updatedUserData.email,
+      roleName: updatedUserData.roleName, // Extract the role name from the role object
+      department: updatedUserData.department
+    };
+    
+
     try {
-      await axios.put(`${API_BASE_URL}/user-management/user/update/${updatedUserData.id}`, updatedUserData);
+      await axios.put(`${API_BASE_URL}/user-management/user/update/${updatedUserData.id}`, payload);
       alert('使用者資訊已成功更新！');
       fetchUsers();
       handleCloseEditModal();

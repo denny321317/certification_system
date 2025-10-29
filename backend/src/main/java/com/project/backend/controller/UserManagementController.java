@@ -26,13 +26,17 @@ import com.project.backend.dto.UserCreationDTO;
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.UserDetailDTO;
 import com.project.backend.dto.UserRoleUpdateDTO;
+import com.project.backend.dto.ProjectTeamDTO;
+import com.project.backend.dto.ProjectUserManagementDTO;
 import com.project.backend.dto.RoleCreationDTO;
+import com.project.backend.dto.RoleDTO;
 import com.project.backend.dto.RoleRenameDTO;
 
 import java.lang.StackWalker.Option;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import jakarta.validation.Valid;
 
@@ -350,9 +354,12 @@ public class UserManagementController {
      */
     @PutMapping("/user/update/{userId}")
     public ResponseEntity<?> updateUserInfo(@PathVariable Long userId, @Valid @RequestBody UserUpdateDTO userUpdateDTO) {
+        
         try {
-            User updatedUser = userManagementService.updateUserInfo(userId, userUpdateDTO);
-            return ResponseEntity.ok(updatedUser);
+            UserDetailDTO responseDTO = userManagementService.updateUserInfo(userId, userUpdateDTO);
+            
+
+            return ResponseEntity.ok(responseDTO);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {

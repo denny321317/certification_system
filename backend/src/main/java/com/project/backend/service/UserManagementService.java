@@ -115,7 +115,7 @@ public class UserManagementService {
      * @return
      */
     @Transactional
-    public User updateUserInfo(Long userId, UserUpdateDTO userUpdateDTO){
+    public UserDetailDTO updateUserInfo(Long userId, UserUpdateDTO userUpdateDTO){
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
 
@@ -136,7 +136,54 @@ public class UserManagementService {
 
         user.setLastTimeLogin(LocalDateTime.now());
 
-        return userRepository.save(user);
+        User updatedUser = userRepository.save(user);
+
+        // --- DTO CONVERSION LOGIC MOVED HERE ---
+
+        // 1. Convert Role to RoleDTO
+        RoleDTO roleDTO = new RoleDTO(
+            updatedUser.getRole().getId(),
+            updatedUser.getRole().getName(),
+            updatedUser.getRole().isAllowReadSystemSettings(),
+            updatedUser.getRole().isAllowWriteSystemSettings(),
+            updatedUser.getRole().isAllowReadUserManagment(),
+            updatedUser.getRole().isAllowWriteUserManagment(),
+            updatedUser.getRole().isAllowReadDocumentManagment(),
+            updatedUser.getRole().isAllowWriteDocumentManagment(),
+            updatedUser.getRole().isAllowReadTemplateCenter(),
+            updatedUser.getRole().isAllowWriteTemplateCenter(),
+            updatedUser.getRole().isAllowReadCertificationProjects(),
+            updatedUser.getRole().isAllowWriteCertificationProjects(),
+            updatedUser.getRole().isAllowReadReportManagment(),
+            updatedUser.getRole().isAllowWriteReportManagment(),
+            updatedUser.getRole().isAllowReadSupplierManagement(),
+            updatedUser.getRole().isAllowWriteSupplierManagement(),
+            updatedUser.getRole().isAllowReadDashboard(),
+            updatedUser.getRole().isAllowWriteDashboard()
+        );
+
+        // 2. Convert ProjectTeam list to ProjectTeamDTO list
+        List<ProjectTeamDTO> projectMembershipsDTO = updatedUser.getProjectMemberships().stream()
+            .map(pt -> {
+                ProjectUserManagementDTO projectDTO = new ProjectUserManagementDTO(pt.getProject().getId(), pt.getProject().getName(), pt.getProject().getStatus());
+                return new ProjectTeamDTO(pt.getId(), projectDTO, pt.getRole());
+            })
+            .collect(Collectors.toList());
+
+        // 3. Create and return the final UserDetailDTO
+        return new UserDetailDTO(
+            updatedUser.getId(),
+            updatedUser.getName(),
+            updatedUser.getEmail(),
+            roleDTO,
+            updatedUser.getDepartment(),
+            updatedUser.getLastTimeLogin(),
+            updatedUser.isOnline(),
+            projectMembershipsDTO,
+            updatedUser.isSuspended(),
+            updatedUser.getPosition()
+        );
+
     }
 
     /**
