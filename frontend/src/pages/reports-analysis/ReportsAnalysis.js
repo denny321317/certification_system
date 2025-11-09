@@ -403,6 +403,20 @@ const ReportsAnalysis = () => {
   ];
 
   /**
+   * 格式化日期為 YYYY/MM/DD
+   * @param {string} dateString - 日期字串 (YYYY-MM-DD)
+   * @returns {string} 格式化後的日期
+   */
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
+
+  /**
    * 渲染嚴重程度標籤
    * @param {string} severity - 嚴重程度（high/medium/low）
    * @returns {JSX.Element} 嚴重程度標籤元素
@@ -445,11 +459,13 @@ const ReportsAnalysis = () => {
     
     switch (status) {
       case 'in-progress':
+      case '進行中':
         badgeClass = 'status-badge in-progress';
         icon = faPlayCircle;
         text = '進行中';
         break;
       case 'completed':
+      case '已解決':
         badgeClass = 'status-badge completed';
         icon = faCheckCircle;
         text = '已解決';
@@ -563,7 +579,7 @@ const ReportsAnalysis = () => {
       '問題名稱': issue.issueName, // 更新 issue 的 name 為 issueName
       '認證類型': issue.certType,
       '嚴重程度': issue.severity, // 後端已處理好，直接使用
-      '發現日期': issue.discoveryDate,
+      '發現日期': formatDate(issue.discoveryDate),
       '狀態': issue.status // 後端已處理好，直接使用
     }));
 
@@ -1393,7 +1409,7 @@ const ReportsAnalysis = () => {
                         <td>{renderSeverityBadge(issue.severity)}</td>
                       )}
                       {visibleColumns.discoveryDate && (
-                        <td className="text-muted">{issue.discoveryDate}</td>
+                        <td className="text-muted">{formatDate(issue.discoveryDate)}</td>
                       )}
                       {visibleColumns.status && (
                         <td>{renderStatusBadge(issue.status)}</td>

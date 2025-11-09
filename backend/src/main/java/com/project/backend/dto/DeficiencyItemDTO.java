@@ -1,11 +1,13 @@
 package com.project.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
 
 public class DeficiencyItemDTO {
     private String issueName;
     private String certType;
     private String severity;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate discoveryDate;
     private String status;
 
