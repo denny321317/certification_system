@@ -297,7 +297,11 @@ const ReviewFeedback = ({ projectId, projectName, requirements }) => {
         status: 'open',
         deadline: issue.deadline && issue.deadlineTime 
             ? `${issue.deadline}T${issue.deadlineTime}:00` 
-            : null
+            : null,
+        indicatorId: issue.indicatorId,
+        documentId: issue.documentId,
+        indicatorText: issue.indicatorText,
+        documentText: issue.documentText
       }))
     };
 

@@ -110,7 +110,11 @@ public class ReviewService {
                 issue.getTitle(),
                 issue.getSeverity(),
                 issue.getStatus(),
-                issue.getDeadline()
+                issue.getDeadline(),
+                issue.getIndicatorId(),
+                issue.getDocumentId(),
+                issue.getIndicatorText(),
+                issue.getDocumentText()
         );
     }
     
@@ -121,6 +125,10 @@ public class ReviewService {
         issue.setSeverity(dto.getSeverity());
         issue.setStatus(dto.getStatus());
         issue.setDeadline(dto.getDeadline());
+        issue.setIndicatorId(dto.getIndicatorId());
+        issue.setDocumentId(dto.getDocumentId());
+        issue.setIndicatorText(dto.getIndicatorText());
+        issue.setDocumentText(dto.getDocumentText());
         return issue;
     }
 
