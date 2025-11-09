@@ -556,6 +556,10 @@ const ReportsAnalysis = () => {
           aValue = severityOrder[a.severity] || 0;
           bValue = severityOrder[b.severity] || 0;
           break;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
+          break;
         case 'date':
         default:
           aValue = new Date(a.discoveryDate);
@@ -1371,6 +1375,7 @@ const ReportsAnalysis = () => {
                   <option value="name">問題名稱</option>
                   <option value="certType">認證類型</option>
                   <option value="severity">嚴重程度</option>
+                  <option value="status">狀態</option>
                 </select>
                 <button 
                   className="btn btn-outline-secondary btn-sm ms-1"
