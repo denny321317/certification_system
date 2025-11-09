@@ -364,6 +364,43 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [userList, setUserList] = useState([]);
 
+  /**
+   * 格式化操作歷史的日期時間
+   * @param {Array|string} dt - 後端傳來的日期時間
+   * @returns {string} 格式化後的日期時間字串
+   */
+  const formatHistoryDate = (dt) => {
+    if (!dt) return 'N/A';
+    try {
+      // 處理後端直接傳來的 LocalDateTime 陣列格式 [YYYY, MM, DD, HH, MM, SS]
+      if (Array.isArray(dt)) {
+        const [year, month, day, hour, minute] = dt;
+        // 月份需要減 1，因為 JavaScript 的月份是 0-11
+        const date = new Date(year, month - 1, day, hour, minute);
+        return date.toLocaleString('zh-TW', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).replace(/\//g, '/');
+      }
+      // 處理標準 ISO 字串格式
+      return new Date(dt).toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '/');
+    } catch (e) {
+      console.error("日期格式化失敗:", dt, e);
+      return '無效日期';
+    }
+  };
+
   const fetchTeamMembers = useCallback(async () => {
     try {
         const res = await fetch(`http://localhost:8000/api/projects/${projectId}/team`);
@@ -2018,13 +2055,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                 history.map(item => (
                   <div className="history-item" key={item.id}>
                     <div className="history-date">
-                      {new Date(item.operationTime).toLocaleString('zh-TW', { 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                      {formatHistoryDate(item.operationTime)}
                     </div>
                     <div className="history-content">
                       <div className="history-title">{item.operator} {item.operationType.replace(/_/g, ' ').toLowerCase()}</div>
