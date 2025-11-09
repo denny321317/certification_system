@@ -108,8 +108,7 @@ const ReportsAnalysis = () => {
     certType: true,
     severity: true,
     discoveryDate: true,
-    status: true,
-    progress: true
+    status: true
   });
   const [exportFormat, setExportFormat] = useState('excel');
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
@@ -541,10 +540,6 @@ const ReportsAnalysis = () => {
           aValue = severityOrder[a.severity] || 0;
           bValue = severityOrder[b.severity] || 0;
           break;
-        case 'progress':
-          aValue = a.progress;
-          bValue = b.progress;
-          break;
         case 'date':
         default:
           aValue = new Date(a.discoveryDate);
@@ -569,8 +564,7 @@ const ReportsAnalysis = () => {
       '認證類型': issue.certType,
       '嚴重程度': issue.severity, // 後端已處理好，直接使用
       '發現日期': issue.discoveryDate,
-      '狀態': issue.status, // 後端已處理好，直接使用
-      '完成進度': `${issue.progress || 0}%` // 假設 progress 可能不存在，給予預設值
+      '狀態': issue.status // 後端已處理好，直接使用
     }));
 
     if (format === 'excel') {
@@ -644,7 +638,7 @@ const ReportsAnalysis = () => {
   useEffect(() => {
     const fetchIssues = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/reports/deficiency-items');
+        const response = await fetch('http://localhost:8000/api/reports/deficiency-items');
         if (!response.ok) {
           throw new Error('無法獲取缺失項目資料');
         }
@@ -1361,7 +1355,6 @@ const ReportsAnalysis = () => {
                   <option value="name">問題名稱</option>
                   <option value="certType">認證類型</option>
                   <option value="severity">嚴重程度</option>
-                  <option value="progress">完成進度</option>
                 </select>
                 <button 
                   className="btn btn-outline-secondary btn-sm ms-1"
@@ -1383,7 +1376,6 @@ const ReportsAnalysis = () => {
                     {visibleColumns.severity && <th>嚴重程度</th>}
                     {visibleColumns.discoveryDate && <th>發現日期</th>}
                     {visibleColumns.status && <th>狀態</th>}
-                    {visibleColumns.progress && <th>進度</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -1405,9 +1397,6 @@ const ReportsAnalysis = () => {
                       )}
                       {visibleColumns.status && (
                         <td>{renderStatusBadge(issue.status)}</td>
-                      )}
-                      {visibleColumns.progress && (
-                        <td>{renderProgressBar(issue.progress || 0)}</td>
                       )}
                     </tr>
                   ))}
