@@ -88,6 +88,14 @@ public class ReviewService {
         return convertToReviewDTO(savedReview);
     }
 
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        if (!reviewRepository.existsById(reviewId)) {
+            throw new RuntimeException("Review not found with id: " + reviewId);
+        }
+        reviewRepository.deleteById(reviewId);
+    }
+
     private ReviewDTO convertToReviewDTO(Review review) {
         List<ReviewIssueDTO> issueDTOs = review.getIssues().stream()
                 .map(this::convertToIssueDTO)
@@ -98,7 +106,7 @@ public class ReviewService {
                 review.getReviewerName(),
                 review.getReviewerDepartment(),
                 review.getReviewDate(),
-                review.getDecision(),
+                review.getDecision(), // decision is the correct field for status
                 review.getComment(),
                 issueDTOs
         );

@@ -25,7 +25,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faCheck, faTimes, faInfoCircle, faExclamationTriangle, 
   faCircle, faCheckCircle, faExclamationCircle, faClock, faUser,
-  faListCheck, faCheckSquare, faFileAlt, faCalendarAlt
+  faListCheck, faCheckSquare, faFileAlt, faCalendarAlt, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
 import './ReviewFeedback.css';
 
@@ -342,6 +342,37 @@ const ReviewFeedback = ({ projectId, projectName, requirements }) => {
   };
 
   /**
+   * 處理刪除審核記錄
+   * @param {number} reviewId - 審核記錄ID
+   */
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('確定要刪除這條審核記錄嗎？此操作無法復原。')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('刪除失敗');
+      }
+
+      // 從前端狀態中移除已刪除的記錄
+      setReviewData(prevData => ({
+        ...prevData,
+        reviews: prevData.reviews.filter(review => review.id !== reviewId)
+      }));
+
+      alert('審核記錄已刪除');
+    } catch (error) {
+      console.error('刪除審核記錄失敗:', error);
+      alert(error.message);
+    }
+  };
+
+  /**
    * 切換問題完成狀態
    * @param {number} issueId - 問題ID
    */
@@ -647,11 +678,20 @@ const ReviewFeedback = ({ projectId, projectName, requirements }) => {
                         </div>
                         <div className="review-meta">
                           <div className="review-date">{formatDate(review.date)}</div>
-                          <div className={`review-status ${review.status}`}>
-                            {review.status === 'approved' && '已核准'}
-                            {review.status === 'rejected' && '未核准'}
-                            {review.status === 'in-progress' && '審核中'}
+                          <div className={`review-status ${review.decision}`}>
+                            {review.decision === 'approved' && '已核准'}
+                            {review.decision === 'rejected' && '未核准'}
+                            {review.decision === 'in-progress' && '審核中'}
                           </div>
+                        </div>
+                        <div className="review-actions">
+                          <button 
+                            className="btn btn-sm btn-icon btn-icon-danger"
+                            title="刪除此審核記錄"
+                            onClick={() => handleDeleteReview(review.id)}
+                          >
+                            <FontAwesomeIcon icon={faTrashAlt} />
+                          </button>
                         </div>
                       </div>
                       

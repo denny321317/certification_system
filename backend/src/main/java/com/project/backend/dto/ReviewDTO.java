@@ -15,7 +15,7 @@ public class ReviewDTO {
     private String reviewer;
     private String reviewerDepartment;
     private LocalDateTime date;
-    private String status;
+    private String decision;
     private String comment;
     private List<ReviewIssueDTO> issues;
 } 
