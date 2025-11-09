@@ -34,9 +34,10 @@ import './ReviewFeedback.css';
  * @param {Object} props - 組件屬性
  * @param {number|string} props.projectId - 項目ID
  * @param {string} props.projectName - 項目名稱
+ * @param {Array} props.requirements - 模板要求
  * @returns {JSX.Element} 審核與回饋界面
  */
-const ReviewFeedback = ({ projectId, projectName }) => {
+const ReviewFeedback = ({ projectId, projectName, requirements }) => {
   /**
    * 當前選中的審核標籤
    * @type {[string, Function]} [當前審核標籤, 設置當前審核標籤的函數]
@@ -112,6 +113,18 @@ const ReviewFeedback = ({ projectId, projectName }) => {
    * @type {[string, Function]} [截止時間, 設置截止時間的函數] 
    */
   const [newIssueDeadlineTime, setNewIssueDeadlineTime] = useState('17:00');
+
+  /**
+   * 新問題關聯的指標 ID
+   * @type {[string, Function]} [指標ID, 設置指標ID的函數]
+   */
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState('');
+
+  /**
+   * 新問題關聯的文件 ID
+   * @type {[string, Function]} [文件ID, 設置文件ID的函數]
+   */
+  const [selectedDocumentId, setSelectedDocumentId] = useState('');
 
   /**
    * 員工視角查看模式
@@ -219,12 +232,20 @@ const ReviewFeedback = ({ projectId, projectName }) => {
   const handleAddIssue = () => {
     if (newIssueTitle.trim() === '') return;
     
+    // 找出選擇的指標與文件文字
+    const indicator = requirements?.find(i => String(i.id) === String(selectedIndicatorId));
+    const document = indicator?.documents.find(d => String(d.id) === String(selectedDocumentId));
+
     const newIssue = {
       title: newIssueTitle,
       severity: newIssueSeverity,
       status: 'open',
       deadline: newIssueDeadline,
-      deadlineTime: newIssueDeadlineTime
+      deadlineTime: newIssueDeadlineTime,
+      indicatorId: selectedIndicatorId || null,
+      documentId: selectedDocumentId || null,
+      indicatorText: indicator ? indicator.text : '',
+      documentText: document ? document.text : ''
     };
     
     setNewIssues([...newIssues, newIssue]);
@@ -232,6 +253,8 @@ const ReviewFeedback = ({ projectId, projectName }) => {
     setNewIssueSeverity('medium');
     setNewIssueDeadline('');
     setNewIssueDeadlineTime('17:00');
+    setSelectedIndicatorId('');
+    setSelectedDocumentId('');
   };
 
   /**
@@ -435,6 +458,11 @@ const ReviewFeedback = ({ projectId, projectName }) => {
               {issue.severity === 'medium' && <FontAwesomeIcon icon={faExclamationCircle} />}
               {issue.severity === 'low' && <FontAwesomeIcon icon={faInfoCircle} />}
               <span className="issue-title">{issue.title}</span>
+              {issue.indicatorText && (
+                <span className="issue-template-link">
+                   ({issue.indicatorText}{issue.documentText ? ` -> ${issue.documentText}` : ''})
+                </span>
+              )}
               {issue.deadline && (
                 <span className="issue-deadline">
                   <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
@@ -675,6 +703,40 @@ const ReviewFeedback = ({ projectId, projectName }) => {
                   </select>
                 </div>
                 
+                <div className="input-group mb-2">
+                  <select 
+                    className="form-select"
+                    value={selectedIndicatorId}
+                    onChange={(e) => {
+                      setSelectedIndicatorId(e.target.value);
+                      setSelectedDocumentId(''); // 當指標變更時，重置文件選項
+                    }}
+                  >
+                    <option value="">選擇相關指標 (可選)</option>
+                    {requirements && requirements.map(indicator => (
+                      <option key={indicator.id} value={indicator.id}>
+                        {indicator.text}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select 
+                    className="form-select"
+                    value={selectedDocumentId}
+                    onChange={(e) => setSelectedDocumentId(e.target.value)}
+                    disabled={!selectedIndicatorId}
+                  >
+                    <option value="">選擇相關文件 (可選)</option>
+                    {selectedIndicatorId && requirements && requirements
+                      .find(indicator => String(indicator.id) === String(selectedIndicatorId))
+                      ?.documents.map(doc => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.text}
+                        </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="deadline-inputs">
                   <div className="input-group mb-1">
                     <span className="input-group-text">

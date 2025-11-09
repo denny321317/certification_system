@@ -2001,7 +2001,11 @@ const CertificationProjectDetail = ({ canWrite }) => {
       case 'reviews':
         return (
           <div className="project-reviews">
-            <ReviewFeedback projectId={projectDetail.id} projectName={projectDetail.name} />
+            <ReviewFeedback 
+              projectId={projectDetail.id} 
+              projectName={projectDetail.name} 
+              requirements={requirements}
+            />
           </div>
         );
       
