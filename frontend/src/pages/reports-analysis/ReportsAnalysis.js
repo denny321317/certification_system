@@ -75,6 +75,9 @@ const ReportsAnalysis = () => {
    */
   const [activeTab, setActiveTab] = useState('綜合報表');
 
+  // 新增一個 state 來存放從後端獲取的缺失項目
+  const [issues, setIssues] = useState([]);
+
   /**
    * 圖表引用
    * @type {React.MutableRefObject<HTMLCanvasElement>} 圖表Canvas元素引用
@@ -315,7 +318,7 @@ const ReportsAnalysis = () => {
   }, []);
 
   /**
-   * 缺失項目數據結構
+   * 缺失項目數據結構 (現在會從後端獲取，這裡的註解留作參考)
    * @type {Array<{
    *   name: string,         // 問題名稱
    *   certType: string,     // 認證類型
@@ -325,48 +328,48 @@ const ReportsAnalysis = () => {
    *   progress: number      // 完成進度
    * }>}
    */
-  const issues = [
-    {
-      name: '工時記錄不完整',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-08-15',
-      status: 'in-progress',
-      progress: 75
-    },
-    {
-      name: '環境管理記錄缺漏',
-      certType: 'ISO 14001',
-      severity: 'medium',
-      discoveryDate: '2023-07-20',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '職業安全培訓未定期執行',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-09-05',
-      status: 'in-progress',
-      progress: 40
-    },
-    {
-      name: '品質控制程序未文件化',
-      certType: 'ISO 9001',
-      severity: 'medium',
-      discoveryDate: '2023-08-02',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '廢棄物處理不符合規範',
-      certType: 'ISO 14001',
-      severity: 'high',
-      discoveryDate: '2023-09-10',
-      status: 'in-progress',
-      progress: 20
-    }
-  ];
+  // const issues = [
+  //   {
+  //     name: '工時記錄不完整',
+  //     certType: 'SMETA',
+  //     severity: 'high',
+  //     discoveryDate: '2023-08-15',
+  //     status: 'in-progress',
+  //     progress: 75
+  //   },
+  //   {
+  //     name: '環境管理記錄缺漏',
+  //     certType: 'ISO 14001',
+  //     severity: 'medium',
+  //     discoveryDate: '2023-07-20',
+  //     status: 'completed',
+  //     progress: 100
+  //   },
+  //   {
+  //     name: '職業安全培訓未定期執行',
+  //     certType: 'SMETA',
+  //     severity: 'high',
+  //     discoveryDate: '2023-09-05',
+  //     status: 'in-progress',
+  //     progress: 40
+  //   },
+  //   {
+  //     name: '品質控制程序未文件化',
+  //     certType: 'ISO 9001',
+  //     severity: 'medium',
+  //     discoveryDate: '2023-08-02',
+  //     status: 'completed',
+  //     progress: 100
+  //   },
+  //   {
+  //     name: '廢棄物處理不符合規範',
+  //     certType: 'ISO 14001',
+  //     severity: 'high',
+  //     discoveryDate: '2023-09-10',
+  //     status: 'in-progress',
+  //     progress: 20
+  //   }
+  // ];
 
   /**
    * 已完成項目數據結構
@@ -512,22 +515,22 @@ const ReportsAnalysis = () => {
       const matchSeverity = !selectedSeverity || issue.severity === selectedSeverity;
       const matchStatus = !selectedStatus || issue.status === selectedStatus;
       
-      // 搜索
+      // 搜索 (更新 issue 的 name 為 issueName)
       const matchSearch = !searchQuery || 
-        issue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.issueName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.certType.toLowerCase().includes(searchQuery.toLowerCase());
       
       return matchType && matchFrom && matchTo && matchSeverity && matchStatus && matchSearch;
     });
 
-    // 排序
+    // 排序 (更新 issue 的 name 為 issueName)
     filtered.sort((a, b) => {
       let aValue, bValue;
       
       switch (sortBy) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = a.issueName.toLowerCase();
+          bValue = b.issueName.toLowerCase();
           break;
         case 'certType':
           aValue = a.certType.toLowerCase();
@@ -562,12 +565,12 @@ const ReportsAnalysis = () => {
   // 數據導出功能
   const exportData = useCallback((format = 'excel') => {
     const data = filteredAndSortedIssues.map(issue => ({
-      '問題名稱': issue.name,
+      '問題名稱': issue.issueName, // 更新 issue 的 name 為 issueName
       '認證類型': issue.certType,
-      '嚴重程度': issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低',
+      '嚴重程度': issue.severity, // 後端已處理好，直接使用
       '發現日期': issue.discoveryDate,
-      '狀態': issue.status === 'completed' ? '已解決' : issue.status === 'in-progress' ? '進行中' : '計畫中',
-      '完成進度': `${issue.progress}%`
+      '狀態': issue.status, // 後端已處理好，直接使用
+      '完成進度': `${issue.progress || 0}%` // 假設 progress 可能不存在，給予預設值
     }));
 
     if (format === 'excel') {
@@ -636,6 +639,25 @@ const ReportsAnalysis = () => {
     setSortBy('date');
     setSortOrder('desc');
   }, []);
+
+  // 使用 useEffect 從後端 API 獲取缺失項目資料
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/reports/deficiency-items');
+        if (!response.ok) {
+          throw new Error('無法獲取缺失項目資料');
+        }
+        const data = await response.json();
+        setIssues(data);
+      } catch (error) {
+        console.error('獲取缺失項目失敗:', error);
+        // 可以在此處設定錯誤狀態，並在 UI 上顯示錯誤訊息
+      }
+    };
+
+    fetchIssues();
+  }, []); // 空依賴陣列，確保只在元件首次渲染時執行一次
 
   // 1. 新增年度趨勢資料（假資料，可根據 filterCertType、filterDateFrom、filterDateTo 篩選）
   const trendData = [
@@ -1368,7 +1390,7 @@ const ReportsAnalysis = () => {
                   {filteredAndSortedIssues.map((issue, idx) => (
                     <tr key={idx} className="table-row-hover">
                       {visibleColumns.name && (
-                        <td className="fw-medium">{issue.name}</td>
+                        <td className="fw-medium">{issue.issueName}</td>
                       )}
                       {visibleColumns.certType && (
                         <td>
@@ -1385,7 +1407,7 @@ const ReportsAnalysis = () => {
                         <td>{renderStatusBadge(issue.status)}</td>
                       )}
                       {visibleColumns.progress && (
-                        <td>{renderProgressBar(issue.progress)}</td>
+                        <td>{renderProgressBar(issue.progress || 0)}</td>
                       )}
                     </tr>
                   ))}
