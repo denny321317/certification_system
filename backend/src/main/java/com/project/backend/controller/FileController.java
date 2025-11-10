@@ -454,7 +454,36 @@ public class FileController {
             "allVersions", responseList
         ));
     }
-        
+    
+    // 查看是否有同名文件(提供給模板進度確認使用)
+    @GetMapping("/project/{projectId}/has-file-by-name")
+    public ResponseEntity<Map<String, Object>> hasFileByName(
+            @PathVariable Long projectId,
+            @RequestParam("name") String name) {
+        try {
+            List<FileEntity> allFiles = fileRepository.findByProjectId(projectId);
+            if (allFiles == null || allFiles.isEmpty()) {
+                return ResponseEntity.ok(Map.of("exists", false, "checkedCount", 0));
+            }
+
+            // 先去掉副檔名，再去掉版本號
+            String inputBaseName = getBaseNameWithoutVersion(stripExtension(name.toLowerCase().trim()));
+
+            boolean exists = allFiles.stream().anyMatch(f -> {
+                String orig = f.getOriginalFilename() == null ? "" : f.getOriginalFilename().toLowerCase();
+                String fileBase = getBaseNameWithoutVersion(stripExtension(orig));
+                return fileBase.equals(inputBaseName);
+            });
+
+            long checkedCount = allFiles.size();
+            return ResponseEntity.ok(Map.of("exists", exists, "checkedCount", checkedCount));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "檢查失敗"));
+        }
+    }
+
     // 建立類別資料夾
     @PostMapping("/create-category")
     public ResponseEntity<?> createCategoryFolder(@RequestParam("category") String category,
