@@ -34,7 +34,7 @@ import './CertificationProjectDetail.css';
 import ReviewFeedback from '../../components/certification-projects/ReviewFeedback';
 
 import axios from "axios";
-
+import Swal from 'sweetalert2';
 /**
  * 認證項目詳情頁面
  * @returns {JSX.Element} 認證項目詳情頁面
@@ -283,7 +283,46 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   }, [selectedTemplate, projectDetail]);
 
-  const handleRequirementChange = (indicatorId, documentId = null) => {
+  const handleRequirementChange = async (indicatorId, documentId = null) => {
+    const indicator = requirements.find(ind => ind.id === indicatorId);
+    if (!indicator) return;
+
+    try {
+      // 取得要檢查的檔案名稱
+      let fileNameToCheck;
+      if (documentId) {
+        const doc = indicator.documents.find(d => d.id === documentId);
+        if (!doc) return;
+        fileNameToCheck = doc.text;
+      } else {
+        // 整個 indicator toggle 時，假設用 indicator.text 對應檔案名稱
+        fileNameToCheck = indicator.text;
+      }
+
+      // 呼叫後端檢查檔案是否存在
+      const response = await fetch(
+        `http://localhost:8000/api/documents/project/${projectId}/has-file-by-name?name=${encodeURIComponent(fileNameToCheck)}`
+      );
+      const data = await response.json();
+
+      // 如果資料庫沒有對應文件
+      if (!data.exists) {
+        const result = await Swal.fire({
+          title: "未上傳該文件",
+          text: "確定要完成此項目嗎？",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "確定",
+          cancelButtonText: "取消",
+        });
+        if (!result.isConfirmed) return; // 使用者取消，不更新狀態
+      }
+    } catch (error) {
+      console.error("檢查文件時發生錯誤", error);
+      return;
+    }
+
+    // 通過檢查 → 更新前端狀態
     setRequirements(prevRequirements =>
       prevRequirements.map(indicator => {
         if (indicator.id === indicatorId) {
@@ -291,26 +330,27 @@ const CertificationProjectDetail = ({ canWrite }) => {
           let newIndicatorCompleted;
 
           if (documentId) {
-            // Toggle a single document
+            // Toggle 單一文件
             newDocuments = indicator.documents.map(doc =>
               doc.id === documentId ? { ...doc, completed: !doc.completed } : doc
             );
-            // After toggling a doc, recalculate indicator status
             newIndicatorCompleted = newDocuments.every(doc => doc.completed);
           } else {
-            // Toggle an entire indicator (and all its documents)
+            // Toggle 整個 indicator
             newIndicatorCompleted = !indicator.completed;
             newDocuments = indicator.documents.map(doc => ({
               ...doc,
               completed: newIndicatorCompleted,
             }));
           }
+
           return { ...indicator, documents: newDocuments, completed: newIndicatorCompleted };
         }
         return indicator;
       })
     );
   };
+
 
   const allDocuments = Array.isArray(requirements) ? requirements.flatMap(indicator => indicator.documents) : [];
   const completedDocuments = allDocuments.filter(doc => doc.completed);
