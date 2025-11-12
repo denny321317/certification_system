@@ -320,7 +320,6 @@ const SystemSettings = () => {
       setBackupMessageType('danger');
       setTimeout(() => setBackupMessage(''), 30000);
     } finally {
-      setTimeout(() => setBackupMessage(''), 30000);
       setBackupLoading(false);
       // Reset the file input so the same file can be selected again
       event.target.value = null;
