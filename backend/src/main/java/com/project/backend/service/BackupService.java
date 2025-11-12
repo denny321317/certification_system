@@ -168,7 +168,7 @@ public class BackupService {
      * Scheduled task to automatically back up the database.
      * This runs at the top of every hour.
      */
-    @Scheduled(cron = "0 0 2 * * ?") // Runs daily at 2:00 AM
+    @Scheduled(cron = "0 0 3 * * ?") // Runs daily at 3:00 AM
     public void scheduledBackup() {
         System.out.println("Running scheduled backup check...");
         try {
