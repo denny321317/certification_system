@@ -257,6 +257,9 @@ const SystemSettings = () => {
   const [backupMessageType, setBackupMessageType] = useState('info');
   const fileInputRef = useRef(null);
 
+
+
+
   const handleCreateBackup = async () => {
     setBackupLoading(true);
     setBackupMessage('正在建立備份...');
@@ -314,11 +317,9 @@ const SystemSettings = () => {
       }
       setBackupMessage(data.message);
       setBackupMessageType('success');
-      setTimeout(() => setBackupMessage(''), 30000);
     } catch (error) {
       setBackupMessage(`還原失敗: ${error.message}`);
       setBackupMessageType('danger');
-      setTimeout(() => setBackupMessage(''), 30000);
     } finally {
       setBackupLoading(false);
       // Reset the file input so the same file can be selected again
