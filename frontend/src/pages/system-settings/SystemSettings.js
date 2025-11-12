@@ -314,10 +314,13 @@ const SystemSettings = () => {
       }
       setBackupMessage(data.message);
       setBackupMessageType('success');
+      setTimeout(() => setBackupMessage(''), 30000);
     } catch (error) {
       setBackupMessage(`還原失敗: ${error.message}`);
       setBackupMessageType('danger');
+      setTimeout(() => setBackupMessage(''), 30000);
     } finally {
+      setTimeout(() => setBackupMessage(''), 30000);
       setBackupLoading(false);
       // Reset the file input so the same file can be selected again
       event.target.value = null;
@@ -658,7 +661,7 @@ const SystemSettings = () => {
                       <option value="30">每月備份</option>
                     </select>
                   </div>
-                  <div className="mb-4">
+                  {/* 自動刪除備份，還沒做好 <div className="mb-4">
                     <label className="form-label">備份保留時間</label>
                     <select 
                       className="form-select mb-3"
@@ -669,7 +672,7 @@ const SystemSettings = () => {
                       <option value="60">保留 60 天</option>
                       <option value="90">保留 90 天</option>
                     </select>
-                  </div>
+                  </div>*/}
                 <div className="d-flex gap-2">
                   <button type="submit" className="btn btn-primary" disabled={backupSettingsLoading}>
                     <FontAwesomeIcon icon={faSave} className="me-2" />
@@ -688,7 +691,7 @@ const SystemSettings = () => {
                   />
                   <button className="btn btn-outline-primary" onClick={handleRestoreClick} disabled={backupLoading}>
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" rotation={180} />
-                    {backupLoading ? '處理中...' : '還原系統'}
+                    {backupLoading ? '處理中...' : '還原資料庫'}
                   </button>
                 </div>
               </form>
