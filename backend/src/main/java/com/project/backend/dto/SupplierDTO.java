@@ -56,4 +56,20 @@ public class SupplierDTO {
 
     public List<ProjectDetailDTO> getProjects() { return projects; }
     public void setProjects(List<ProjectDetailDTO> projects) { this.projects = projects; }
+        public List<String> getCommonCerts() {
+        return commonCerts;
+    }
+
+    public void setCommonCerts(List<String> commonCerts) {
+        this.commonCerts = commonCerts;
+    }
+
+    public String getOtherCertification() {
+        return otherCertification;
+    }
+
+    public void setOtherCertification(String otherCertification) {
+        this.otherCertification = otherCertification;
+    }
+
 }
