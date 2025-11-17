@@ -39,7 +39,7 @@ public class Notification {
     private List<Long> userIds = new ArrayList<>();  // the user Id of the receiver
     
     @Column(name="is_read")
-    private boolean isRead = false;
+    private Boolean isRead = false;
 
     @Column(nullable = false)
     private String topic;
@@ -72,9 +72,8 @@ public class Notification {
         this.topic = topic;
         this.content = content;
         this.timestamp = LocalDateTime.now();
-        if (userIds != null) {
-            this.readStatus = userIds.stream().collect(Collectors.toMap(id -> id, id -> false, (a, b) -> b));
-        }
+        this.isRead = false; // It's good practice to initialize it.
+        this.userIds.forEach(userId -> this.readStatus.put(userId, false));
     }
 
      // Getters

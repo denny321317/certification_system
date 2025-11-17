@@ -65,6 +65,7 @@ const DeleteNotification = () => {
     <div className="delete-notifications-container">
       <div className="delete-notifications-card">
         <h2 className="delete-notifications-title">刪除通知</h2>
+        <p>在此處刪除通知將會對所有用戶刪除</p>
         {notifications.length === 0 ? (
           <p>There are no notifications in the system.</p>
         ) : (

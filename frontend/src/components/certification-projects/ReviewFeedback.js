@@ -25,7 +25,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faCheck, faTimes, faInfoCircle, faExclamationTriangle, 
   faCircle, faCheckCircle, faExclamationCircle, faClock, faUser,
-  faListCheck, faCheckSquare, faFileAlt, faCalendarAlt
+  faListCheck, faCheckSquare, faFileAlt, faCalendarAlt, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
 import './ReviewFeedback.css';
 
@@ -34,9 +34,10 @@ import './ReviewFeedback.css';
  * @param {Object} props - 組件屬性
  * @param {number|string} props.projectId - 項目ID
  * @param {string} props.projectName - 項目名稱
+ * @param {Array} props.requirements - 模板要求
  * @returns {JSX.Element} 審核與回饋界面
  */
-const ReviewFeedback = ({ projectId, projectName }) => {
+const ReviewFeedback = ({ projectId, projectName, requirements }) => {
   /**
    * 當前選中的審核標籤
    * @type {[string, Function]} [當前審核標籤, 設置當前審核標籤的函數]
@@ -112,6 +113,18 @@ const ReviewFeedback = ({ projectId, projectName }) => {
    * @type {[string, Function]} [截止時間, 設置截止時間的函數] 
    */
   const [newIssueDeadlineTime, setNewIssueDeadlineTime] = useState('17:00');
+
+  /**
+   * 新問題關聯的指標 ID
+   * @type {[string, Function]} [指標ID, 設置指標ID的函數]
+   */
+  const [selectedIndicatorId, setSelectedIndicatorId] = useState('');
+
+  /**
+   * 新問題關聯的文件 ID
+   * @type {[string, Function]} [文件ID, 設置文件ID的函數]
+   */
+  const [selectedDocumentId, setSelectedDocumentId] = useState('');
 
   /**
    * 員工視角查看模式
@@ -219,12 +232,20 @@ const ReviewFeedback = ({ projectId, projectName }) => {
   const handleAddIssue = () => {
     if (newIssueTitle.trim() === '') return;
     
+    // 找出選擇的指標與文件文字
+    const indicator = requirements?.find(i => String(i.id) === String(selectedIndicatorId));
+    const document = indicator?.documents.find(d => String(d.id) === String(selectedDocumentId));
+
     const newIssue = {
       title: newIssueTitle,
       severity: newIssueSeverity,
       status: 'open',
       deadline: newIssueDeadline,
-      deadlineTime: newIssueDeadlineTime
+      deadlineTime: newIssueDeadlineTime,
+      indicatorId: selectedIndicatorId || null,
+      documentId: selectedDocumentId || null,
+      indicatorText: indicator ? indicator.text : '',
+      documentText: document ? document.text : ''
     };
     
     setNewIssues([...newIssues, newIssue]);
@@ -232,6 +253,8 @@ const ReviewFeedback = ({ projectId, projectName }) => {
     setNewIssueSeverity('medium');
     setNewIssueDeadline('');
     setNewIssueDeadlineTime('17:00');
+    setSelectedIndicatorId('');
+    setSelectedDocumentId('');
   };
 
   /**
@@ -274,7 +297,11 @@ const ReviewFeedback = ({ projectId, projectName }) => {
         status: 'open',
         deadline: issue.deadline && issue.deadlineTime 
             ? `${issue.deadline}T${issue.deadlineTime}:00` 
-            : null
+            : null,
+        indicatorId: issue.indicatorId,
+        documentId: issue.documentId,
+        indicatorText: issue.indicatorText,
+        documentText: issue.documentText
       }))
     };
 
@@ -311,6 +338,37 @@ const ReviewFeedback = ({ projectId, projectName }) => {
       alert(error.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /**
+   * 處理刪除審核記錄
+   * @param {number} reviewId - 審核記錄ID
+   */
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('確定要刪除這條審核記錄嗎？此操作無法復原。')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/reviews/${reviewId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('刪除失敗');
+      }
+
+      // 從前端狀態中移除已刪除的記錄
+      setReviewData(prevData => ({
+        ...prevData,
+        reviews: prevData.reviews.filter(review => review.id !== reviewId)
+      }));
+
+      alert('審核記錄已刪除');
+    } catch (error) {
+      console.error('刪除審核記錄失敗:', error);
+      alert(error.message);
     }
   };
 
@@ -435,6 +493,11 @@ const ReviewFeedback = ({ projectId, projectName }) => {
               {issue.severity === 'medium' && <FontAwesomeIcon icon={faExclamationCircle} />}
               {issue.severity === 'low' && <FontAwesomeIcon icon={faInfoCircle} />}
               <span className="issue-title">{issue.title}</span>
+              {issue.indicatorText && (
+                <span className="issue-template-link">
+                   ({issue.indicatorText}{issue.documentText ? ` -> ${issue.documentText}` : ''})
+                </span>
+              )}
               {issue.deadline && (
                 <span className="issue-deadline">
                   <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
@@ -615,11 +678,20 @@ const ReviewFeedback = ({ projectId, projectName }) => {
                         </div>
                         <div className="review-meta">
                           <div className="review-date">{formatDate(review.date)}</div>
-                          <div className={`review-status ${review.status}`}>
-                            {review.status === 'approved' && '已核准'}
-                            {review.status === 'rejected' && '未核准'}
-                            {review.status === 'in-progress' && '審核中'}
+                          <div className={`review-status ${review.decision}`}>
+                            {review.decision === 'approved' && '已核准'}
+                            {review.decision === 'rejected' && '未核准'}
+                            {review.decision === 'in-progress' && '審核中'}
                           </div>
+                        </div>
+                        <div className="review-actions">
+                          <button 
+                            className="btn btn-sm btn-icon btn-icon-danger"
+                            title="刪除此審核記錄"
+                            onClick={() => handleDeleteReview(review.id)}
+                          >
+                            <FontAwesomeIcon icon={faTrashAlt} />
+                          </button>
                         </div>
                       </div>
                       
@@ -675,6 +747,40 @@ const ReviewFeedback = ({ projectId, projectName }) => {
                   </select>
                 </div>
                 
+                <div className="input-group mb-2">
+                  <select 
+                    className="form-select"
+                    value={selectedIndicatorId}
+                    onChange={(e) => {
+                      setSelectedIndicatorId(e.target.value);
+                      setSelectedDocumentId(''); // 當指標變更時，重置文件選項
+                    }}
+                  >
+                    <option value="">選擇相關指標 (可選)</option>
+                    {requirements && requirements.map(indicator => (
+                      <option key={indicator.id} value={indicator.id}>
+                        {indicator.text}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select 
+                    className="form-select"
+                    value={selectedDocumentId}
+                    onChange={(e) => setSelectedDocumentId(e.target.value)}
+                    disabled={!selectedIndicatorId}
+                  >
+                    <option value="">選擇相關文件 (可選)</option>
+                    {selectedIndicatorId && requirements && requirements
+                      .find(indicator => String(indicator.id) === String(selectedIndicatorId))
+                      ?.documents.map(doc => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.text}
+                        </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="deadline-inputs">
                   <div className="input-group mb-1">
                     <span className="input-group-text">

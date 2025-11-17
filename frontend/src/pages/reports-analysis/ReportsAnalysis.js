@@ -75,6 +75,9 @@ const ReportsAnalysis = () => {
    */
   const [activeTab, setActiveTab] = useState('綜合報表');
 
+  // 新增一個 state 來存放從後端獲取的缺失項目
+  const [issues, setIssues] = useState([]);
+
   /**
    * 圖表引用
    * @type {React.MutableRefObject<HTMLCanvasElement>} 圖表Canvas元素引用
@@ -105,8 +108,7 @@ const ReportsAnalysis = () => {
     certType: true,
     severity: true,
     discoveryDate: true,
-    status: true,
-    progress: true
+    status: true
   });
   const [exportFormat, setExportFormat] = useState('excel');
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
@@ -315,7 +317,7 @@ const ReportsAnalysis = () => {
   }, []);
 
   /**
-   * 缺失項目數據結構
+   * 缺失項目數據結構 (現在會從後端獲取，這裡的註解留作參考)
    * @type {Array<{
    *   name: string,         // 問題名稱
    *   certType: string,     // 認證類型
@@ -325,48 +327,48 @@ const ReportsAnalysis = () => {
    *   progress: number      // 完成進度
    * }>}
    */
-  const issues = [
-    {
-      name: '工時記錄不完整',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-08-15',
-      status: 'in-progress',
-      progress: 75
-    },
-    {
-      name: '環境管理記錄缺漏',
-      certType: 'ISO 14001',
-      severity: 'medium',
-      discoveryDate: '2023-07-20',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '職業安全培訓未定期執行',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-09-05',
-      status: 'in-progress',
-      progress: 40
-    },
-    {
-      name: '品質控制程序未文件化',
-      certType: 'ISO 9001',
-      severity: 'medium',
-      discoveryDate: '2023-08-02',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '廢棄物處理不符合規範',
-      certType: 'ISO 14001',
-      severity: 'high',
-      discoveryDate: '2023-09-10',
-      status: 'in-progress',
-      progress: 20
-    }
-  ];
+  // const issues = [
+  //   {
+  //     name: '工時記錄不完整',
+  //     certType: 'SMETA',
+  //     severity: 'high',
+  //     discoveryDate: '2023-08-15',
+  //     status: 'in-progress',
+  //     progress: 75
+  //   },
+  //   {
+  //     name: '環境管理記錄缺漏',
+  //     certType: 'ISO 14001',
+  //     severity: 'medium',
+  //     discoveryDate: '2023-07-20',
+  //     status: 'completed',
+  //     progress: 100
+  //   },
+  //   {
+  //     name: '職業安全培訓未定期執行',
+  //     certType: 'SMETA',
+  //     severity: 'high',
+  //     discoveryDate: '2023-09-05',
+  //     status: 'in-progress',
+  //     progress: 40
+  //   },
+  //   {
+  //     name: '品質控制程序未文件化',
+  //     certType: 'ISO 9001',
+  //     severity: 'medium',
+  //     discoveryDate: '2023-08-02',
+  //     status: 'completed',
+  //     progress: 100
+  //   },
+  //   {
+  //     name: '廢棄物處理不符合規範',
+  //     certType: 'ISO 14001',
+  //     severity: 'high',
+  //     discoveryDate: '2023-09-10',
+  //     status: 'in-progress',
+  //     progress: 20
+  //   }
+  // ];
 
   /**
    * 已完成項目數據結構
@@ -399,6 +401,20 @@ const ReportsAnalysis = () => {
       date: '2023-09-01'
     }
   ];
+
+  /**
+   * 格式化日期為 YYYY/MM/DD
+   * @param {string} dateString - 日期字串 (YYYY-MM-DD)
+   * @returns {string} 格式化後的日期
+   */
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
 
   /**
    * 渲染嚴重程度標籤
@@ -443,11 +459,13 @@ const ReportsAnalysis = () => {
     
     switch (status) {
       case 'in-progress':
+      case '進行中':
         badgeClass = 'status-badge in-progress';
         icon = faPlayCircle;
         text = '進行中';
         break;
       case 'completed':
+      case '已解決':
         badgeClass = 'status-badge completed';
         icon = faCheckCircle;
         text = '已解決';
@@ -512,22 +530,22 @@ const ReportsAnalysis = () => {
       const matchSeverity = !selectedSeverity || issue.severity === selectedSeverity;
       const matchStatus = !selectedStatus || issue.status === selectedStatus;
       
-      // 搜索
+      // 搜索 (更新 issue 的 name 為 issueName)
       const matchSearch = !searchQuery || 
-        issue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.issueName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.certType.toLowerCase().includes(searchQuery.toLowerCase());
       
       return matchType && matchFrom && matchTo && matchSeverity && matchStatus && matchSearch;
     });
 
-    // 排序
+    // 排序 (更新 issue 的 name 為 issueName)
     filtered.sort((a, b) => {
       let aValue, bValue;
       
       switch (sortBy) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = a.issueName.toLowerCase();
+          bValue = b.issueName.toLowerCase();
           break;
         case 'certType':
           aValue = a.certType.toLowerCase();
@@ -538,9 +556,9 @@ const ReportsAnalysis = () => {
           aValue = severityOrder[a.severity] || 0;
           bValue = severityOrder[b.severity] || 0;
           break;
-        case 'progress':
-          aValue = a.progress;
-          bValue = b.progress;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
           break;
         case 'date':
         default:
@@ -562,12 +580,11 @@ const ReportsAnalysis = () => {
   // 數據導出功能
   const exportData = useCallback((format = 'excel') => {
     const data = filteredAndSortedIssues.map(issue => ({
-      '問題名稱': issue.name,
+      '問題名稱': issue.issueName, // 更新 issue 的 name 為 issueName
       '認證類型': issue.certType,
-      '嚴重程度': issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低',
-      '發現日期': issue.discoveryDate,
-      '狀態': issue.status === 'completed' ? '已解決' : issue.status === 'in-progress' ? '進行中' : '計畫中',
-      '完成進度': `${issue.progress}%`
+      '嚴重程度': issue.severity, // 後端已處理好，直接使用
+      '發現日期': formatDate(issue.discoveryDate),
+      '狀態': issue.status // 後端已處理好，直接使用
     }));
 
     if (format === 'excel') {
@@ -636,6 +653,25 @@ const ReportsAnalysis = () => {
     setSortBy('date');
     setSortOrder('desc');
   }, []);
+
+  // 使用 useEffect 從後端 API 獲取缺失項目資料
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/reports/deficiency-items');
+        if (!response.ok) {
+          throw new Error('無法獲取缺失項目資料');
+        }
+        const data = await response.json();
+        setIssues(data);
+      } catch (error) {
+        console.error('獲取缺失項目失敗:', error);
+        // 可以在此處設定錯誤狀態，並在 UI 上顯示錯誤訊息
+      }
+    };
+
+    fetchIssues();
+  }, []); // 空依賴陣列，確保只在元件首次渲染時執行一次
 
   // 1. 新增年度趨勢資料（假資料，可根據 filterCertType、filterDateFrom、filterDateTo 篩選）
   const trendData = [
@@ -1339,7 +1375,7 @@ const ReportsAnalysis = () => {
                   <option value="name">問題名稱</option>
                   <option value="certType">認證類型</option>
                   <option value="severity">嚴重程度</option>
-                  <option value="progress">完成進度</option>
+                  <option value="status">狀態</option>
                 </select>
                 <button 
                   className="btn btn-outline-secondary btn-sm ms-1"
@@ -1361,14 +1397,13 @@ const ReportsAnalysis = () => {
                     {visibleColumns.severity && <th>嚴重程度</th>}
                     {visibleColumns.discoveryDate && <th>發現日期</th>}
                     {visibleColumns.status && <th>狀態</th>}
-                    {visibleColumns.progress && <th>進度</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAndSortedIssues.map((issue, idx) => (
                     <tr key={idx} className="table-row-hover">
                       {visibleColumns.name && (
-                        <td className="fw-medium">{issue.name}</td>
+                        <td className="fw-medium">{issue.issueName}</td>
                       )}
                       {visibleColumns.certType && (
                         <td>
@@ -1379,13 +1414,10 @@ const ReportsAnalysis = () => {
                         <td>{renderSeverityBadge(issue.severity)}</td>
                       )}
                       {visibleColumns.discoveryDate && (
-                        <td className="text-muted">{issue.discoveryDate}</td>
+                        <td className="text-muted">{formatDate(issue.discoveryDate)}</td>
                       )}
                       {visibleColumns.status && (
                         <td>{renderStatusBadge(issue.status)}</td>
-                      )}
-                      {visibleColumns.progress && (
-                        <td>{renderProgressBar(issue.progress)}</td>
                       )}
                     </tr>
                   ))}

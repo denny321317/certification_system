@@ -34,7 +34,7 @@ import './CertificationProjectDetail.css';
 import ReviewFeedback from '../../components/certification-projects/ReviewFeedback';
 
 import axios from "axios";
-
+import Swal from 'sweetalert2';
 /**
  * 認證項目詳情頁面
  * @returns {JSX.Element} 認證項目詳情頁面
@@ -283,7 +283,46 @@ const CertificationProjectDetail = ({ canWrite }) => {
     }
   }, [selectedTemplate, projectDetail]);
 
-  const handleRequirementChange = (indicatorId, documentId = null) => {
+  const handleRequirementChange = async (indicatorId, documentId = null) => {
+    const indicator = requirements.find(ind => ind.id === indicatorId);
+    if (!indicator) return;
+
+    try {
+      // 取得要檢查的檔案名稱
+      let fileNameToCheck;
+      if (documentId) {
+        const doc = indicator.documents.find(d => d.id === documentId);
+        if (!doc) return;
+        fileNameToCheck = doc.text;
+      } else {
+        // 整個 indicator toggle 時，假設用 indicator.text 對應檔案名稱
+        fileNameToCheck = indicator.text;
+      }
+
+      // 呼叫後端檢查檔案是否存在
+      const response = await fetch(
+        `http://localhost:8000/api/documents/project/${projectId}/has-file-by-name?name=${encodeURIComponent(fileNameToCheck)}`
+      );
+      const data = await response.json();
+
+      // 如果資料庫沒有對應文件
+      if (!data.exists) {
+        const result = await Swal.fire({
+          title: "未上傳該文件",
+          text: "確定要完成此項目嗎？",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "確定",
+          cancelButtonText: "取消",
+        });
+        if (!result.isConfirmed) return; // 使用者取消，不更新狀態
+      }
+    } catch (error) {
+      console.error("檢查文件時發生錯誤", error);
+      return;
+    }
+
+    // 通過檢查 → 更新前端狀態
     setRequirements(prevRequirements =>
       prevRequirements.map(indicator => {
         if (indicator.id === indicatorId) {
@@ -291,26 +330,27 @@ const CertificationProjectDetail = ({ canWrite }) => {
           let newIndicatorCompleted;
 
           if (documentId) {
-            // Toggle a single document
+            // Toggle 單一文件
             newDocuments = indicator.documents.map(doc =>
               doc.id === documentId ? { ...doc, completed: !doc.completed } : doc
             );
-            // After toggling a doc, recalculate indicator status
             newIndicatorCompleted = newDocuments.every(doc => doc.completed);
           } else {
-            // Toggle an entire indicator (and all its documents)
+            // Toggle 整個 indicator
             newIndicatorCompleted = !indicator.completed;
             newDocuments = indicator.documents.map(doc => ({
               ...doc,
               completed: newIndicatorCompleted,
             }));
           }
+
           return { ...indicator, documents: newDocuments, completed: newIndicatorCompleted };
         }
         return indicator;
       })
     );
   };
+
 
   const allDocuments = Array.isArray(requirements) ? requirements.flatMap(indicator => indicator.documents) : [];
   const completedDocuments = allDocuments.filter(doc => doc.completed);
@@ -363,6 +403,43 @@ const CertificationProjectDetail = ({ canWrite }) => {
   const [history, setHistory] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [userList, setUserList] = useState([]);
+
+  /**
+   * 格式化操作歷史的日期時間
+   * @param {Array|string} dt - 後端傳來的日期時間
+   * @returns {string} 格式化後的日期時間字串
+   */
+  const formatHistoryDate = (dt) => {
+    if (!dt) return 'N/A';
+    try {
+      // 處理後端直接傳來的 LocalDateTime 陣列格式 [YYYY, MM, DD, HH, MM, SS]
+      if (Array.isArray(dt)) {
+        const [year, month, day, hour, minute] = dt;
+        // 月份需要減 1，因為 JavaScript 的月份是 0-11
+        const date = new Date(year, month - 1, day, hour, minute);
+        return date.toLocaleString('zh-TW', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).replace(/\//g, '/');
+      }
+      // 處理標準 ISO 字串格式
+      return new Date(dt).toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '/');
+    } catch (e) {
+      console.error("日期格式化失敗:", dt, e);
+      return '無效日期';
+    }
+  };
 
   const fetchTeamMembers = useCallback(async () => {
     try {
@@ -2001,7 +2078,11 @@ const CertificationProjectDetail = ({ canWrite }) => {
       case 'reviews':
         return (
           <div className="project-reviews">
-            <ReviewFeedback projectId={projectDetail.id} projectName={projectDetail.name} />
+            <ReviewFeedback 
+              projectId={projectDetail.id} 
+              projectName={projectDetail.name} 
+              requirements={requirements}
+            />
           </div>
         );
       
@@ -2014,13 +2095,7 @@ const CertificationProjectDetail = ({ canWrite }) => {
                 history.map(item => (
                   <div className="history-item" key={item.id}>
                     <div className="history-date">
-                      {new Date(item.operationTime).toLocaleString('zh-TW', { 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                      {formatHistoryDate(item.operationTime)}
                     </div>
                     <div className="history-content">
                       <div className="history-title">{item.operator} {item.operationType.replace(/_/g, ' ').toLowerCase()}</div>

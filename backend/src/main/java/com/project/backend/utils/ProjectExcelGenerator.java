@@ -106,7 +106,7 @@ public class ProjectExcelGenerator {
 
                 Row statusRow = sheet.createRow(rowIdx++);
                 statusRow.createCell(0).setCellValue("狀態");
-                statusRow.createCell(1).setCellValue(review.getStatus());
+                statusRow.createCell(1).setCellValue(review.getDecision());
 
                 Row commentRow = sheet.createRow(rowIdx++);
                 commentRow.createCell(0).setCellValue("評論");
@@ -114,7 +114,7 @@ public class ProjectExcelGenerator {
 
                 if (review.getIssues() != null && !review.getIssues().isEmpty()) {
                     Row issueHeader = sheet.createRow(rowIdx++);
-                    String[] issueCols = {"議題", "嚴重程度", "狀態", "截止日"};
+                    String[] issueCols = {"議題", "嚴重程度", "狀態", "截止日", "關聯指標", "關聯文件"};
                     for (int i = 0; i < issueCols.length; i++) {
                         Cell cell = issueHeader.createCell(i);
                         cell.setCellValue(issueCols[i]);
@@ -125,7 +125,9 @@ public class ProjectExcelGenerator {
                         row.createCell(0).setCellValue(issue.getTitle());
                         row.createCell(1).setCellValue(issue.getSeverity());
                         row.createCell(2).setCellValue(issue.getStatus());
-                        row.createCell(3).setCellValue(issue.getDeadline().toLocalDate().toString());
+                        row.createCell(3).setCellValue(issue.getDeadline() != null ? issue.getDeadline().toLocalDate().toString() : "");
+                        row.createCell(4).setCellValue(issue.getIndicatorText());
+                        row.createCell(5).setCellValue(issue.getDocumentText());
                     }
                 }
                 rowIdx++;
