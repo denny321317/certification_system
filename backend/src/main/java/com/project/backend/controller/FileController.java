@@ -9,10 +9,12 @@ import org.springframework.web.multipart.MultipartFile;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
+import com.project.backend.model.User;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.service.NotificationSettingsService;
+import com.project.backend.service.AuthService;
 import com.project.backend.service.NotificationService;
 import com.project.backend.service.OperationHistoryService;
 
@@ -44,19 +46,16 @@ public class FileController {
 
     @Autowired
     private FileRepository fileRepository;
-
     @Autowired
     private ProjectRepository projectRepository;
-
     @Autowired
     private OperationHistoryService operationHistoryService;
-
     @Autowired
     private NotificationSettingsService notificationSettingsService;
-
     @Autowired
     private UserRepository userRepository;
-
+    @Autowired
+    private AuthService authService;
     @Autowired
     private NotificationService notificationService;
 
@@ -71,9 +70,16 @@ public class FileController {
             @PathVariable("projectId") Long projectId,
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("category") String category,
-            @RequestParam("description") String description
+            @RequestParam("description") String description,
+            @RequestHeader("X-User-Email") String userEmail
     ) {
         try {
+            Optional<User> userOpt = authService.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("success", false, "error", "使用者未登入或不存在"));
+            }
+            User loginUser = userOpt.get();
             Optional<Project> optionalProject = projectRepository.findById(projectId);
             if (optionalProject.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -121,7 +127,7 @@ public class FileController {
                 fileEntity.setOriginalFilename(displayOriginalName);
                 fileEntity.setFileType(extension);
                 fileEntity.setUploadTime(LocalDateTime.now());
-                fileEntity.setUploadedBy("admin"); // TODO: 實際登入使用者
+                fileEntity.setUploadedBy(loginUser.getName()); // TODO: 實際登入使用者
                 fileEntity.setSizeInBytes(file.getSize());
                 fileEntity.setStatus("pending");
                 fileEntity.setCategory(category);
@@ -132,7 +138,7 @@ public class FileController {
                 fileRepository.save(fileEntity);
 
                 // 操作紀錄
-                String operator = "admin";
+                String operator = loginUser.getName();
                 String details = String.format("上傳了文件 '%s' 到類別 '%s'", displayOriginalName, category);
                 operationHistoryService.recordHistory(projectId, operator, "UPLOAD_DOCUMENT", details);
 
@@ -300,8 +306,17 @@ public class FileController {
     // 刪除檔案
     @DeleteMapping("/delete/{id}")
     @Transactional
-    public ResponseEntity<?> deleteFile(@PathVariable Long id) {
+    public ResponseEntity<?> deleteFile(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Email") String userEmail
+    ) {
         try {
+            Optional<User> userOpt = authService.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("success", false, "error", "使用者未登入或不存在"));
+            }
+            User loginUser = userOpt.get();
             // 先確認檔案是否存在
             Optional<FileEntity> optional = fileRepository.findById(id);
             if (optional.isEmpty()) {
@@ -324,7 +339,7 @@ public class FileController {
             // ===== 操作紀錄 =====
             if (project != null) {
                 Long projectId = project.getId();
-                String operator = "admin"; // TODO: 換成登入使用者
+                String operator = loginUser.getName();  // TODO: 換成登入使用者
                 String details = String.format(
                     "刪除了文件 '%s' (類別 '%s')，專案：'%s'",
                     file.getOriginalFilename(),

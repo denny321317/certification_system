@@ -51,6 +51,7 @@ const Login = () => {
       const result = await login(email, password);
       
       if (result.success) {
+        localStorage.setItem("userEmail", result.user.email);
         navigate('/dashboard', { replace: true });
       } else {
         if (result.error === 'password_change_required') {
