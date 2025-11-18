@@ -64,13 +64,13 @@ public class SupplierService {
 
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<SupplierDTO> getAllSuppliers() {
         return supplierRepository.findAll().stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
-    @Transactional(readOnly = true)
+    @Transactional
     public Supplier createSupplier(SupplierDTO dto) {
         Supplier supplier = new Supplier();
         supplier.setName(dto.getName());
