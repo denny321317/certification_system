@@ -19,6 +19,11 @@ public class SupplierDTO {
     private CertificateStatus certificateStatus;
     private RiskProfile riskProfile;
     private List<ProjectDetailDTO> projects;
+    @JsonProperty("commonCerts")
+    private List<String> commonCerts;
+
+    @JsonProperty("otherCertification")
+    private String otherCertification;
 
     // Getters and Setters
     public Long getId() { return id; }
