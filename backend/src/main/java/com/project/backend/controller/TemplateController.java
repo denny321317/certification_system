@@ -23,6 +23,12 @@ public class TemplateController {
         return ResponseEntity.ok(templates);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CertificationTemplateDTO> getTemplateById(@PathVariable String id) {
+        CertificationTemplateDTO template = templateService.getTemplateById(id);
+        return ResponseEntity.ok(template);
+    }
+
     @PostMapping
     public ResponseEntity<CertificationTemplateDTO> createTemplate(@RequestBody CertificationTemplateRequestDTO createDTO) {
         CertificationTemplateDTO createdTemplate = templateService.createTemplate(createDTO);

@@ -33,7 +33,7 @@ public class ProjectExcelGenerator {
             rowIdx = writeKeyValue(sheet, rowIdx, "結束日期", project.getEndDate());
             rowIdx = writeKeyValue(sheet, rowIdx, "內部審查", project.getInternalReviewDate());
             rowIdx = writeKeyValue(sheet, rowIdx, "外部審查", project.getExternalReviewDate());
-            rowIdx = writeKeyValue(sheet, rowIdx, "負責人", project.getManager());
+            rowIdx = writeKeyValue(sheet, rowIdx, "負責人", project.getManagerId());
             rowIdx = writeKeyValue(sheet, rowIdx, "機構", project.getAgency());
             rowIdx = writeKeyValue(sheet, rowIdx, "進度", project.getProgress() + "%");
             rowIdx = writeKeyValue(sheet, rowIdx, "說明", project.getDescription());

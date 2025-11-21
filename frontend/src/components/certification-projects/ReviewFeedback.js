@@ -136,41 +136,72 @@ const ReviewFeedback = ({ projectId, projectName }) => {
         }
         const data = await response.json();
         setReviewData(data);
-
-        // 設置待調整問題清單
-        let allIssues = [];
-        if (data && data.reviews) {
-            data.reviews.forEach(review => {
-                if (review.issues && review.issues.length > 0) {
-                    review.issues.forEach(issue => {
-                        if (issue.status === 'open') {
-                            allIssues.push({
-                                ...issue,
-                                reviewer: review.reviewer,
-                                reviewerDepartment: review.reviewerDepartment,
-                                reviewDate: review.date,
-                                completed: false
-                            });
-                        }
-                    });
-                }
-            });
-        }
-        setAdjustmentIssues(allIssues);
-
       } catch (error) {
         console.error("獲取審核數據失敗:", error);
-        // 可以設置錯誤狀態來顯示錯誤訊息
-        setReviewData({ reviews: [] }); // 發生錯誤時，清空舊資料避免顯示錯誤資訊
+        setReviewData({ reviews: [] });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // 當 employeeView 為 true 時，獲取所有待辦事項
+    const fetchAllAdjustmentIssues = async () => {
+      setLoading(true);
+      try {
+        const [internalResponse, externalResponse] = await Promise.all([
+          fetch(`http://localhost:8000/api/projects/${projectId}/reviews?type=internal`),
+          fetch(`http://localhost:8000/api/projects/${projectId}/reviews?type=external`)
+        ]);
+
+        if (!internalResponse.ok || !externalResponse.ok) {
+          throw new Error('無法獲取待調整事項');
+        }
+
+        const internalData = await internalResponse.json();
+        const externalData = await externalResponse.json();
+
+        const processIssues = (data, type) => {
+          let issues = [];
+          if (data && data.reviews) {
+            data.reviews.forEach(review => {
+              if (review.issues && review.issues.length > 0) {
+                review.issues.forEach(issue => {
+                  issues.push({
+                    ...issue,
+                    reviewer: review.reviewer,
+                    reviewerDepartment: review.reviewerDepartment,
+                    reviewDate: review.date,
+                    completed: issue.status === 'closed', // 根據後端狀態設定是否勾選
+                    source: type // 添加來源標記
+                  });
+                });
+              }
+            });
+          }
+          return issues;
+        };
+
+        const internalIssues = processIssues(internalData, 'internal');
+        const externalIssues = processIssues(externalData, 'external');
+        
+        setAdjustmentIssues([...internalIssues, ...externalIssues]);
+
+      } catch (error) {
+        console.error("獲取待調整事項失敗:", error);
+        setAdjustmentIssues([]);
       } finally {
         setLoading(false);
       }
     };
 
     if (projectId) {
-      fetchReviewData();
+      if (employeeView) {
+        fetchAllAdjustmentIssues();
+      } else {
+        fetchReviewData();
+      }
     }
-  }, [activeTab, projectId]);
+  }, [activeTab, projectId, employeeView]);
 
   /**
    * 處理審核標籤切換
@@ -222,6 +253,12 @@ const ReviewFeedback = ({ projectId, projectName }) => {
       return;
     }
     
+    // 驗證邏輯：如果存在問題，則不允許審核通過
+    if (reviewDecision === 'approved' && newIssues.length > 0) {
+      alert('尚有未解決的問題，無法核准通過。');
+      return;
+    }
+
     setSubmitting(true);
 
     const feedbackData = {
@@ -257,14 +294,11 @@ const ReviewFeedback = ({ projectId, projectName }) => {
 
       const newReview = await response.json();
 
-      // 提交成功後，樂觀更新前端狀態
-      setReviewData(prevData => {
-          const updatedReviews = prevData && prevData.reviews ? [...prevData.reviews, newReview] : [newReview];
-          return {
-            ...prevData,
-            reviews: updatedReviews
-          }
-      });
+      // 提交成功後，直接使用後端返回的數據更新狀態，確保ID和Date的正確性
+      setReviewData(prevData => ({
+        ...prevData,
+        reviews: [...(prevData?.reviews || []), newReview]
+      }));
 
       // 清空表單
       setNewFeedback('');
@@ -282,21 +316,43 @@ const ReviewFeedback = ({ projectId, projectName }) => {
 
   /**
    * 切換問題完成狀態
-   * @param {number} index - 問題索引
+   * @param {number} issueId - 問題ID
    */
-  const handleToggleIssueCompletion = (index) => {
-    const updatedIssues = [...adjustmentIssues];
-    updatedIssues[index].completed = !updatedIssues[index].completed;
-    setAdjustmentIssues(updatedIssues);
+  const handleToggleIssueCompletion = (issueId) => {
+    setAdjustmentIssues(prevIssues =>
+      prevIssues.map(issue =>
+        issue.id === issueId ? { ...issue, completed: !issue.completed } : issue
+      )
+    );
   };
 
   /**
    * 提交問題完成狀態
    */
-  const handleSubmitCompletedIssues = () => {
-    // 這裡應該有API調用來保存完成狀態
-    console.log("儲存完成狀態:", adjustmentIssues);
-    alert("已儲存調整進度");
+  const handleSubmitCompletedIssues = async () => {
+    const issuesToUpdate = adjustmentIssues.map(issue => ({
+      id: issue.id,
+      completed: issue.completed
+    }));
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/projects/${projectId}/issues/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(issuesToUpdate),
+      });
+
+      if (!response.ok) {
+        throw new Error('儲存調整進度失敗');
+      }
+
+      alert("已儲存調整進度");
+    } catch (error) {
+      console.error("儲存調整進度失敗:", error);
+      alert(error.message);
+    }
   };
 
   /**
@@ -325,8 +381,22 @@ const ReviewFeedback = ({ projectId, projectName }) => {
    */
   const formatDate = (dateString) => {
     if (!dateString) return '未設定';
+
+    let date;
+    if (Array.isArray(dateString)) {
+      // 處理 [年, 月, 日, 時, 分] 格式
+      const [year, month, day] = dateString;
+      // JavaScript 的月份是 0-11，所以需要 month - 1
+      date = new Date(year, month - 1, day);
+    } else {
+      date = new Date(dateString);
+    }
+
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return '無效日期';
+    }
     
-    const date = new Date(dateString);
     return date.toLocaleDateString('zh-TW', {
       year: 'numeric',
       month: 'long',
@@ -390,52 +460,71 @@ const ReviewFeedback = ({ projectId, projectName }) => {
         </div>
       );
     }
+
+    const internalIssues = adjustmentIssues.filter(issue => issue.source === 'internal');
+    const externalIssues = adjustmentIssues.filter(issue => issue.source === 'external');
+
+    const renderIssueList = (issues) => {
+      return issues.map((issue, index) => (
+        <div key={issue.id} className="adjustment-item">
+          <div className="adjustment-header">
+            <div className="form-check">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id={`issue-${issue.id}`}
+                checked={issue.completed}
+                onChange={() => handleToggleIssueCompletion(issue.id)}
+              />
+              <label className="form-check-label" htmlFor={`issue-${issue.id}`}>
+                <span className={`issue-title ${issue.completed ? 'completed' : ''}`}>
+                  {issue.title}
+                  <span className={`issue-badge issue-${issue.severity}`}>
+                    {issue.severity === 'high' && '重要'}
+                    {issue.severity === 'medium' && '一般'}
+                    {issue.severity === 'low' && '輕微'}
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div className="adjustment-details">
+            <div className="adjustment-meta">
+              <span className="reviewer-info">審核人: {issue.reviewer} ({issue.reviewerDepartment})</span>
+              <span className="review-date">審核日期: {formatDate(issue.reviewDate)}</span>
+              {issue.deadline && (
+                <span className={`deadline-info deadline-${getDeadlineStatus(issue.deadline)}`}>
+                  <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
+                  改善期限: {formatDateTime(issue.deadline, issue.deadlineTime)}
+                </span>
+              )}
+            </div>
+            {issue.completed && (
+              <div className="completion-status">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-success me-1" />
+                已完成調整
+              </div>
+            )}
+          </div>
+        </div>
+      ));
+    };
     
     return (
       <div className="adjustment-checklist">
-        {adjustmentIssues.map((issue, index) => (
-          <div key={index} className="adjustment-item">
-            <div className="adjustment-header">
-              <div className="form-check">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id={`issue-${index}`}
-                  checked={issue.completed}
-                  onChange={() => handleToggleIssueCompletion(index)}
-                />
-                <label className="form-check-label" htmlFor={`issue-${index}`}>
-                  <span className={`issue-title ${issue.completed ? 'completed' : ''}`}>
-                    {issue.title}
-                    <span className={`issue-badge issue-${issue.severity}`}>
-                      {issue.severity === 'high' && '重要'}
-                      {issue.severity === 'medium' && '一般'}
-                      {issue.severity === 'low' && '輕微'}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </div>
-            <div className="adjustment-details">
-              <div className="adjustment-meta">
-                <span className="reviewer-info">審核人: {issue.reviewer} ({issue.reviewerDepartment})</span>
-                <span className="review-date">審核日期: {issue.reviewDate}</span>
-                {issue.deadline && (
-                  <span className={`deadline-info deadline-${getDeadlineStatus(issue.deadline)}`}>
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                    改善期限: {formatDateTime(issue.deadline, issue.deadlineTime)}
-                  </span>
-                )}
-              </div>
-              {issue.completed && (
-                <div className="completion-status">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-success me-1" />
-                  已完成調整
-                </div>
-              )}
-            </div>
+        {internalIssues.length > 0 && (
+          <div className="issue-group">
+            <h6 className="issue-group-title">內部團隊審核問題</h6>
+            {renderIssueList(internalIssues)}
           </div>
-        ))}
+        )}
+
+        {externalIssues.length > 0 && (
+          <div className="issue-group">
+            <h6 className="issue-group-title">外部認證機構審核問題</h6>
+            {renderIssueList(externalIssues)}
+          </div>
+        )}
         
         <button 
           className="btn btn-primary mt-3"
@@ -525,7 +614,7 @@ const ReviewFeedback = ({ projectId, projectName }) => {
                           <div className="reviewer-dept">{review.reviewerDepartment}</div>
                         </div>
                         <div className="review-meta">
-                          <div className="review-date">{review.date}</div>
+                          <div className="review-date">{formatDate(review.date)}</div>
                           <div className={`review-status ${review.status}`}>
                             {review.status === 'approved' && '已核准'}
                             {review.status === 'rejected' && '未核准'}

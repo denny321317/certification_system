@@ -24,8 +24,9 @@
  */
 
 import React, { useContext, useState } from 'react';
+import { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { 
   faGear, faShieldHalved, faBell, faCloudArrowUp, 
   faCode, faBook, faCheckCircle, faClipboard, faKey, faTrash
@@ -37,18 +38,43 @@ import './SystemSettings.css';
  */
 import { AuthContext } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom';
-
+import { useSettings } from '../../contexts/SettingsContext'
+import { Link } from 'react-router-dom';
 
 /**
  * 系統設置組件
  * @returns {JSX.Element} 系統設置界面
  */
 const SystemSettings = () => {
+
+  const { currentUser } = useContext(AuthContext);
+
   /**
    * 當前選中的設置標籤
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
    */
   const [activeTab, setActiveTab] = useState('general');
+
+  const {settings, loading: settingsLoading, refreshSettings } = useSettings();
+
+  /**
+   * 處理基本設定
+   */
+  const [generalSettings, setGeneralSettings] = useState(settings);
+  const [generalLoading, setGeneralLoading] = useState(false);
+
+  /**
+   * 處理通知設定
+   */
+  const [notificationSettings, setNotificationSettings] = useState({
+    certificationExpireNotice: true,
+    daysBeforeExpirarySendNotice: 90,
+    newProjectNotice: true,
+    documentUpdateNotice: true,
+    missionAssignmentNotice: true,
+    commentAndReplyNotice: true
+  });
+  const [notificationLoading, setNotificationLoading] = useState(false);
 
   /**
    * 當前頁碼（用於稽核日誌分頁）
@@ -64,6 +90,111 @@ const SystemSettings = () => {
     setCurrentPage(newPage);
   };
 
+    /**
+   * 處理安全設定
+   */
+  const [securitySettings, setSecuritySettings] = useState({
+    requireMinLength: true,
+    minLength: 8,
+    requireUpperLowerCase: true,
+    requireNumber: true,
+    requireSpecialChar: true,
+    enableTwoFactor: false,
+    maxLoginAttempts: 5,
+    sessionTimeoutMinuites: 30
+  });
+  const [securityLoading, setSecurityLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      setSecurityLoading(true);
+      fetch(`http://localhost:8000/api/security-settings/getSettings`)
+        .then(res => res.json())
+        .then(data => {
+          setSecuritySettings(data);
+          setSecurityLoading(false);
+        })
+        .catch(() => setSecurityLoading(false));
+    } else if (activeTab === 'general') {
+      setGeneralLoading(true);
+      fetch(`http://localhost:8000/api/general-settings`)
+        .then(res => res.json())
+        .then(data => {
+          setGeneralSettings(data);
+          setGeneralLoading(false);
+        })
+        .catch(() => setGeneralLoading(false));
+    } else if (activeTab === 'notification') {
+      setNotificationLoading(true);
+      fetch(`http://localhost:8000/api/notification-settings/getSettings`)
+        .then(res => res.json())
+        .then(data => {
+          setNotificationSettings(data);
+          setNotificationLoading(false);
+        })
+        .catch(() => setNotificationLoading(false));
+    }
+  }, [activeTab])
+
+  const handleSecuritySave = (e) => {
+    e.preventDefault();
+    setSecurityLoading(true);
+    fetch(`http://localhost:8000/api/security-settings/putSettings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(securitySettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setSecuritySettings(data);
+        setSecurityLoading(false);
+        alert('安全設定已儲存');
+      })
+      .catch(() => {
+        setSecurityLoading(false);
+        alert('儲存失敗')
+      });
+  };
+
+  const handleGeneralSave = (e) => {
+    e.preventDefault();
+    setGeneralLoading(true);
+    fetch(`http://localhost:8000/api/general-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json'},
+      body: JSON.stringify(generalSettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        refreshSettings();
+        setGeneralLoading(false);
+        alert('基本設定已儲存');
+      })
+      .catch(() => {
+        setGeneralLoading(false);
+        alert('儲存失敗');
+      });
+  };
+
+  const handleNotificationSave = (e) => {
+    e.preventDefault();
+    setNotificationLoading(true);
+    fetch(`http://localhost:8000/api/notification-settings/putSettings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notificationSettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        setNotificationSettings(data);
+        setNotificationLoading(false);
+        alert('通知設定已儲存');
+      })
+      .catch(() => {
+        setNotificationLoading(false);
+        alert('儲存失敗')
+      });
+  }
 
 
   /**
@@ -113,6 +244,10 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />
                   備份與還原
                 </div>
+                
+                {/* TODO: 還沒做好的功能 */}
+                {/*
+                
                 <div 
                   className={`settings-tab ${activeTab === 'api' ? 'active' : ''}`} 
                   onClick={() => setActiveTab('api')}
@@ -127,6 +262,7 @@ const SystemSettings = () => {
                   <FontAwesomeIcon icon={faBook} className="me-2" />
                   稽核日誌
                 </div>
+                */}
               </div>
             </div>
           </div>
@@ -138,37 +274,57 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">基本設定</h5>
-                <form>
+                <form onSubmit={handleGeneralSave}>
                   <div className="mb-4">
                     <label className="form-label">系統名稱</label>
-                    <input type="text" className="form-control" defaultValue="企業認證資料整合系統" />
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      defaultValue="企業認證資料整合系統"
+                      value={generalSettings.systemName}
+                      onChange={e => setGeneralSettings(s => ({ ...s, systemName: e.target.value}))}
+                    />
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">系統語言</label>
-                    <select className="form-select">
-                      <option selected>繁體中文</option>
-                      <option>English</option>
-                      <option>日本語</option>
+                    <label className="form-label">系統語言 (目前僅繁體中文可用)</label>
+                    <select 
+                      className="form-select"
+                      value={generalSettings.systemLanguage}
+                      onChange={e => setGeneralSettings(s => ({ ...s, systemLanguage: e.target.value}))}
+                    >  
+                      <option value="zh-tw">繁體中文</option>  {/* 本系統預設使用繁體中文 */}
+                      <option value="en-us">English</option>
+                      <option value="jp">日本語</option>
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">時區設定</label>
-                    <select className="form-select">
-                      <option selected>(GMT+08:00) 台北</option>
-                      <option>(GMT+09:00) 東京</option>
-                      <option>(GMT+00:00) 倫敦</option>
+                    <label className="form-label">時區設定</label> 
+                    <select 
+                      className="form-select"
+                      value={generalSettings.timezone}
+                      onChange={e => setGeneralSettings(s => ({ ...s, timezone: e.target.value}))}
+                    >
+                      <option value="Asia/Taipei">(GMT+08:00) 台北</option>
+                      <option value="Asia/Tokyo">(GMT+09:00) 東京</option>
+                      <option value="Europe/London">(GMT+00:00) 倫敦</option>
                     </select>
                   </div>
                   <div className="mb-4">
                     <label className="form-label">日期格式</label>
-                    <select className="form-select">
-                      <option selected>YYYY-MM-DD</option>
-                      <option>DD/MM/YYYY</option>
-                      <option>MM/DD/YYYY</option>
+                    <select 
+                      className="form-select"
+                      value={generalSettings.dateFormat}
+                      onChange={e => setGeneralSettings(s => ({ ...s, dateFormat: e.target.value}))}
+                    >
+                      <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                      <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                      <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                     </select>
                   </div>
                   <div className="d-flex justify-content-between">
-                  <button type="submit" className="btn btn-primary">儲存設定</button>
+                  <button type="submit" className="btn btn-primary" disabled={setGeneralLoading}>
+                    {generalLoading ? '儲存中...' : '儲存設定'}
+                  </button>
                     <button type="button" className="btn btn-danger" onClick={handleLogout}>
                       <FontAwesomeIcon icon={faSignOutAlt} className="me-2" />
                       系統登出
@@ -184,12 +340,24 @@ const SystemSettings = () => {
             <div className="card">
               <div className="card-body">
                 <h5 className="card-title mb-4">安全設定</h5>
-                <form>
+                <form onSubmit={handleSecuritySave}>
                   <div className="mb-4">
                     <label className="form-label">密碼政策</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">要求至少8個字元</label>
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={securitySettings.requireMinLength}
+                        onChange={e => setSecuritySettings(s => ({ ...s, requireMinLength: e.target.checked}))} 
+                      />
+                      <label className="form-check-label">要求至少n個字元</label>
+                      <input
+                        type="number"
+                        className="form-control mt-2"
+                        value={securitySettings.minLength}
+                        min={1}
+                        onChange={e => setSecuritySettings(s => ({ ...s, minLength: Number(e.target.value) }))}
+                      />
                     </div>
                     <div className="form-check mb-2">
                       <input className="form-check-input" type="checkbox" defaultChecked />
@@ -207,22 +375,39 @@ const SystemSettings = () => {
                   <div className="mb-4">
                     <label className="form-label">登入安全</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">啟用雙因素認證</label>
-                    </div>
-                    <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">登入失敗鎖定（5次嘗試）</label>
+                      
+                      <label className="form-check-label">登入失敗鎖定前可嘗試次數: </label>
+                      <input
+                        type="number"
+                        className="form-control mt-2"
+                        value={securitySettings.maxLoginAttempts}
+                        min={1}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginAttempts: Number(e.target.value) }))}
+                      />
+                      <label className="form-check-label">達到失敗次數後的鎖定時間: </label>
+                      <input
+                        type='number'
+                        className='form-control mt-2'
+                        min={1}
+                        value={securitySettings.maxLoginLockMinutes}
+                        onChange={e => setSecuritySettings(s => ({ ...s, maxLoginLockMinutes: Number(e.target.value) }))}
+                      />
+
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <label className="form-label">Session 設定</label>
-                    <select className="form-select mb-3">
+                  {/* TODO: 還沒做好的功能 */}
+                  {/*<div className="mb-4">
+                    <label className="form-label">Session 設定 (尚未實作)</label>
+                    <select
+                      className="form-select mb-3"
+                      value={securitySettings.sessionTimeoutMinutes}
+                      onChange={e => setSecuritySettings(s => ({ ...s, sessionTimeoutMinutes: Number(e.target.value) }))}
+                    >
                       <option selected>30 分鐘後自動登出</option>
                       <option>1 小時後自動登出</option>
                       <option>2 小時後自動登出</option>
                     </select>
-                  </div>
+                  </div>*/}
                   <button type="submit" className="btn btn-primary">儲存設定</button>
                 </form>
               </div>
@@ -233,47 +418,82 @@ const SystemSettings = () => {
           {activeTab === 'notification' && (
             <div className="card">
               <div className="card-body">
-                <h5 className="card-title mb-4">通知設定</h5>
-                <form>
+                <div className='d-flex justify-content-between align-items-center mb-4'>
+                  <h5 className="card-title mb-4">通知設定</h5>
+                  {currentUser && currentUser.roleDTO && currentUser.roleDTO.id === 1 && (
+                    <Link to="/send-notification" className="btn btn-primary">
+                      傳送通知
+                    </Link>
+                  )}
+                </div>
+                <form onSubmit={handleNotificationSave}>
                   <div className="mb-4">
-                    <label className="form-label">電子郵件通知</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.certificationExpireNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, certificationExpireNotice: e.target.checked }))} 
+                      />
                       <label className="form-check-label">認證到期提醒</label>
                     </div>
+                    <div className="mb-2">
+                      <label className="form-label">提前提醒天數</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        value={notificationSettings.daysBeforeExpirarySendNotice}
+                        min="1"
+                        onChange={e => setNotificationSettings(s => ({ ...s, daysBeforeExpirarySendNotice: Number(e.target.value) }))}
+                      />
+                    </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.newProjectNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, newProjectNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">新專案通知</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.documentUpdateNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, documentUpdateNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">文件更新通知</label>
                     </div>
                     <div className="form-check">
                       <input className="form-check-input" type="checkbox" defaultChecked />
-                      <label className="form-check-label">系統維護通知</label>
+                      <label className="form-check-label">系統維護通知 (預計不實做)</label>
                     </div>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">系統內通知</label>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                     <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.missionAssignmentNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, missionAssignmentNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">任務指派通知</label>
                     </div>
                     <div className="form-check mb-2">
-                      <input className="form-check-input" type="checkbox" defaultChecked />
+                      <input 
+                        className="form-check-input" 
+                        type="checkbox" 
+                        checked={notificationSettings.commentAndReplyNotice}
+                        onChange={e => setNotificationSettings(s => ({ ...s, commentAndReplyNotice: e.target.checked }))}
+                      />
                       <label className="form-check-label">評論與回覆通知</label>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <label className="form-label">提醒時間設定</label>
-                    <select className="form-select mb-3">
-                      <option selected>提前 30 天</option>
-                      <option>提前 15 天</option>
-                      <option>提前 7 天</option>
-                    </select>
-                  </div>
-                  <button type="submit" className="btn btn-primary">儲存設定</button>
+              
+                  <button type="submit" className="btn btn-primary" disabled={notificationLoading}>
+                    {notificationLoading ? '儲存中...' : '儲存設定'}
+                  </button>
                 </form>
               </div>
             </div>
@@ -305,6 +525,9 @@ const SystemSettings = () => {
                   </select>
                 </div>
                 <div className="d-flex gap-2">
+                  <button className="btn btn-primary">
+                    <FontAwesomeIcon icon={faSave} className="me-2" />儲存設定
+                  </button>
                   <button className="btn btn-primary">
                     <FontAwesomeIcon icon={faCloudArrowUp} className="me-2" />立即備份
                   </button>

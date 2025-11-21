@@ -1,16 +1,23 @@
 package com.project.backend.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.backend.model.User;
 import com.project.backend.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.project.backend.dto.UserDTO;
+
 
 
 @RestController
@@ -25,5 +32,12 @@ public class UserController {
         return userRepository.findAll().stream()
             .map(u -> new UserDTO(u.getId(), u.getName(), u.getPosition()))
             .toList();
+    }
+
+    @GetMapping("/notifications/{userId}")
+    public ResponseEntity<List<String>> getNotifications(@PathVariable Long userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        User user = userOptional.get();
+        return ResponseEntity.ok(user.getNotifications());
     }
 } 

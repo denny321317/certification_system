@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -25,8 +25,60 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { register } = useContext(AuthContext);
+  const { register, securitySettings, fetchSecuritySettings } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!securitySettings) {
+      fetchSecuritySettings();
+    }
+  }, [securitySettings, fetchSecuritySettings]);
+
+
+  const requirements = useMemo(() => {
+
+    // FOR DEBUG
+    console.log('Calculating requirements with these settings: ', securitySettings);
+
+
+    if (!securitySettings) return [];
+    const reqs = [];
+    if (securitySettings.requireMinLength) {
+      reqs.push({
+        key: 'minLength',
+        label: `至少 ${securitySettings.minLength} 個字元`,
+        test: (pw) => pw.length >= securitySettings.minLength
+      });
+    }
+    if (securitySettings.requireUpperLowerCase) {
+      reqs.push({
+        key: 'upperLower',
+        label: '密碼需同時包含大小寫字母',
+        test: (pw) => /[A-Z]/.test(pw) && /[a-z]/.test(pw)
+      });
+    }
+    if (securitySettings.requireNumber) {
+      reqs.push({
+        key: 'number',
+        label: '密碼需包含至少一個數字',
+        test: (pw) => /\d/.test(pw)
+      });
+    }
+    if (securitySettings.requireSpecialChar) {
+      reqs.push({
+        key: 'special',
+        label: '密碼需包含至少一個特殊字元',
+        test: (pw) => /[^A-Za-z0-9]/.test(pw)
+      });
+    }
+    return reqs;
+  }, [securitySettings]);
+
+  const allRequirementsMet = useMemo(() => {
+    if (!formData.password) return false;
+    return requirements.every(r => r.test(formData.password));
+  }, [formData.password, requirements]);
+
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -57,8 +109,8 @@ const Register = () => {
       return false;
     }
     
-    if (formData.password.length < 8) {
-      setError('密碼長度必須至少為8個字符');
+    if (!allRequirementsMet) {
+      setError('密碼不符合所有安全要求');
       return false;
     }
     
@@ -187,6 +239,25 @@ const Register = () => {
                     </div>
                   </Form.Group>
                   
+                  {/* Password Requirements Display */}
+                  {formData.password && requirements.length > 0 && (
+                    <div className='password-requirements mb-3'>
+                      <ul className='list-unstyled'>
+                        {requirements.map(r => {
+                          const met = r.test(formData.password);
+                          return (
+                            <li key={r.key} className={met ? 'text-success' : 'text-danger'}>
+                              {met ? '✓' : '✗'} {r.label}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+
+
+
                   <Form.Group className="mb-3 position-relative">
                     <Form.Label>確認密碼</Form.Label>
                     <Form.Control
@@ -227,7 +298,7 @@ const Register = () => {
                     type="submit" 
                     variant="primary" 
                     className="w-100 mb-3"
-                    disabled={loading}
+                    disabled={loading || !allRequirementsMet}
                   >
                     {loading ? '註冊中...' : '註冊帳號'}
                   </Button>

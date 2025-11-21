@@ -30,6 +30,7 @@ import {
   faUser, faFile, faDownload, faPencilAlt, 
   faShare, faTrash, faEllipsisV
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import './DocumentManagement.css';
 
 /**
@@ -37,6 +38,7 @@ import './DocumentManagement.css';
  * @returns {JSX.Element} 文件管理介面
  */
 const DocumentManagement = ({ canWrite }) => {
+  const { settings } = useSettings();
   /**
    * 文件搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -60,6 +62,53 @@ const DocumentManagement = ({ canWrite }) => {
    * @type {[string, Function]} [當前排序選項, 設置排序選項的函數]
    */
   const [sortOption, setSortOption] = useState('recent');
+
+  /**
+   * 處理日期格式顯示
+   * @param {*} dateInput 
+   * @returns 
+   */
+  const formatDate = (dateInput) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return dateInput || 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return dateInput || 'N/A';
+    }
+
+    try {
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: settings.timezone,
+      };
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+
+      if (!year || !month || !day) {
+        return date.toLocaleDateString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      return settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return new Date(dateInput).toLocaleDateString();
+    }
+  };
 
   /**
    * 根據文件類型返回對應的圖標
@@ -382,7 +431,7 @@ const DocumentManagement = ({ canWrite }) => {
                       <div className="file-meta">
                         <span>
                           <FontAwesomeIcon icon={faClock} className="me-1" />
-                          更新於 {file.updatedAt}
+                          更新於 {formatDate(file.updatedAt)}
                         </span>
                         <span>
                           <FontAwesomeIcon icon={faUser} className="me-1" />

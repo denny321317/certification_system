@@ -27,4 +27,17 @@ public class EmailService {
         }
     }
     
+    /**
+     * A general email sending service.
+     * @param to the receiver
+     * @param subject
+     * @param body the content of the email
+     */
+    public void sendEmail(String to, String subject, String body) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(subject);
+        message.setText(body);
+        emailSender.send(message);
+    }
 }

@@ -13,7 +13,7 @@ import java.util.List;
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long>{
     
-    @EntityGraph(attributePaths = "projects")
+    @EntityGraph(attributePaths = {"projects","commonCerts"})
     Optional<Supplier> findById(Long id);
     
     Optional<Supplier> findByEmail(String email);
@@ -21,7 +21,7 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long>{
     List<Supplier> findByCertificateStatus(CertificateStatus certificateStatus);
     List<Supplier> findByCountry(String country);
     
-    @EntityGraph(attributePaths = "projects")
+    @EntityGraph(attributePaths = {"projects","commonCerts"})
     List<Supplier> findAll();
     
 

@@ -2,9 +2,8 @@ package com.project.backend.model;
 
 import java.util.Date;
 import java.util.List;
-
-
-
+import java.util.Set;
+import java.util.HashSet;
 import jakarta.persistence.*;
 
 import lombok.*;
@@ -46,6 +45,21 @@ public class Supplier {
 
     @Column
     private Date collabStart;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "supplier_common_certs",
+        joinColumns = @JoinColumn(name = "supplier_id")
+    )
+    @Column(name = "cert_name", length = 128, nullable = false)
+    private Set<String> commonCerts = new HashSet<>();
+
+    public Set<String> getCommonCerts() {
+        return commonCerts;
+    }
+
+    public void setCommonCerts(Set<String> commonCerts) {
+        this.commonCerts = commonCerts;
+    }
 
 
     public enum CertificateStatus {

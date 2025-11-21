@@ -1,9 +1,11 @@
 import React, { useState, useContext } from 'react';
+import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldAlt, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { AuthContext } from '../../contexts/AuthContext';
+import PasswordChangeModal from '../../components/modals/PasswordChangeModal';
 import './Auth.css';
 
 const Login = () => {
@@ -13,9 +15,26 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState(null);
+  const [lockSeconds, setLockSeconds] = useState(0);
+
+
   
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (lockSeconds <= 0) return;
+
+    const id = setInterval(() => {
+      setLockSeconds(s => {
+        if (s <= 1) return 0;
+        return s-1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [lockSeconds]);
   
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,7 +53,16 @@ const Login = () => {
       if (result.success) {
         navigate('/dashboard', { replace: true });
       } else {
-        setError(result.error);
+        if (result.error === 'password_change_required') {
+          setSecuritySettings(result.securitySettings);
+          setShowPasswordChangeModal(true);
+          setError(''); // Clear login from error
+        } else if (result.error === 'account_locked') {
+          setLockSeconds(result.lockRemainingSeconds || 0);
+          setError('因登入失敗次數過多，此帳號被暫時封鎖，請稍後再試');
+        } else {
+          setError(result.error);
+        }
       }
     } catch (err) {
       setError('登錄時發生錯誤，請稍後再試');
@@ -43,6 +71,26 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  /* 
+  const handlePasswordUpdate = async (newPassword) => {
+    try {
+      setLoading(true);
+      setError('');
+      const result = await forcePasswordUpdate(email, newPassword);
+      if (result.success) {
+        setShowPasswordChangeModal(false);
+        navigate('/dashboard', { replace: true });
+      } else {
+        setError(result.error); // Show error inside the modal
+      }
+    } catch (error) {
+      setError('更新密碼時發生錯誤')
+    } finally {
+      setLoading(false);
+    }
+  };
+  */
   
   return (
     <div className="auth-page">
@@ -108,10 +156,16 @@ const Login = () => {
                     type="submit" 
                     variant="primary" 
                     className="w-100 mb-3"
-                    disabled={loading}
+                    disabled={loading || lockSeconds > 0}
                   >
-                    {loading ? '登入中...' : '登入'}
+                    {lockSeconds > 0 ? `鎖定中 (${lockSeconds}s)` : (loading ? '登入中...' : '登入')}
+
                   </Button>
+                  {lockSeconds > 0 && (
+                    <div style={{ marginTop: 8, color: '#b45309', fontSize: '0.9rem' }}>
+                      帳號被鎖定，請等待 {lockSeconds} 秒後再試。
+                    </div>
+                  )}
                   
                   <div className="text-center">
                     還沒有帳號？ <Link to="/register" className="text-decoration-none">立即註冊</Link>
@@ -122,6 +176,16 @@ const Login = () => {
           </Col>
         </Row>
       </Container>
+      <PasswordChangeModal
+        open={showPasswordChangeModal && !!securitySettings}
+        onClose={() => { 
+          setShowPasswordChangeModal(false);
+          setSecuritySettings(null);
+        }}
+        securitySettings={securitySettings}
+        username={email}
+        oldPassword={password}
+      />
     </div>
   );
 };

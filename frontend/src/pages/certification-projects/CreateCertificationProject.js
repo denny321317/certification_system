@@ -44,7 +44,7 @@ const CreateCertificationProject = () => {
     endDate: '',
     internalReviewDate: '',
     externalReviewDate: '',
-    manager: '',
+    managerId: '',
     agency: '',
     description: '',
     progress: 0  // 新增進度欄位
@@ -446,9 +446,9 @@ const CreateCertificationProject = () => {
               <div className="input-with-icon">
                 <FontAwesomeIcon icon={faUser} className="input-icon" />
                 <select
-                  id="manager"
-                  name="manager"
-                  value={formData.manager}
+                  id="managerId"
+                  name="managerId"
+                  value={formData.managerId}
                   onChange={handleInputChange}
                   className="form-control"
                 >
@@ -460,10 +460,10 @@ const CreateCertificationProject = () => {
                   ))}
                 </select>
               </div>
-              {formErrors.manager && (
+              {formErrors.managerId && (
                 <div className="invalid-feedback">
                   <FontAwesomeIcon icon={faExclamationCircle} className="me-1" />
-                  {formErrors.manager}
+                  {formErrors.managerId}
                 </div>
               )}
             </div>
