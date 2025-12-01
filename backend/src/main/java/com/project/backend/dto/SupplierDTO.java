@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.project.backend.model.Supplier.CertificateStatus;
 import com.project.backend.model.Supplier.RiskProfile;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SupplierDTO {
     private Long id;
