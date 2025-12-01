@@ -7,7 +7,7 @@ import com.project.backend.model.Supplier.CertificateStatus;
 import com.project.backend.model.Supplier.RiskProfile;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SupplierDTO {
     private Long id;
     private String name;
@@ -26,6 +26,7 @@ public class SupplierDTO {
 
     @JsonProperty("otherCertification")
     private String otherCertification;
+
 
     // Getters and Setters
     public Long getId() { return id; }

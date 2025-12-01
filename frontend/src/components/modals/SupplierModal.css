@@ -137,3 +137,93 @@
   outline: none;
   box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
 }
+
+/* ===== Certifications chip style ===== */
+.cert-section { border-top: 1px solid #f1f2f6; padding-top: .75rem; }
+.cert-list { display: flex; flex-wrap: wrap; gap: .5rem .75rem; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+}
+
+.cert-chip {
+  --chip-radius: 14px;
+  --chip-pad-y: .45rem;
+  --chip-pad-x: .75rem;
+  --chip-border: #e6e8f0;
+  --chip-bg: #ffffff;
+  --chip-text: #303651;
+  --chip-shadow: 0 1px 2px rgba(16,24,40,.06);
+
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: var(--chip-pad-y) var(--chip-pad-x);
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  border-radius: var(--chip-radius);
+  box-shadow: var(--chip-shadow);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .05s ease;
+  user-select: none;
+}
+
+.cert-chip:hover { border-color: #cfd3e1; }
+
+.cert-chip:active { transform: translateY(1px); }
+
+.cert-chip .cert-icon {
+  width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; border: 1px solid #dfe3f0;
+  background: #f8f9ff;
+  font-size: 12px;
+}
+
+.cert-chip.is-checked {
+  /* 主色：用你列表卡片紫色邊框近似色；可改成你的品牌色 */
+  background: #5b6dff;
+  border-color: #5362f0;
+  color: #ffffff;
+}
+
+.cert-chip.is-checked .cert-icon {
+  background: rgba(255,255,255,.15);
+  border-color: rgba(255,255,255,.4);
+}
+
+.cert-text { font-weight: 600; letter-spacing: .2px; }
+
+/* 細調在深色主色底下的可讀性 */
+.cert-chip.is-checked .cert-text { color: #fff; }
+/* ===== 勾選 icon 顯示控制 ===== */
+.cert-chip .cert-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  font-size: 12px;
+  color: white;
+  opacity: 0;               /* 預設隱藏 */
+  transition: opacity 0.15s ease;
+}
+
+.cert-chip.is-checked .cert-icon {
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;              /* 勾選時顯示 icon */
+}
+
+.cert-chip .cert-text {
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+.cert-chip:not(.is-checked) .cert-icon {
+  border-color: transparent; /* 沒勾的時候隱藏框線 */
+}
