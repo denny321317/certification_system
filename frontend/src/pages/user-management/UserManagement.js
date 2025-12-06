@@ -491,6 +491,18 @@ const UserManagement = ({ canWrite }) => {
       
   }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
 
+  // This useEffect hook will run whenever 'selectedRole' changes.
+  useEffect(() => {
+    if (selectedRole) {
+      fetchRoleAuth(selectedRole);
+    }
+  }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
+
+  // Add this new useEffect to reset pagination when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
   /*
     Handlers 
    */
