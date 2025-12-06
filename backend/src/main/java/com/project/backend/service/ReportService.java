@@ -33,4 +33,10 @@ public class ReportService {
             return item;
         }).collect(Collectors.toList());
     }
+
+    public long getDeficiencyItemCount() {
+        return reviewIssueRepository.count(); 
+    }
+    
+    
 }

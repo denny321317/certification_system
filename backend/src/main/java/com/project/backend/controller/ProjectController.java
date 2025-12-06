@@ -26,6 +26,7 @@ import com.project.backend.dto.ExportSettingsDTO;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.ReviewDTO;
 import com.project.backend.dto.TeamMemberDTO;
+import com.project.backend.dto.CertTypeAverageProgressDTO;
 import com.project.backend.dto.ChecklistUpdateRequest;
 import com.project.backend.model.NotificationSettings;
 import com.project.backend.model.Project;
@@ -191,6 +192,24 @@ public class ProjectController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body("{\"error\": \"Failed to save checklist: " + e.getMessage() + "\"}");
         }
+    }
+
+    @GetMapping("/average-progress")
+    public ResponseEntity<Double> getAverageProjectProgress() {
+        try {
+            // 直接呼叫 Service 層新增的方法
+            double averageProgress = projectService.getAverageProjectProgress();
+            return ResponseEntity.ok(averageProgress);
+        } catch (Exception e) {
+            // 處理錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(0.0);
+        }
+    }
+
+    @GetMapping("/progress-by-type")
+    public ResponseEntity<List<CertTypeAverageProgressDTO>> getAverageProgressByCertType() {
+        List<CertTypeAverageProgressDTO> summary = projectService.getAverageProgressByCertType();
+        return ResponseEntity.ok(summary);
     }
 
     

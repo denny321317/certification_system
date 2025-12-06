@@ -6,6 +6,7 @@ import com.project.backend.dto.TeamMemberDTO;
 import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
+import com.project.backend.dto.CertTypeAverageProgressDTO;
 import com.project.backend.model.Project;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
@@ -313,5 +314,48 @@ public class ProjectService {
         project.setChecklistState(checklistState);
         
         projectRepository.save(project);
+    }
+
+    @Transactional(readOnly = true)
+    public double getAverageProjectProgress() {
+        List<Project> projects = projectRepository.findAll();
+        if (projects.isEmpty()) {
+            return 0.0;
+        }
+        double totalProgress = projects.stream()
+            .mapToDouble(Project::getProgress) 
+            .sum();
+        double averageProgress = totalProgress / projects.size();
+        return Math.round(averageProgress * 100.0) / 100.0; 
+    }
+
+    /**
+     * 計算並回傳每個認證類型的平均進度。
+     * @return List<CertTypeAverageProgress> 每個類型的平均進度列表。
+     */
+    public List<CertTypeAverageProgressDTO> getAverageProgressByCertType() {
+        List<Project> allProjects = projectRepository.findAll();
+
+        if (allProjects.isEmpty()) {
+            return List.of();
+        }
+        
+        // 按 CertType 分組並計算每個組的平均進度
+        Map<String, Double> progressByType = allProjects.stream()
+            .collect(Collectors.groupingBy(
+                project -> Optional.ofNullable(project.getCertType()).orElse("未分類"),                // 計算每個分組的平均值
+                Collectors.averagingInt(Project::getProgress) 
+            ));
+
+        // 將 Map 轉換為 List<CertTypeAverageProgress>
+        List<CertTypeAverageProgressDTO> typeProgresses = progressByType.entrySet().stream()
+            .map(entry -> new CertTypeAverageProgressDTO(
+                entry.getKey(), // CertType
+                // 將 Double 精度控制在小數點後兩位
+                Math.round(entry.getValue() * 100.0) / 100.0 
+            ))
+            .collect(Collectors.toList());
+
+        return typeProgresses;
     }
 }

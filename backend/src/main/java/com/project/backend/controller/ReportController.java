@@ -24,4 +24,10 @@ public class ReportController {
         List<DeficiencyItemDTO> items = reportService.getDeficiencyItems();
         return ResponseEntity.ok(items);
     }
+
+    @GetMapping("/deficiency-items/count")
+    public ResponseEntity<Long> getDeficiencyItemCount() {
+        long count = reportService.getDeficiencyItemCount();
+        return ResponseEntity.ok(count);
+    }
 }
