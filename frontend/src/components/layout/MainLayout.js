@@ -38,7 +38,7 @@ const MainLayout = ({ children }) => {
    */
   const menuItems = [
     { path: '/dashboard', icon: faHome, label: '儀表板', permissionKey: 'allowReadDashboard', writeKey: 'allowWriteDashboard' },
-    { path: '/document-management', icon: faFileAlt, label: '文件管理', permissionKey: 'allowReadDocumentManagment', writeKey: 'allowWriteDocumentManagment' },
+    //{ path: '/document-management', icon: faFileAlt, label: '文件管理', permissionKey: 'allowReadDocumentManagment', writeKey: 'allowWriteDocumentManagment' },
     { path: '/template-center', icon: faFileContract, label: '模板中心', permissionKey: 'allowReadTemplateCenter', writeKey: 'allowWriteTemplateCenter' },
     { path: '/certification-projects', icon: faCertificate, label: '認證專案', permissionKey: 'allowReadCertificationProjects', writeKey: 'allowWriteCertificationProjects' },
     { path: '/reports-analysis', icon: faChartBar, label: '報表分析', permissionKey: 'allowReadReportManagment', writeKey: 'allowWriteReportManagment' },

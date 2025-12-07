@@ -97,7 +97,7 @@ const UserManagement = ({ canWrite }) => {
   const permissionLabels = [
     {key: 'SystemSettings', lable: '系統設定'},
     {key: 'UserManagement', label: '用戶管理'},
-    {key: 'DocumentManagement', label: '文件管理'},
+    // {key: 'DocumentManagement', label: '文件管理'},
     {key: 'TemplateCenter', label: '模板中心'},
     {key: 'CertificationProjects', label: '認證專案'},
     {key: 'ReportManagement', label: '報表分析'},
