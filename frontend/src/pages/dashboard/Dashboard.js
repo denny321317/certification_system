@@ -237,7 +237,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faFile, 
       color: '#3b82f6',
       link: '/document-management',
-      trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
+      // trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
     },
     { 
       title: '完成認證', 
@@ -245,7 +245,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faCheckCircle, 
       color: '#10b981',
       link: '/certification-projects',
-      trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
+      // trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
     },
     { 
       title: '待處理任務', 
@@ -254,7 +254,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faExclamationCircle, 
       color: '#f59e0b',
       link: '/tasks',
-      trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
+      // trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
     },
     { 
       title: '即將到期項目', 
@@ -263,7 +263,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faExclamationCircle, 
       color: '#ef4444',
       link: '/upcoming-items',
-      trend: { direction: 'up', value: 2, label: '需要關注' }
+      // trend: { direction: 'up', value: 2, label: '需要關注' }
     }
   ];
 
