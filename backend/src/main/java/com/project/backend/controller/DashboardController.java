@@ -8,18 +8,22 @@ import com.project.backend.model.FileEntity;
 import com.project.backend.model.OperationHistory;
 import com.project.backend.model.Project;
 import com.project.backend.model.Todo;
+import com.project.backend.model.User;
 import com.project.backend.service.OperationHistoryService;
 import com.project.backend.service.ProjectService;
 import com.project.backend.service.TodoService;
+import com.project.backend.service.AuthService;
 import com.project.backend.repository.FileRepository;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.TodoRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -42,6 +46,8 @@ public class DashboardController {
 
     @Autowired
     private TodoService todoService;
+    @Autowired
+    private AuthService authService;
     @Autowired
     private TodoRepository todoRepository;
 
@@ -129,9 +135,18 @@ public class DashboardController {
 
     // 建立待辦事項
     @PostMapping("create/todos")
-    public ResponseEntity<TodoDTO> createTodo(@RequestBody Todo todo) {
-        Todo created = todoService.createTodo(todo);
+    public ResponseEntity<TodoDTO> createTodo(@RequestBody Todo todo, @RequestHeader("X-User-Email") String userEmail) {
+        
+        Optional<User> userOpt = authService.findByEmail(userEmail); 
+        if (userOpt.isEmpty()) {
+            // 如果找不到使用者，回傳 401 或 404 錯誤
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED) 
+                                .body(null); // 或回傳自定義錯誤訊息
+        }
+        User loginUser = userOpt.get();
+        todo.setAssigneeName(loginUser.getName()); 
 
+        Todo created = todoService.createTodo(todo);
         TodoDTO dto = new TodoDTO(
                 created.getId(),
                 created.getTitle(),
@@ -139,7 +154,8 @@ public class DashboardController {
                 created.getUrgency(),
                 created.getDueDate(),
                 created.getCategory(),
-                created.isCompleted() 
+                created.isCompleted(),
+                created.getAssigneeName() 
         );
 
         return ResponseEntity.ok(dto);
@@ -156,7 +172,8 @@ public class DashboardController {
                         todo.getUrgency(),
                         todo.getDueDate(),
                         todo.getCategory(),
-                        todo.isCompleted()
+                        todo.isCompleted(),
+                        todo.getAssigneeName()
                 ))
                 .toList();
 

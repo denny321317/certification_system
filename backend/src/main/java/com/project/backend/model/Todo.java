@@ -30,5 +30,7 @@ public class Todo {
     
     @Column(nullable = false)
     private boolean completed = false;
-    //姓名關聯還未做
+    
+    @Column
+    private String assigneeName;
 }

@@ -312,12 +312,15 @@ const Dashboard = ({ canWrite }) => {
     e.preventDefault();
     fetch("http://localhost:8000/api/dashboard/create/todos", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-User-Email": localStorage.getItem("userEmail") 
+       },
       body: JSON.stringify(newTodo)
     })
     .then(res => res.json())
     .then(data => {
-      setTodos(prev => [...prev, { ...data, assignee: "小明" }]);
+      setTodos(prev => [...prev, { ...data}]);
       handleCloseAddTodoModal();
     })
     .catch(err => console.error(err));
@@ -336,7 +339,7 @@ const Dashboard = ({ canWrite }) => {
           dueDate: item.dueDate,
           category: item.category,
           completed: item.completed,
-          assignee: "小明" // 先寫死
+          assignee: item.assigneeName
         }));
         setTodos(mapped);
         setUrgentCount(data.filter(todo => todo.urgency === 'high').length);
@@ -835,7 +838,7 @@ const Dashboard = ({ canWrite }) => {
           </div>
 
           {/* 認證類型分布圖表 */}
-          <div className="dashboard-card">
+          {/* <div className="dashboard-card">
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
@@ -845,7 +848,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="chart-container">
               <Doughnut data={chartData} options={doughnutOptions} />
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* 右欄 */}
@@ -894,11 +897,11 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faFileAlt} className="card-header-icon" />
-                文件到期提醒
+                專案到期提醒
                 <span className="badge warning-badge">{expiringDocuments.filter(doc => doc.status != '').length}</span>
               </h2>
-              <Link to="/document-management" className="view-all">
-                所有文件提醒 <FontAwesomeIcon icon={faArrowRight} />
+              <Link to="/certification-projects" className="view-all">
+                所有專案 <FontAwesomeIcon icon={faArrowRight} />
               </Link>
             </div>
             <div className="expiring-documents">
@@ -925,7 +928,7 @@ const Dashboard = ({ canWrite }) => {
           </div>
           
           {/* 文件狀態分布圖表 */}
-          <div className="dashboard-card">
+          {/* <div className="dashboard-card">
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
@@ -935,8 +938,9 @@ const Dashboard = ({ canWrite }) => {
             <div className="chart-container">
               <Bar data={documentStatusData} options={barOptions} />
             </div>
-          </div>
+          </div> */}
         </div>
+
         {/* 新增 Todo Modal */}
         {showAddTodoModal && (
           <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.3)' }}>

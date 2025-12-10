@@ -13,4 +13,5 @@ public class TodoDTO {
     private String dueDate;
     private String category;
     private boolean completed;
+    private String assigneeName;
 }
