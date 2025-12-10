@@ -212,5 +212,21 @@ public class ProjectController {
         return ResponseEntity.ok(summary);
     }
 
+
+    /**
+     * 取得目前所有專案中不重複的認證類型 (certType) 的種類數量
+     * @return
+     */
+    @GetMapping("/certtype-unique-count")
+    public ResponseEntity<Integer> getUniqueCertTypeCount() {
+        try {
+            int uniqueCount = projectService.countUniqueCertTypes();
+            return ResponseEntity.ok(uniqueCount);
+        } catch (Exception e) {
+            logger.error("Error fetching unique cert type count: {}", e.getMessage(), e);
+            // 處理錯誤
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(0); 
+        }
+    }
     
 }

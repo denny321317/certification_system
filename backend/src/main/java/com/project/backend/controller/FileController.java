@@ -35,8 +35,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
-//TODO: Replace "admin" with actual logged-in user
-
 @RestController
 @RequestMapping("/api/documents")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -127,7 +125,7 @@ public class FileController {
                 fileEntity.setOriginalFilename(displayOriginalName);
                 fileEntity.setFileType(extension);
                 fileEntity.setUploadTime(LocalDateTime.now());
-                fileEntity.setUploadedBy(loginUser.getName()); // TODO: 實際登入使用者
+                fileEntity.setUploadedBy(loginUser.getName());
                 fileEntity.setSizeInBytes(file.getSize());
                 fileEntity.setStatus("pending");
                 fileEntity.setCategory(category);

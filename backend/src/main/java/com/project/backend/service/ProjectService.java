@@ -7,6 +7,7 @@ import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
 import com.project.backend.dto.CertTypeAverageProgressDTO;
+import com.project.backend.dto.CertTypeCountDTO;
 import com.project.backend.model.Project;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
@@ -357,5 +358,14 @@ public class ProjectService {
             .collect(Collectors.toList());
 
         return typeProgresses;
+    }
+
+    /**
+     * 計算資料庫中不重複的專案認證類型 (certType) 的數量。
+     * @return 不重複的 certType 種類總數。
+     */
+    public int countUniqueCertTypes() {
+        List<CertTypeCountDTO> counts = projectRepository.countCertType();
+        return counts.size();
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.project.backend.dto.CertTypeCountDTO;
 import com.project.backend.dto.ProjectDeadlineDTO;
 import com.project.backend.model.Project;
 
@@ -32,6 +33,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
       String getCertType();
       Long getCount();
    }
+
+   @Query("SELECT new com.project.backend.dto.CertTypeCountDTO(COALESCE(p.certType, '無認證'), COUNT(p)) " +
+           "FROM Project p GROUP BY p.certType")
+    List<CertTypeCountDTO> countCertType();
+   
 
 }
 
