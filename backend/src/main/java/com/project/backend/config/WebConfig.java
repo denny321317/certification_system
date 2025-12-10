@@ -29,7 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
     public CorsFilter corsFilter() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000"));
-        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        cfg.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         cfg.setAllowedHeaders(Arrays.asList("*"));
         cfg.setExposedHeaders(Arrays.asList("Location", "Content-Disposition"));
         cfg.setAllowCredentials(true);
