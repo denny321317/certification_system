@@ -135,6 +135,34 @@ const ReportsAnalysis = () => {
   const trendChartInstance = useRef(null);
   const refreshTimerRef = useRef(null);
 
+  // 認證類型分布
+  const [uniqueCertTypeCount, setUniqueCertTypeCount] = useState(0);
+  useEffect(() => {
+        const fetchUniqueCertTypeCount = async () => {
+            try {
+                const response = await fetch(`http://localhost:8000/api/projects/certtype-unique-count`);
+
+                if (!response.ok) {
+                    // 處理非 200 的狀態碼 (例如 500 Internal Server Error)
+                    console.error("Failed to fetch unique cert type count. Status:", response.status);
+                    // 這裡可以選擇拋出錯誤或設定為 0
+                    return; 
+                }
+
+                // API 回傳的是一個整數 (Integer)
+                const count = await response.json(); 
+                setUniqueCertTypeCount(count); // 設定狀態
+                
+            } catch (error) {
+                // 處理網路錯誤 (例如 TypeError: Failed to fetch / CORS 錯誤)
+                console.error("Error fetching unique cert type count:", error);
+                setUniqueCertTypeCount(0); // 失敗時設為 0
+            }
+        };
+
+        fetchUniqueCertTypeCount();
+        
+    }, []);
   /**
    * 認證專案進度數據（與認證專案頁面同步）
    * @type {Array<{
@@ -952,7 +980,7 @@ const ReportsAnalysis = () => {
                 <div className="stats-title">認證類型分布</div>
               </div>
               <div className="stats-bottom-row">
-                <div className="stats-value">4</div>
+                <div className="stats-value">{uniqueCertTypeCount}</div>
                 <div className="stats-desc">類型</div>
               </div>
             </div>
