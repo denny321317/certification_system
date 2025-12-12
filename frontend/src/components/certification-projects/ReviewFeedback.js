@@ -285,9 +285,7 @@ const ReviewFeedback = ({ projectId, projectName, requirements }) => {
     setSubmitting(true);
 
     const feedbackData = {
-      // 這邊先暫時寫死審核員資訊，未來應從用戶登入資訊獲取
-      reviewerName: '王經理', 
-      reviewerDepartment: '管理部',
+      // 移除寫死的審核員資訊，由後端根據 X-User-Email 標頭自動填入
       reviewType: activeTab,
       decision: reviewDecision,
       comment: newFeedback,
@@ -310,6 +308,7 @@ const ReviewFeedback = ({ projectId, projectName, requirements }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Email': localStorage.getItem("userEmail") // 添加使用者 Email 標頭
         },
         body: JSON.stringify(feedbackData),
       });
