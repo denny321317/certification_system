@@ -6,17 +6,21 @@ import com.project.backend.dto.ReviewFeedbackDTO;
 import com.project.backend.dto.SubmitFeedbackDTO;
 import com.project.backend.model.Project;
 import com.project.backend.model.NotificationSettings;
+import com.project.backend.model.User;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.service.AuthService;
 import com.project.backend.service.NotificationService;
 import com.project.backend.service.NotificationSettingsService;
 import com.project.backend.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,6 +40,9 @@ public class ReviewController {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private AuthService authService;
+
     @GetMapping("/projects/{projectId}/reviews")
     public ResponseEntity<ReviewFeedbackDTO> getProjectReviews(
             @PathVariable Long projectId,
@@ -49,8 +56,19 @@ public class ReviewController {
     @Transactional
     public ResponseEntity<ReviewDTO> submitProjectReview(
             @PathVariable Long projectId,
-            @RequestBody SubmitFeedbackDTO submitFeedbackDTO) {
+            @RequestBody SubmitFeedbackDTO submitFeedbackDTO,
+            @RequestHeader("X-User-Email") String userEmail) {
         
+        Optional<User> userOpt = authService.findByEmail(userEmail);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        User user = userOpt.get();
+
+        // 使用登入使用者的資訊覆蓋
+        submitFeedbackDTO.setReviewerName(user.getName());
+        submitFeedbackDTO.setReviewerDepartment(user.getDepartment());
+
         ReviewDTO createdReview = reviewService.createReview(projectId, submitFeedbackDTO);
 
         Project project = projectRepository.findById(projectId).orElseThrow();
@@ -77,4 +95,4 @@ public class ReviewController {
         reviewService.updateIssueStatuses(issues);
         return ResponseEntity.ok().build();
     }
-} 
+}
