@@ -1,4 +1,7 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { faL } from '@fortawesome/free-solid-svg-icons';
+import React, { createContext, useState, useEffect, useCallback
+ } from 'react';
+import axios from 'axios';
 
 /**
  * 身份驗證上下文
@@ -11,13 +14,35 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [securitySettings, setSecuritySettings] = useState(null);
+
+  
 
   useEffect(() => {
     const userData = localStorage.getItem('currentUser');
     if (userData) {
       setCurrentUser(JSON.parse(userData));
     }
+    fetchSecuritySettings();
     setLoading(false);
+  }, []);
+
+  /**
+   * 抓取安全設定
+   */
+  const fetchSecuritySettings = useCallback(async() => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/security-settings/getSettings');
+      
+      // FOR DEBUG
+      console.log('AuthContext: API response received: ', response.data);
+
+      if (response.data) {
+        setSecuritySettings(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch security settings: ", error);
+    }
   }, []);
 
   /**
@@ -25,26 +50,29 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
+      const response = await axios.post('http://localhost:8000/api/login', { email, password });
 
-      const data = await response.json();
+      const data = response?.data;
 
-      if (response.ok && data.success) {
+      if (data?.success && data.user) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         setCurrentUser(data.user);
-        return { success: true };
+        return { success: true, user: data.user };
       } else {
-        return { success: false, error: data.error || '登入失敗' };
+        return { 
+          success: false,
+          error: data.error || '登入失敗',
+          securitySettings: data.securitySettings || null,
+          lockRemainingSeconds: data.lockRemainingSeconds || 0,
+          remainingAttempts: data.remainingAttempts
+        };
       }
+
+      return { success: false, error: data?.error || '登入失敗' };
     } catch (error) {
-      return { success: false, error: error.message || '伺服器錯誤' };
+      const msg = error.response?.data?.error || error.message || '登入失敗';
+      return { success: false, error: msg };
     }
   };
 
@@ -160,7 +188,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  
+  // FOR DEBUG
+  console.log("AuthProvider is rendering. Current securitySettings state: ", securitySettings);
 
   const value = {
     currentUser,
@@ -170,6 +199,7 @@ export const AuthProvider = ({ children }) => {
     register,
     forgotPassword,
     resetPassword,
+    fetchSecuritySettings
 
   };
 

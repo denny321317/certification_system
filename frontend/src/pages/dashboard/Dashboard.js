@@ -20,13 +20,14 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faFile, faCheckCircle, faExclamationCircle,
-  faChartLine, faTasks, faFileAlt, faArrowRight,
+  faChartLine, faTasks, faFileAlt, faArrowRight, faTrash,
   faArrowUp, faArrowDown, faRefresh, faBell, faEye, 
   faChevronRight, faCheckSquare, faPlus, faFilter, faUser
 } from '@fortawesome/free-solid-svg-icons';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { AuthContext } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Dashboard.css';
 
 // 註冊Chart.js組件
@@ -38,6 +39,7 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tool
  */
 const Dashboard = ({ canWrite }) => {
   const { currentUser } = useContext(AuthContext);
+  const { settings } = useSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [completedTasks, setCompletedTasks] = useState(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -46,11 +48,78 @@ const Dashboard = ({ canWrite }) => {
   const [documentCount, setDocumentCount] = useState(0);
   const [projectSummary, setProjectSummary] = useState('0 / 0');
   const [upcomingCount, setUpcomingCount] = useState(0);
+  const [todoCount, setTodoCount] = useState(0);
+  const [urgentCount, setUrgentCount] = useState(0);
+
+  const [isLoadingTodoCount, setIsLoadingTodoCount] = useState(true);
 
   const [certificationProgress, setCertificationProgress] = useState([]);
   const [expiringDocuments, setExpiringDocuments] = useState([]);
 
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [todos, setTodos] = useState([]);
+  const [showAddTodoModal, setShowAddTodoModal] = useState(false);
+  const handleOpenAddTodoModal = () => setShowAddTodoModal(true);
+  const handleCloseAddTodoModal = () => setShowAddTodoModal(false);
+
   const [isLoading, setIsLoading] = useState(true);
+
+  const formatDate = (dateInput, includeTime = false) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return dateInput || 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return dateInput || 'N/A';
+    }
+
+    try {
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: settings.timezone,
+        hour12: false,
+      };
+      if (includeTime) {
+        options.hour = '2-digit';
+        options.minute = '2-digit';
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+
+      if (!year || !month || !day) {
+        return date.toLocaleDateString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      let formattedDate = settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+      
+      if (includeTime) {
+        const hour = getPart('hour');
+        const minute = getPart('minute');
+        if (hour && minute) {
+          return `${formattedDate} ${hour}:${minute}`;
+        }
+      }
+      
+      return formattedDate;
+
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return new Date(dateInput).toLocaleDateString();
+    }
+  };
 
   // 更新時間
   useEffect(() => {
@@ -69,9 +138,18 @@ const Dashboard = ({ canWrite }) => {
   };
 
   // 處理任務完成
-  const handleTaskComplete = (taskId) => {
-    setCompletedTasks(prev => new Set([...prev, taskId]));
+  const handleTaskComplete = (taskId, checked) => {
+    fetch(`http://localhost:8000/api/dashboard/todos/${taskId}/complete?completed=${checked}`, {
+      method: 'PATCH',
+    })
+    .then(res => {
+      if(res.ok){
+        setTodos(prev => prev.map(todo => todo.id === taskId ? {...todo, completed: checked} : todo));
+      }
+    })
+    .catch(err => console.error(err));
   };
+
 
   // 取得文件總數API
   useEffect(() => {
@@ -106,7 +184,7 @@ const Dashboard = ({ canWrite }) => {
   }, []);
 
   //即將到期項目
-    useEffect(() => {
+  useEffect(() => {
     const fetchUpcomingDeadlines = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/dashboard/upcoming-deadlines');
@@ -118,6 +196,23 @@ const Dashboard = ({ canWrite }) => {
     };
 
     fetchUpcomingDeadlines();
+  }, []);
+
+  //取得待辦清單數量
+  useEffect(() => {
+    const fetchTodoCount = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/dashboard/todos/count');
+        const data = await response.json(); // 後端回傳的是 Long
+        setTodoCount(data); // 直接設置數值
+      } catch (error) {
+        console.error('抓取 Todo 總數錯誤:', error);
+      } finally {
+        setIsLoadingTodoCount(false);
+      }
+    };
+
+    fetchTodoCount();
   }, []);
 
   //if (isLoading) return <div>載入中...</div>;
@@ -142,7 +237,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faFile, 
       color: '#3b82f6',
       link: '/document-management',
-      trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
+      // trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
     },
     { 
       title: '完成認證', 
@@ -150,16 +245,16 @@ const Dashboard = ({ canWrite }) => {
       icon: faCheckCircle, 
       color: '#10b981',
       link: '/certification-projects',
-      trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
+      // trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
     },
     { 
-      title: '待處理任務(後端還沒寫)', 
-      value: 18, 
-      urgentCount: 3,
+      title: '待處理任務', 
+      value: isLoadingTodoCount ? '載入中...' : todoCount, 
+      urgentCount: urgentCount,
       icon: faExclamationCircle, 
       color: '#f59e0b',
       link: '/tasks',
-      trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
+      // trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
     },
     { 
       title: '即將到期項目', 
@@ -168,7 +263,7 @@ const Dashboard = ({ canWrite }) => {
       icon: faExclamationCircle, 
       color: '#ef4444',
       link: '/upcoming-items',
-      trend: { direction: 'up', value: 2, label: '需要關注' }
+      // trend: { direction: 'up', value: 2, label: '需要關注' }
     }
   ];
 
@@ -204,41 +299,77 @@ const Dashboard = ({ canWrite }) => {
    *   assignee: string  // 負責人
    * }>}
    */
-  const todoItems = [
-    { 
-      id: 1, 
-      title: '更新ESG報告文件', 
-      urgency: 'high', 
-      dueDate: '2023/6/15',
-      category: '文件更新',
-      assignee: '李小明'
-    },
-    { 
-      id: 2, 
-      title: '準備ISO 9001內部審核', 
-      urgency: 'medium',
-      dueDate: '2023/6/22',
-      category: '審核準備',
-      assignee: '王大力'
-    },
-    { 
-      id: 3, 
-      title: '完成供應商評估表格', 
-      urgency: 'low', 
-      dueDate: '2023/6/30',
-      category: '供應商管理',
-      assignee: '張小華'
-    },
-    { 
-      id: 4, 
-      title: '審核安全合規文件', 
-      urgency: 'high', 
-      dueDate: '2023/6/18',
-      category: '合規審核',
-      assignee: '林志明'
-    }
-  ];
+  const [newTodo, setNewTodo] = useState({
+    title: "",
+    description: "",
+    urgency: "medium",
+    dueDate: "",
+    category: ""
+  });
 
+  // 新增Todo
+  const handleAddTodo = (e) => {
+    e.preventDefault();
+    fetch("http://localhost:8000/api/dashboard/create/todos", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "X-User-Email": localStorage.getItem("userEmail") 
+       },
+      body: JSON.stringify(newTodo)
+    })
+    .then(res => res.json())
+    .then(data => {
+      setTodos(prev => [...prev, { ...data}]);
+      handleCloseAddTodoModal();
+    })
+    .catch(err => console.error(err));
+  };
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/dashboard/todos')
+      .then(res => res.json())
+      .then(data => {
+        // 後端回傳 TodoDTO 陣列
+        const mapped = data.map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          urgency: item.urgency,
+          dueDate: item.dueDate,
+          category: item.category,
+          completed: item.completed,
+          assignee: item.assigneeName
+        }));
+        setTodos(mapped);
+        setUrgentCount(data.filter(todo => todo.urgency === 'high').length);
+      })
+      .catch(err => console.error('抓取 Todo 錯誤:', err));
+  }, []);
+
+  const handleDelete = (taskId) => {
+    const confirmDelete = window.confirm("確定要刪除這個待辦嗎？");
+    if (!confirmDelete) return; // 使用者取消
+
+    fetch(`http://localhost:8000/api/dashboard/delete/todos/${taskId}`, {
+      method: 'DELETE',
+    })
+      .then(res => {
+        if (res.ok) {
+          // 刪除成功後更新前端列表
+          setTodos(prev => prev.filter(todo => todo.id !== taskId));
+          // 若該任務已完成，也從 completedTasks 移除
+          setCompletedTasks(prev => {
+            const updated = new Set(prev);
+            updated.delete(taskId);
+            return updated;
+          });
+        } else {
+          console.error('刪除失敗');
+        }
+      })
+      .catch(err => console.error('刪除 Todo 錯誤:', err));
+  };
   /**
    * 最近活動數據結構
    * @type {Array<{
@@ -250,40 +381,27 @@ const Dashboard = ({ canWrite }) => {
    *   type: string     // 活動類型
    * }>}
    */
-  const recentActivities = [
-    { 
-      id: 1, 
-      user: '李小明', 
-      action: '上傳了文件', 
-      target: '2023年第一季度ESG報告.pdf', 
-      timestamp: '今天 09:45',
-      type: 'upload'
-    },
-    { 
-      id: 2, 
-      user: '王大力', 
-      action: '更新了認證進度', 
-      target: 'ISO 14001 環境管理系統', 
-      timestamp: '昨天 16:30',
-      type: 'update'
-    },
-    { 
-      id: 3, 
-      user: currentUser?.name || '張三豐', 
-      action: '完成了任務', 
-      target: '準備SMETA審核文件', 
-      timestamp: '2023/6/10 14:15',
-      type: 'complete'
-    },
-    { 
-      id: 4, 
-      user: '林小華', 
-      action: '新增了供應商', 
-      target: '台灣綠色科技有限公司', 
-      timestamp: '2023/6/9 11:20',
-      type: 'create'
-    }
-  ];
+  useEffect(() => {
+    fetch('http://localhost:8000/api/dashboard/recent-history')
+      .then(res => res.json())
+      .then(data => {
+        console.log('抓到的歷史活動資料:', data);
+        if (data && Array.isArray(data)) {
+          const mapped = data.map(item => ({
+            id: item.id,
+            user: item.user || '未知用戶',
+            target: item.target || '',
+            timestamp: item.timestamp || '',
+            type: item.type || 'operation',
+          }));
+          console.log('mapped:', mapped);
+          setRecentActivities(mapped);
+        }
+      })
+      .catch(err => console.error('抓取歷史任務錯誤:', err));
+  }, []);
+
+
 
   /**
    * 文件到期提醒數據結構
@@ -330,38 +448,52 @@ const Dashboard = ({ canWrite }) => {
    * 認證類型分布圖表配置
    * @type {Object} Chart.js圖表數據配置
    */
-  const certificationDistributionData = {
-    labels: ['ISO標準', 'ESG認證', '產品認證', '其他標準'],
-    datasets: [
-      {
-        data: [45, 25, 20, 10],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(16, 185, 129, 0.8)',
-          'rgba(245, 158, 11, 0.8)',
-          'rgba(99, 102, 241, 0.8)'
-        ],
-        borderColor: [
-          'rgba(59, 130, 246, 1)',
-          'rgba(16, 185, 129, 1)',
-          'rgba(245, 158, 11, 1)',
-          'rgba(99, 102, 241, 1)'
-        ],
-        borderWidth: 2,
-        hoverBackgroundColor: [
-          'rgba(59, 130, 246, 0.9)',
-          'rgba(16, 185, 129, 0.9)',
-          'rgba(245, 158, 11, 0.9)',
-          'rgba(99, 102, 241, 0.9)'
-        ]
-      },
-    ],
-  };
+    const [chartData, setChartData] = useState({
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: [],
+      borderColor: [],
+      borderWidth: 2,
+      hoverBackgroundColor: []
+    }]
+  });
 
+  useEffect(() => {
+    const backgroundColors = [
+      'rgba(59, 130, 246, 0.8)',
+      'rgba(16, 185, 129, 0.8)',
+      'rgba(245, 158, 11, 0.8)',
+      'rgba(99, 102, 241, 0.8)'
+    ];
+    const borderColors = backgroundColors.map(c => c.replace('0.8', '1'));
+    const hoverBackgroundColors = backgroundColors.map(c => c.replace('0.8', '0.9'));
+
+    fetch('http://localhost:8000/api/dashboard/certification-distribution')
+      .then(res => res.json())
+      .then(data => {
+        const total = data.data.reduce((sum, val) => sum + val, 0);
+        const percentages = data.data.map(val => (val / total) * 100);
+        const labels = data.labels.map(label => label ?? '未知');
+        setChartData({
+          labels,
+          datasets: [{
+            data: percentages,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderColor: borderColors.slice(0, labels.length),
+            borderWidth: 2,
+            hoverBackgroundColor: hoverBackgroundColors.slice(0, labels.length)
+          }]
+        });
+      })
+      .catch(err => console.error('抓取認證類型分布錯誤:', err));
+  }, []);
+  
   /**
    * 文件狀態分布圖表配置
    * @type {Object} Chart.js圖表數據配置
    */
+  
   const documentStatusData = {
     labels: ['有效', '即將到期', '已過期', '草稿'],
     datasets: [
@@ -386,7 +518,7 @@ const Dashboard = ({ canWrite }) => {
       },
     ],
   };
-
+  
   /**
    * 圓餅圖配置選項
    * @type {Object} Chart.js圖表選項
@@ -504,7 +636,8 @@ const Dashboard = ({ canWrite }) => {
               year: 'numeric', 
               month: 'long', 
               day: 'numeric',
-              weekday: 'long'
+              weekday: 'long',
+              timeZone: settings?.timezone
             })}</span>
           </div>
           <button 
@@ -587,29 +720,44 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faTasks} className="card-header-icon" />
-                待辦事項(後端還沒寫)
-                <span className="badge urgent-badge">{todoItems.filter(item => item.urgency === 'high').length}</span>
+                待辦事項(串接使用者未完成)
+                <span className="badge urgent-badge">
+                  {todos.filter(item => item.completed).length}
+                </span>
               </h2>
               <div className="card-actions">
                 <button className="filter-btn">
                   <FontAwesomeIcon icon={faFilter} />
                 </button>
-                <Link to="/tasks" className="view-all">
+                <button
+                  onClick={handleOpenAddTodoModal}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    cursor: 'pointer',
+                    color: 'blue', // 或你想要的文字顏色
+                    fontSize: '1rem', // 可調整大小
+                  }}
+                >
                   管理任務 <FontAwesomeIcon icon={faArrowRight} />
-                </Link>
+                </button>
+
               </div>
             </div>
+
             <div className="todo-list">
-              {todoItems.map(item => (
+              {todos.map(item => (
                 <div 
                   key={item.id} 
-                  className={`todo-item urgency-${item.urgency} ${completedTasks.has(item.id) ? 'completed' : ''}`}
+                  className={`todo-item urgency-${item.urgency} ${item.completed ? 'completed' : ''}`}
                 >
                   <div className="todo-checkbox">
                     <input 
                       type="checkbox" 
-                      checked={completedTasks.has(item.id)}
-                      onChange={() => handleTaskComplete(item.id)}
+                      checked={item.completed}  // 用後端 completed
+                      onChange={e => handleTaskComplete(item.id, e.target.checked)}
                     />
                   </div>
                   <div className="todo-info">
@@ -620,14 +768,27 @@ const Dashboard = ({ canWrite }) => {
                         {item.assignee}
                       </span>
                       <span className="todo-category">{item.category}</span>
-                      <span className="todo-due-date">
-                        {item.dueDate}
-                      </span>
+                      <span className="todo-due-date">{item.dueDate}</span>
                     </div>
                   </div>
                   <div className={`urgency-indicator urgency-${item.urgency}`}>
                     {item.urgency === 'high' && <FontAwesomeIcon icon={faExclamationCircle} />}
                   </div>
+                  <button 
+                    onClick={() => handleDelete(item.id)} 
+                    className="delete-btn"
+                    style={{
+                      cursor: 'pointer',
+                      color: 'black',   // 想要的顏色
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      margin: 0,
+                    }}
+                    title="刪除"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -677,17 +838,17 @@ const Dashboard = ({ canWrite }) => {
           </div>
 
           {/* 認證類型分布圖表 */}
-          <div className="dashboard-card">
+          {/* <div className="dashboard-card">
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
-                認證類型分布(後端還沒寫)
+                認證類型分布
               </h2>
             </div>
             <div className="chart-container">
-              <Doughnut data={certificationDistributionData} options={doughnutOptions} />
+              <Doughnut data={chartData} options={doughnutOptions} />
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* 右欄 */}
@@ -697,7 +858,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faFileAlt} className="card-header-icon" />
-                最近活動(後端沒寫完)
+                最近活動
               </h2>
               <div className="activity-controls">
                 <button className="notification-btn">
@@ -736,11 +897,11 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faFileAlt} className="card-header-icon" />
-                文件到期提醒
+                專案到期提醒
                 <span className="badge warning-badge">{expiringDocuments.filter(doc => doc.status != '').length}</span>
               </h2>
-              <Link to="/document-management" className="view-all">
-                所有文件提醒 <FontAwesomeIcon icon={faArrowRight} />
+              <Link to="/certification-projects" className="view-all">
+                所有專案 <FontAwesomeIcon icon={faArrowRight} />
               </Link>
             </div>
             <div className="expiring-documents">
@@ -765,9 +926,9 @@ const Dashboard = ({ canWrite }) => {
               ))}
             </div>
           </div>
-
+          
           {/* 文件狀態分布圖表 */}
-          <div className="dashboard-card">
+          {/* <div className="dashboard-card">
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faChartLine} className="card-header-icon" />
@@ -777,8 +938,70 @@ const Dashboard = ({ canWrite }) => {
             <div className="chart-container">
               <Bar data={documentStatusData} options={barOptions} />
             </div>
-          </div>
+          </div> */}
         </div>
+
+        {/* 新增 Todo Modal */}
+        {showAddTodoModal && (
+          <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.3)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">新增 Todo</h5>
+                  <button type="button" className="btn-close" onClick={handleCloseAddTodoModal}></button>
+                </div>
+                <form onSubmit={handleAddTodo}>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label">標題</label>
+                      <input
+                        className="form-control"
+                        value={newTodo.title}
+                        onChange={e => setNewTodo(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">截止日期</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={newTodo.dueDate}
+                        onChange={e => setNewTodo(prev => ({ ...prev, dueDate: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">緊急程度</label>
+                      <select
+                        className="form-select"
+                        value={newTodo.urgency}
+                        onChange={e => setNewTodo(prev => ({ ...prev, urgency: e.target.value }))}
+                        required
+                      >
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">類別</label>
+                      <input
+                        className="form-control"
+                        value={newTodo.category}
+                        onChange={e => setNewTodo(prev => ({ ...prev, category: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={handleCloseAddTodoModal}>取消</button>
+                    <button type="submit" className="btn btn-primary">新增</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

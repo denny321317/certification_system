@@ -19,7 +19,7 @@
  * <SupplierManagement />
  * ```
  */
-
+import SupplierModal from '../../components/modals/SupplierModal';
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -27,6 +27,7 @@ import {
   faSearch, 
   faFilter, 
   faEye, 
+  faXmark,
   faPencil,
   faBuilding,
   faCheckCircle,
@@ -37,7 +38,7 @@ import {
   faCheckSquare
 } from '@fortawesome/free-solid-svg-icons';
 import './SupplierManagement.css';
-
+import * as supplierApi from '../../services/supplierService';
 /**
  * 供應商管理組件
  * @returns {JSX.Element} 供應商管理介面
@@ -48,7 +49,7 @@ const SupplierManagement = ({ canWrite }) => {
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
    */
   const [activeTab, setActiveTab] = useState('全部');
-
+  const PAGE_SIZE = 10;
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -60,6 +61,17 @@ const SupplierManagement = ({ canWrite }) => {
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
    */
   const [currentPage, setCurrentPage] = useState(1);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+const [filters, setFilters] = useState({
+ category: 'ALL',
+  status: 'ALL',
+  risk: 'ALL',
+  region: 'ALL',
+});
+const [draftFilters, setDraftFilters] = useState(filters);
+
+
   
   /**
    * 供應商數據結構
@@ -92,113 +104,58 @@ const SupplierManagement = ({ canWrite }) => {
    *   }
    * }>}
    */
-  const suppliers = [
-    {
-      id: 1,
-      name: '頂尖電子有限公司',
-      status: 'approved',
-      categories: ['原材料供應商', '電子元件'],
-      location: '台灣新北市',
-      since: '2019',
-      certifications: 4,
-      riskLevel: 'low',
-      latestCertification: {
-        name: 'SMETA 4支柱認證',
-        date: '2023-05-20'
-      },
-      expirationReminder: {
-        name: 'ISO 14001',
-        daysLeft: 60
-      }
-    },
-    {
-      id: 2,
-      name: '優質塑膠工業股份有限公司',
-      status: 'pending',
-      categories: ['原材料供應商', '塑膠製品'],
-      location: '台灣台中市',
-      since: '2020',
-      certifications: 2,
-      riskLevel: 'medium',
-      latestCertification: {
-        name: 'ISO 9001',
-        date: '2022-11-15'
-      },
-      ongoingCertification: {
-        name: 'SMETA',
-        progress: 65
-      }
-    },
-    {
-      id: 3,
-      name: '宏遠五金製造廠',
-      status: 'high-risk',
-      categories: ['零配件供應商', '金屬零件'],
-      location: '中國廣東省',
-      since: '2021',
-      certifications: 1,
-      riskLevel: 'high',
-      riskReason: '未完成環境與安全審核',
-      actionNeeded: {
-        name: '環境管理審核',
-        overdueDays: 30
-      }
-    },
-    {
-      id: 4,
-      name: '東方包裝科技有限公司',
-      status: 'approved',
-      categories: ['包裝材料供應商'],
-      location: '台灣高雄市',
-      since: '2018',
-      certifications: 3,
-      riskLevel: 'low',
-      latestCertification: {
-        name: 'ISO 14001',
-        date: '2023-01-10'
-      },
-      expirationReminder: {
-        name: null,
-        text: '無近期到期認證'
-      }
-    },
-    {
-      id: 5,
-      name: '國際物流運輸有限公司',
-      status: 'pending',
-      categories: ['服務提供商', '物流運輸'],
-      location: '台灣台北市',
-      since: '2022',
-      certifications: 2,
-      riskLevel: 'medium',
-      latestCertification: {
-        name: 'ISO 9001',
-        date: '2022-08-05'
-      },
-      ongoingCertification: {
-        name: 'ISO 14001',
-        progress: 40
-      }
-    }
-  ];
+  const [suppliers, setSuppliers] = useState([]);
+
   
   /**
    * 根據當前標籤和搜索關鍵字過濾供應商
    * @returns {Array} 過濾後的供應商列表
    */
   const filteredSuppliers = suppliers.filter(supplier => {
+    // const totalSuppliers = suppliers.length;
+    // const certifiedCount = suppliers.filter(s => s.status === 'approved').length;
+    // const pendingCount   = suppliers.filter(s => s.status === 'pending').length;
+    // const highRiskCount  = suppliers.filter(s => s.riskLevel === 'high').length;
     // 標籤篩選
     if (activeTab === '已認證' && supplier.status !== 'approved') return false;
     if (activeTab === '待審核' && supplier.status !== 'pending') return false;
     if (activeTab === '風險監控' && supplier.riskLevel !== 'high') return false;
     
     // 搜索篩選
-    if (searchTerm && !supplier.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
+    if (searchTerm && !((supplier.name || '').toLowerCase()).includes(searchTerm.toLowerCase())) {
+    return false;
     }
+    if (filters.category !== 'ALL') {
+    // 以 supplier.type 做為供應商類別比對
+      if ((supplier.type || '') !== filters.category) return false;
+    }
+    if (filters.status !== 'ALL') {
+      // filters.status 可能是 'APPROVED' / 'PENDING'
+      const want = filters.status.toLowerCase() === 'approved' ? 'approved' : 'pending';
+      if (supplier.status !== want) return false;
+    }
+    if (filters.risk !== 'ALL') {
+      // 'LOW' | 'MEDIUM' | 'HIGH'
+      if (supplier.riskLevel !== filters.risk.toLowerCase()) return false;
+    }
+    if (filters.region !== 'ALL') {
+      // 以 country code 或文字比對（ex: 'TW','CN','VN' 或 '台灣'…依你資料）
+      const loc = (supplier.location || '').toString().toUpperCase();
+      if (loc !== filters.region.toUpperCase()) return false;
+    }
+
     
     return true;
   });
+  const totalPages = Math.max(1, Math.ceil(filteredSuppliers.length / PAGE_SIZE));
+  const safePage   = Math.min(Math.max(currentPage, 1), totalPages);
+  const startIdx   = (safePage - 1) * PAGE_SIZE;
+  const endIdx     = startIdx + PAGE_SIZE;
+  const pagedSuppliers = filteredSuppliers.slice(startIdx, endIdx);
+  const totalSuppliers = suppliers.length;
+  const certifiedCount = suppliers.filter(s => s.status === 'approved').length;
+  const pendingCount   = suppliers.filter(s => s.status === 'pending').length;
+  const highRiskCount  = suppliers.filter(s => s.riskLevel === 'high').length;
   
   /**
    * 根據風險等級渲染風險指示器
@@ -279,7 +236,168 @@ const SupplierManagement = ({ canWrite }) => {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
+  // Modal 控制
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit' | 'create'
+  const [currentSupplier, setCurrentSupplier] = useState(null);
+  const dtoToUi = (dto) => ({
+  id: dto.id,
+  name: dto.name || '',
+  type: dto.type || '',
+
+  // 卡片顯示用
+  status: dto.certificateStatus === 'CERTIFICATED' ? 'approved' : 'pending',
+  categories: [],
+  location: dto.country || '',
+  since: dto.collabStart ? String(new Date(dto.collabStart).getFullYear()) : '',
+  certifications: 0,
+  riskLevel: (dto.riskProfile || 'MEDIUM').toLowerCase(),
+
+  latestCertification: undefined,
+  ongoingCertification: undefined,
+  expirationReminder: undefined,
+  actionNeeded: undefined,
+
   
+  product: (dto.product || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
+  address: (dto.address || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
+  telephone: (dto.telephone || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
+  email: (dto.email || '').replace(/\u00A0/g, ' ').replace(/\t/g, ' ').replace(/\s+/g, ' ').trim(),
+  
+  collabStart: dto.collabStart ? new Date(dto.collabStart).toISOString().slice(0, 10) : '',
+  
+  certificateStatus: (dto.certificateStatus || 'UNDER_CERTIFICATION').toUpperCase(),
+  riskProfile: (dto.riskProfile || 'MEDIUM').toUpperCase(),
+  commonCerts: Array.isArray(dto.commonCerts) ? dto.commonCerts : [],
+  otherCertification: dto.otherCertification || '',
+});
+// ---- 下方新增：把 UI 的表單資料轉成後端 DTO ----
+const uiToDto = (form) => {
+  const toEnum = (v) => (typeof v === 'string' ? v.trim().toUpperCase() : v);
+  return {
+    id: form.id ?? null,
+    name: form.name ?? '',
+    type: form.type ?? null,
+    product: form.product ?? null,
+    country: form.country ?? '',
+    address: form.address ?? null,
+    telephone: form.telephone ?? null,
+    email: form.email ?? null,
+    certificateStatus: toEnum(form.certificateStatus ?? 'UNDER_CERTIFICATION'),
+    riskProfile: toEnum(form.riskProfile ?? 'MEDIUM'),
+    // ★ yyyy-MM-dd → epoch 毫秒；空值回傳 null
+    collabStart: form.collabStart ? new Date(form.collabStart).getTime() : null,
+    commonCerts: Array.isArray(form.selectedCerts) ? [...new Set(form.selectedCerts)] : [],
+    otherCertification: (form.otherCert || '').trim(),
+  };
+};
+
+// ---- 下方新增：統一的重新載入函式 ----
+const reload = async () => {
+  try {
+    setLoading(true);
+    const data = await supplierApi.listSuppliers();
+    setSuppliers(prev => {
+      const prevMap = new Map(prev.map(s => [s.id, s]));
+      return (Array.isArray(data) ? data.map(dtoToUi) : []).map(next => {
+        const old = prevMap.get(next.id);
+        return {
+          ...next,
+          commonCerts: (Array.isArray(next.commonCerts) && next.commonCerts.length)
+            ? next.commonCerts
+            : (old?.commonCerts || []),
+          otherCertification: (next.otherCertification ?? '') !== ''
+            ? next.otherCertification
+            : (old?.otherCertification || ''),
+        };
+      });
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+React.useEffect(() => {
+  let mounted = true;
+  (async () => {
+    if (!mounted) return;
+    await reload();
+  })();
+  return () => { mounted = false; };
+}, []);
+
+
+  // 查看
+const handleView = (s) => {
+  setCurrentSupplier(s);
+  setModalMode('view');
+  setModalOpen(true);
+};
+
+// 編輯
+const handleEdit = (s) => {
+  
+  setCurrentSupplier(s);
+  setModalMode('edit');
+  setModalOpen(true);
+};
+
+// 新增
+const handleCreate = () => {
+  
+  setCurrentSupplier({
+    id: null, name: '', type: '', product: '', country: '',
+    address: '', telephone: '', email: '', collabStart: '',
+    certificateStatus: 'UNDER_CERTIFICATION', riskProfile: 'MEDIUM',
+  });
+  setModalMode('create');
+  setModalOpen(true);
+};
+
+// 先本地更新加上後端更新
+const handleSave = async (form) => {
+  try {
+    const dto = uiToDto(form);
+    
+    if (modalMode === 'create') {
+      await supplierApi.createSupplier(dto);
+    } else if (modalMode === 'edit' && form.id != null) {
+      await supplierApi.updateSupplier(form.id, dto);
+    }
+    setSuppliers(prev =>
+      prev.map(s =>
+        s.id === (form.id ?? null)
+          ? {
+              ...s,
+              // 把表單的選擇直接寫回列表物件（後端若尚未實作也能顯示）
+              commonCerts: Array.isArray(form.selectedCerts) ? [...new Set(form.selectedCerts)] : [],
+              otherCertification: (form.otherCert || '').trim(),
+            }
+          : s
+      )
+    );
+    await reload();      // 成功後重抓列表
+    setModalOpen(false); // 關閉 Modal
+  } catch (e) {
+    console.error(e);
+    alert(`儲存失敗：${e?.response?.data?.message || e.message || e}`);
+  }
+};
+// 刪除（暫用瀏覽器確認窗）
+const askDelete = async (id) => {
+  if (!window.confirm('刪除後將無法復原，確定要刪除此供應商嗎？')) return;
+  try {
+    await supplierApi.deleteSupplier(id); // ← 打後端
+    await reload();                       // ← 刷新列表
+  } catch (e) {
+    console.error(e);
+    alert(`刪除失敗：${e?.response?.data?.message || e.message || e}`);
+  }
+};
+
+
   return (
     <div className="supplier-management-container">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -295,11 +413,8 @@ const SupplierManagement = ({ canWrite }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button 
-            className="btn upload-btn"
-            disabled={ !canWrite }
-          >
-            <FontAwesomeIcon icon={faPlus} className="me-2" />新增供應商
+          <button className="btn btn-sm btn-outline-secondary" onClick={handleCreate}>
+                        <FontAwesomeIcon icon={faPlus} className="me-2" />新增供應商
           </button>
         </div>
       </div>
@@ -322,19 +437,19 @@ const SupplierManagement = ({ canWrite }) => {
             <h6 className="mb-3">供應商總覽</h6>
             <div className="d-flex justify-content-between mb-3">
               <div>供應商總數</div>
-              <div className="fw-bold">68</div>
+              <div className="fw-bold">{totalSuppliers}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>已認證供應商</div>
-              <div className="fw-bold text-success">42</div>
+              <div className="fw-bold text-success">{certifiedCount}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>待審核供應商</div>
-              <div className="fw-bold text-warning">15</div>
+              <div className="fw-bold text-warning">{pendingCount}</div>
             </div>
             <div className="d-flex justify-content-between mb-3">
               <div>高風險供應商</div>
-              <div className="fw-bold text-danger">11</div>
+              <div className="fw-bold text-danger">{highRiskCount}</div>
             </div>
           </div>
           
@@ -342,58 +457,83 @@ const SupplierManagement = ({ canWrite }) => {
             <h6 className="mb-3">篩選條件</h6>
             <div className="mb-3">
               <label className="form-label">供應商類別</label>
-              <select className="form-select">
-                <option>全部類別</option>
-                <option>原材料供應商</option>
-                <option>零配件供應商</option>
-                <option>包裝材料供應商</option>
-                <option>服務提供商</option>
+              <select
+                className="form-select"
+                value={draftFilters.category}
+                onChange={(e) => setDraftFilters(d => ({ ...d, category: e.target.value }))}
+              > 
+              <option value="ALL">全部類別</option>
+                {/* 依照你的 dto.type 實際值調整 value */}
+                <option value="RAW_MATERIAL">原材料供應商</option>
+                <option value="PARTS">零配件供應商</option>
+                <option value="PACKAGING">包裝材料供應商</option>
+                <option value="SERVICE">服務提供商</option>
               </select>
+              
             </div>
             <div className="mb-3">
               <label className="form-label">認證狀態</label>
-              <select className="form-select">
-                <option>全部狀態</option>
-                <option>已通過認證</option>
-                <option>認證進行中</option>
-                <option>待認證</option>
-                <option>認證過期</option>
-              </select>
+              <select
+              className="form-select"
+              value={draftFilters.status}
+              onChange={(e) => setDraftFilters(d => ({ ...d, status: e.target.value }))}
+            >
+              <option value="ALL">全部狀態</option>
+              <option value="APPROVED">已通過認證</option>
+              <option value="UNDER_CERTIFICATION">認證進行中</option>
+              <option value="PENDING">待認證</option>
+              <option value="EXPIRED">認證過期</option>
+            </select>
             </div>
             <div className="mb-3">
               <label className="form-label">風險等級</label>
-              <select className="form-select">
-                <option>全部風險等級</option>
-                <option>低風險</option>
-                <option>中風險</option>
-                <option>高風險</option>
+              <select
+                className="form-select"
+                value={draftFilters.risk}
+                onChange={(e) => setDraftFilters(d => ({ ...d, risk: e.target.value }))}
+              >
+                <option value="ALL">全部風險等級</option>
+                <option value="LOW">低風險</option>
+                <option value="MEDIUM">中風險</option>
+                <option value="HIGH">高風險</option>
               </select>
             </div>
             <div className="mb-3">
               <label className="form-label">所在地區</label>
-              <select className="form-select">
-                <option>全部地區</option>
-                <option>台灣</option>
-                <option>中國大陸</option>
-                <option>東南亞</option>
-                <option>其他地區</option>
+              <select
+                className="form-select"
+                value={draftFilters.region}
+                onChange={(e) => setDraftFilters(d => ({ ...d, region: e.target.value }))}
+              >
+                <option value="ALL">全部地區</option>
+                <option value="TW">台灣</option>
+                <option value="CN">中國大陸</option>
+                <option value="SEA">東南亞</option>
+                <option value="OTHER">其他地區</option>
               </select>
             </div>
-            <button className="btn btn-outline-primary w-100">
-              <FontAwesomeIcon icon={faFilter} className="me-2" />套用篩選
-            </button>
+            <button
+                className="btn btn-outline-primary w-100"
+                onClick={() => { setFilters(draftFilters); setCurrentPage(1); }}
+              >
+                <FontAwesomeIcon icon={faFilter} className="me-2" />套用篩選
+              </button>
           </div>
         </div>
         
-        <div className="col-md-9">
-          {filteredSuppliers.length === 0 ? (
+       <div className="col-md-9">
+          {loading ? (
+            <div className="text-center py-5">資料載入中…</div>
+          ) : error ? (
+            <div className="text-center py-5 text-danger">載入失敗：{String(error)}</div>
+          ) : filteredSuppliers.length === 0 ? (
             <div className="text-center py-5">
               <h5>未找到符合條件的供應商</h5>
               <p className="text-muted">請嘗試調整搜尋條件</p>
             </div>
           ) : (
             <>
-              {filteredSuppliers.map(supplier => (
+              {pagedSuppliers.map((supplier) => (
                 <div className="supplier-card" key={supplier.id}>
                   <div className="d-flex justify-content-between">
                     <div className="d-flex">
@@ -406,9 +546,13 @@ const SupplierManagement = ({ canWrite }) => {
                           {renderStatusBadge(supplier.status)}
                         </div>
                         <div>
-                          {supplier.categories.map((category, index) => (
-                            <span className="category-badge" key={index}>{category}</span>
-                          ))}
+                          {(Array.isArray(supplier.categories) ? supplier.categories : []).map(
+                            (category, index) => (
+                              <span className="category-badge" key={`cat-${supplier.id}-${index}`}>
+                                {category}
+                              </span>
+                            )
+                          )}
                         </div>
                         <div className="supplier-meta">
                           <span>
@@ -419,112 +563,177 @@ const SupplierManagement = ({ canWrite }) => {
                             <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
                             合作自 {supplier.since}
                           </span>
-                          <span>
-                            <FontAwesomeIcon icon={faCheckSquare} className="me-1" />
-                            {supplier.certifications} 項已完成認證
-                          </span>
+                          {(() => {
+                              const completedCerts = [
+                                ...(Array.isArray(supplier.commonCerts) ? supplier.commonCerts : []),
+                                ...(supplier.otherCertification ? [supplier.otherCertification] : []),
+                              ].filter(Boolean);
+
+                              return (
+                                <span className="d-inline-flex align-items-center flex-wrap gap-2">
+                                  <FontAwesomeIcon icon={faCheckSquare} className="me-1" />
+                                  <span className="me-1">{completedCerts.length} 項已完成認證</span>
+
+                                  
+                                </span>
+                              );
+                            })()}
+
                         </div>
                       </div>
                     </div>
+
                     <div className="supplier-actions">
-                      <button className="btn btn-sm btn-outline-secondary">
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => handleView(supplier)}
+                      >
                         <FontAwesomeIcon icon={faEye} />
                       </button>
-                      <button className={`btn btn-sm btn-outline-primary${ !canWrite ? 'icon-disabled' : ''}`}>
+                      <button
+                        className="btn btn-sm btn-outline-secondary mx-2"
+                        onClick={() => handleEdit(supplier)}
+                      >
                         <FontAwesomeIcon icon={faPencil} />
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => askDelete(supplier.id)}
+                        aria-label="刪除供應商"
+                      >
+                        <FontAwesomeIcon icon={faXmark} />
                       </button>
                     </div>
                   </div>
+
                   <div className="row mt-3">
                     <div className="col-md-4">
                       <div className="mb-1">風險評估</div>
                       {renderRiskIndicator(supplier.riskLevel)}
                     </div>
+
                     <div className="col-md-4">
                       <div className="mb-1">
-                        {supplier.riskReason ? '風險原因' : 
-                         supplier.ongoingCertification ? '進行中認證' : '最近認證'}
+                        {supplier.riskReason
+                          ? '風險原因'
+                          : supplier.ongoingCertification
+                          ? '進行中認證'
+                          : supplier.latestCertification
+                          ? '最近認證'
+                          : '已完成認證：'}
                       </div>
                       <div>
-                        {supplier.riskReason ? supplier.riskReason : 
-                         supplier.ongoingCertification ? (
-                           <>
-                             {supplier.ongoingCertification.name} 
-                             <span className="text-primary small">
-                               進行中 ({supplier.ongoingCertification.progress}%)
-                             </span>
-                           </>
-                         ) : (
-                           <>
-                             {supplier.latestCertification.name} 
-                             <span className="text-muted small">
-                               ({supplier.latestCertification.date})
-                             </span>
-                           </>
-                         )}
-                      </div>
-                    </div>
-                    <div className="col-md-4">
-                      <div className="mb-1">
-                        {supplier.actionNeeded ? '需要行動' : 
-                         supplier.ongoingCertification && !supplier.riskReason ? '最近認證' : '認證到期提醒'}
-                      </div>
-                      <div>
-                        {supplier.actionNeeded ? (
+                        {supplier.riskReason ? (
+                          supplier.riskReason
+                        ) : supplier.ongoingCertification ? (
                           <>
-                            {supplier.actionNeeded.name} 
-                            <span className="text-danger small">
-                              逾期 {supplier.actionNeeded.overdueDays} 天
+                            {supplier.ongoingCertification.name}{' '}
+                            <span className="text-primary small">
+                              進行中 ({supplier.ongoingCertification.progress}%)
                             </span>
                           </>
-                        ) : supplier.ongoingCertification && !supplier.riskReason ? (
+                        ) : supplier.latestCertification ? (
                           <>
-                            {supplier.latestCertification.name} 
+                            {supplier.latestCertification.name}{' '}
                             <span className="text-muted small">
                               ({supplier.latestCertification.date})
                             </span>
                           </>
-                        ) : supplier.expirationReminder && supplier.expirationReminder.name ? (
-                          <>
-                            {supplier.expirationReminder.name} 
-                            <span className="text-warning small">
-                              剩餘{supplier.expirationReminder.daysLeft}天
-                            </span>
-                          </>
                         ) : (
-                          supplier.expirationReminder && supplier.expirationReminder.text
+                          (() => {
+                      const items = [
+                        ...(Array.isArray(supplier.commonCerts) ? supplier.commonCerts : []),
+                        ...(supplier.otherCertification ? [supplier.otherCertification] : []),
+                      ].filter(Boolean);
+
+                      if (items.length === 0) {
+                        return <span className="text-muted small">無資料</span>;
+                      }
+
+                      return (
+                        <div className="d-flex flex-wrap gap-2">
+                          {items.map((cert, i) => (
+                            <span
+                              key={`${supplier.id}-cert-${i}`}
+                              className="badge rounded-pill bg-primary-subtle text-primary fs-5"
+                            >
+                              {cert}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()
+
                         )}
                       </div>
                     </div>
+
+                    
                   </div>
                 </div>
               ))}
-            
+
               <nav aria-label="供應商分頁">
-                <ul className="pagination justify-content-center mt-4">
-                  <li className="page-item disabled">
-                    <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled>上一頁</button>
-                  </li>
-                  <li className="page-item active">
-                    <button className="page-link" onClick={() => handlePageChange(1)}>1</button>
-                  </li>
-                  <li className="page-item">
-                    <button className="page-link" onClick={() => handlePageChange(2)}>2</button>
-                  </li>
-                  <li className="page-item">
-                    <button className="page-link" onClick={() => handlePageChange(3)}>3</button>
-                  </li>
-                  <li className="page-item">
-                    <button className="page-link" onClick={() => handlePageChange(currentPage + 1)}>下一頁</button>
-                  </li>
-                </ul>
-              </nav>
+                  <ul className="pagination justify-content-center mt-4">
+                    {/* 上一頁 */}
+                    <li className={`page-item ${safePage === 1 ? 'disabled' : ''}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                      >
+                        上一頁
+                      </button>
+                    </li>
+
+                    {/* 動態頁碼（最多顯示 7 個） */}
+                    {Array.from({ length: totalPages })
+                      .slice(
+                        Math.max(0, safePage - 4),
+                        Math.max(0, safePage - 4) + Math.min(7, totalPages)
+                      )
+                      .map((_, i) => {
+                        const first = Math.max(1, safePage - 3);
+                        const page = first + i;
+                        return (
+                          <li key={page} className={`page-item ${page === safePage ? 'active' : ''}`}>
+                            <button className="page-link" onClick={() => setCurrentPage(page)}>
+                              {page}
+                            </button>
+                          </li>
+                        );
+                      })}
+
+                    {/* 下一頁 */}
+                    <li className={`page-item ${safePage === totalPages ? 'disabled' : ''}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                      >
+                        下一頁
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+
             </>
           )}
         </div>
-      </div>
-    </div>
-  );
-};
+        </div>
 
-export default SupplierManagement; 
+        <SupplierModal
+          open={modalOpen}
+          mode={modalMode}            // 'view' | 'edit' | 'create'
+          supplier={currentSupplier}
+          canWrite={canWrite}
+          onClose={() => setModalOpen(false)}
+          onSave={handleSave}
+        />
+        </div>
+
+        );
+        };
+
+        
+        export default SupplierManagement;

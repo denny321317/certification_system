@@ -18,18 +18,13 @@ public class ProjectDetailDTO {
     private String endDate;
     private String internalReviewDate;
     private String externalReviewDate;
-    private String manager;
+    private String managerId;
     private String agency;
-    private Integer progress;
+    private int progress;
     private String progressColor;
     private String description;
     private List<TeamMemberDTO> team;
     private List<DocumentDTO> documents;
-    // 你可依需求擴充 timeline 等欄位
-
-    public ProjectDetailDTO(Long id, String name, String status) {
-        this.id = id;
-        this.name = name;
-        this.status = status;
-    }
+    private String selectedTemplateId;
+    private String checklistState;
 } 

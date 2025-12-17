@@ -1,14 +1,17 @@
 package com.project.backend.controller;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.project.backend.model.SecuritySettings;
 import com.project.backend.model.User;
 import com.project.backend.service.AuthService;
 import com.project.backend.service.EmailService;
+import com.project.backend.service.SecuritySettingsService;
 
 import lombok.Data;
 
@@ -26,11 +29,14 @@ public class AuthController {
     private AuthService authService;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private SecuritySettingsService securitySettingsService;
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest request) {
 
         Map<String, Object> response = new HashMap<>();
+        SecuritySettings settings = securitySettingsService.getSettings();
         try {
             Optional<User> user = authService.login(request.getEmail(), request.getPassword());
             if (user.isPresent()) {
@@ -41,9 +47,11 @@ public class AuthController {
                 loggedInUser.setLastTimeLogin(LocalDateTime.now());
                 authService.saveUser(loggedInUser);
 
+
                 response.put("success", true);
                 response.put("token", "mock_token");
                 response.put("user", authService.toUserDTO(user.get()));
+                
             } else {
                 response.put("success", false);
                 response.put("error", "帳號或密碼錯誤");
@@ -52,7 +60,26 @@ public class AuthController {
             if ("suspended".equals(e.getMessage())) {
                 response.put("success", false);
                 response.put("error", "您的帳號已被停用，請聯絡管理員。");
-            } else {
+            } else if ("password_not_compliant".equals(e.getMessage())) {
+                response.put("token", "mock_token");
+                response.put("success", false);
+                response.put("error", "password_change_required");
+                response.put("securitySettings", securitySettingsService.getSettings());
+            
+            } else if ("account_locked".equals(e.getMessage())) {
+                // find user again for remaining time
+                authService.findByEmail(request.getEmail()).ifPresent(u -> {
+                    if (u.getAccountLockedUntil() != null) {
+                        long seconds = Duration.between(LocalDateTime.now(), u.getAccountLockedUntil()).getSeconds();
+                        response.put("lockRemainingSeconds", seconds);
+                    }
+                });
+                response.put("success", false);
+                response.put("error", "account_locked");
+                
+            } 
+            
+            else {
                 response.put("success", false);
                 response.put("error", "未知錯誤");
             }
@@ -138,7 +165,52 @@ public class AuthController {
         
         return response;
     }
+
+    /**
+     * 專門於用戶被迫改密碼時(如: 密碼政策改變)使用
+     * @param request
+     * @return
+     */
+    @PostMapping("/update-password-for-compliancy")
+    public Map<String, Object> updatePasswordForce(@RequestBody UpdatePasswordForceRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        
+        // 根據 email 獲取用戶
+        Optional<User> user = authService.findByEmail(request.getEmail());
+        
+        if (user.isPresent()) {
+            // 透過舊密碼檢查身份
+            if (!user.get().getPassword().equals(request.getOldPassword())) {
+                response.put("success", false);
+                response.put("message", "身份驗證錯誤");
+                return response;
+            }
+            
+            // 更新用戶的密碼
+            boolean isUpdated = authService.updatePassword(user.get(), request.getNewPassword());
+            
+            if (isUpdated) {
+                response.put("success", true);
+                response.put("message", "密碼已成功更新");
+            } else {
+                response.put("success", false);
+                response.put("error", "密碼更新失敗，請稍後再試");
+            }
+        } else {
+            response.put("success", false);
+            response.put("error", "找不到 Email 為 " + request.email + " 的用戶");
+        }
+        
+        return response;
+    }
     
+    @Data
+    static class UpdatePasswordForceRequest {
+        private String email;
+        private String oldPassword;
+        private String newPassword;
+    }
+
     @Data
     static class UpdatePasswordRequest {
         private String token;       // 重設 token

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.project.backend.repository.ReviewIssueRepository;
+
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -22,6 +24,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
     private final OperationHistoryService operationHistoryService;
+    private final ReviewIssueRepository reviewIssueRepository;
 
     @Transactional(readOnly = true)
     public ReviewFeedbackDTO getReviewFeedback(Long projectId, String reviewType) {
@@ -42,6 +45,16 @@ public class ReviewService {
         return new ReviewFeedbackDTO(status, progress, reviewSteps, reviewDTOs);
     }
     
+    @Transactional
+    public void updateIssueStatuses(List<IssueStatusUpdateDTO> issues) {
+        for (IssueStatusUpdateDTO dto : issues) {
+            ReviewIssue issue = reviewIssueRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Issue not found with id: " + dto.getId()));
+            issue.setStatus(dto.isCompleted() ? "closed" : "open");
+            reviewIssueRepository.save(issue);
+        }
+    }
+
     @Transactional
     public ReviewDTO createReview(Long projectId, SubmitFeedbackDTO submitFeedbackDTO) {
         Project project = projectRepository.findById(projectId)
@@ -75,6 +88,14 @@ public class ReviewService {
         return convertToReviewDTO(savedReview);
     }
 
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        if (!reviewRepository.existsById(reviewId)) {
+            throw new RuntimeException("Review not found with id: " + reviewId);
+        }
+        reviewRepository.deleteById(reviewId);
+    }
+
     private ReviewDTO convertToReviewDTO(Review review) {
         List<ReviewIssueDTO> issueDTOs = review.getIssues().stream()
                 .map(this::convertToIssueDTO)
@@ -85,7 +106,7 @@ public class ReviewService {
                 review.getReviewerName(),
                 review.getReviewerDepartment(),
                 review.getReviewDate(),
-                review.getDecision(),
+                review.getDecision(), // decision is the correct field for status
                 review.getComment(),
                 issueDTOs
         );
@@ -97,7 +118,11 @@ public class ReviewService {
                 issue.getTitle(),
                 issue.getSeverity(),
                 issue.getStatus(),
-                issue.getDeadline()
+                issue.getDeadline(),
+                issue.getIndicatorId(),
+                issue.getDocumentId(),
+                issue.getIndicatorText(),
+                issue.getDocumentText()
         );
     }
     
@@ -108,6 +133,10 @@ public class ReviewService {
         issue.setSeverity(dto.getSeverity());
         issue.setStatus(dto.getStatus());
         issue.setDeadline(dto.getDeadline());
+        issue.setIndicatorId(dto.getIndicatorId());
+        issue.setDocumentId(dto.getDocumentId());
+        issue.setIndicatorText(dto.getIndicatorText());
+        issue.setDocumentText(dto.getDocumentText());
         return issue;
     }
 

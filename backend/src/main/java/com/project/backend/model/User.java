@@ -1,5 +1,6 @@
 package com.project.backend.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -33,7 +34,7 @@ public class User {
 
     private String position;
 
-    @Column(name = "password_reset_token")
+    @Column(name = "password_reset_token", unique = true)
     private String passwordResetToken;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -58,6 +59,12 @@ public class User {
     @Column(nullable = false)
     private boolean suspended = false;
 
+    private int failedLoginAttempts;
+    private LocalDateTime accountLockedUntil;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<String> notifications = new ArrayList<>();
+
     // default constructor for JPA
 
     public User(String name, Role role, String email, String department){
@@ -73,6 +80,11 @@ public class User {
     /*
      * Getters and Setters below
      */
+
+    public int getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void setFailedLoginAttempts(int v) { this.failedLoginAttempts = v; }
+    public LocalDateTime getAccountLockedUntil() { return accountLockedUntil; }
+    public void setAccountLockedUntil(LocalDateTime t) { this.accountLockedUntil = t; }
 
     public String getDepartment(){
         return department;
@@ -141,6 +153,19 @@ public class User {
 
     public boolean isSuspended() {
         return suspended;
+    }
+
+        public List<String> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<String> notifications) {
+        this.notifications = notifications;
+    }
+
+    // Add a helper method to add notifications
+    public void addNotification(String notification) {
+        this.notifications.add(notification);
     }
 
 

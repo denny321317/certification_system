@@ -27,6 +27,7 @@ import {
   faPrint, 
   faFilter,
   faCheckSquare, 
+  faSpinner,
   faCheckCircle, 
   faHourglassHalf, 
   faExclamationTriangle,
@@ -75,6 +76,9 @@ const ReportsAnalysis = () => {
    */
   const [activeTab, setActiveTab] = useState('綜合報表');
 
+  // 新增一個 state 來存放從後端獲取的缺失項目
+  const [issues, setIssues] = useState([]);
+
   /**
    * 圖表引用
    * @type {React.MutableRefObject<HTMLCanvasElement>} 圖表Canvas元素引用
@@ -105,19 +109,23 @@ const ReportsAnalysis = () => {
     certType: true,
     severity: true,
     discoveryDate: true,
-    status: true,
-    progress: true
+    status: true
   });
   const [exportFormat, setExportFormat] = useState('excel');
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
 
-  // 趨勢分析新增狀態
-  const [trendChartType, setTrendChartType] = useState('line'); // line, bar, area
-  const [trendTimeRange, setTrendTimeRange] = useState('12months'); // 6months, 12months, 24months
-  const [trendMetric, setTrendMetric] = useState('count'); // count, progress, resolution_rate
-  const [showTrendComparison, setShowTrendComparison] = useState(false);
-  const [selectedTrendCerts, setSelectedTrendCerts] = useState(['SMETA', 'ISO 14001']); // 用於對比的認證類型
+  // 認證類型分布數據
+  const [certTypeChartData, setCertTypeChartData] = useState({
+    labels: ['無資料'], // 預設標籤，避免首次渲染錯誤
+    datasets: [{
+      data: [1], 
+      backgroundColor: ['#ccc'],
+      borderWidth: 0
+    }]
+  });
 
+  const [deficiencyCount, setDeficiencyCount] = useState(null);
+  const [isCountLoading, setIsCountLoading] = useState(true);
   /**
    * 圖表實例引用
    */
@@ -127,6 +135,34 @@ const ReportsAnalysis = () => {
   const trendChartInstance = useRef(null);
   const refreshTimerRef = useRef(null);
 
+  // 認證類型分布
+  const [uniqueCertTypeCount, setUniqueCertTypeCount] = useState(0);
+  useEffect(() => {
+        const fetchUniqueCertTypeCount = async () => {
+            try {
+                const response = await fetch(`http://localhost:8000/api/projects/certtype-unique-count`);
+
+                if (!response.ok) {
+                    // 處理非 200 的狀態碼 (例如 500 Internal Server Error)
+                    console.error("Failed to fetch unique cert type count. Status:", response.status);
+                    // 這裡可以選擇拋出錯誤或設定為 0
+                    return; 
+                }
+
+                // API 回傳的是一個整數 (Integer)
+                const count = await response.json(); 
+                setUniqueCertTypeCount(count); // 設定狀態
+                
+            } catch (error) {
+                // 處理網路錯誤 (例如 TypeError: Failed to fetch / CORS 錯誤)
+                console.error("Error fetching unique cert type count:", error);
+                setUniqueCertTypeCount(0); // 失敗時設為 0
+            }
+        };
+
+        fetchUniqueCertTypeCount();
+        
+    }, []);
   /**
    * 認證專案進度數據（與認證專案頁面同步）
    * @type {Array<{
@@ -135,13 +171,102 @@ const ReportsAnalysis = () => {
    *   status: string       // 專案狀態
    * }>}
    */
-  const projectProgressData = [
-    { name: 'SMETA 4支柱認證', progress: 75, status: 'in-progress' },
-    { name: 'ISO 14001 環境管理系統', progress: 90, status: 'in-progress' },
-    { name: 'ISO 9001 品質管理系統', progress: 100, status: 'completed' },
-    { name: 'SA8000 社會責任認證', progress: 0, status: 'planned' }
-  ];
+  // const projectProgressData = [
+  //   { name: 'SMETA 4支柱認證', progress: 75, status: 'in-progress' },
+  //   { name: 'ISO 14001 環境管理系統', progress: 90, status: 'in-progress' },
+  //   { name: 'ISO 9001 品質管理系統', progress: 100, status: 'completed' },
+  //   { name: 'SA8000 社會責任認證', progress: 0, status: 'planned' },
+  //   { name: 'SA8000 社會責任認證', progress: 0, status: 'planned' },
+  //   { name: 'SA8000 社會責任認證', progress: 0, status: 'planned' }
+  // ];
+  const [projectProgressSummary, setProjectProgressSummary] = useState([]);
+  const [isTypeProgressLoading, setIsTypeProgressLoading] = useState(true);
 
+  const getStatusByProgress = useCallback((progress) => {
+    if (progress === 100) return 'completed';
+    if (progress >= 10) return 'in-progress';
+    return 'planned';
+  }, []);
+
+  useEffect(() => {
+    const fetchProgressByType = async () => {
+        setIsTypeProgressLoading(true);
+        try {
+            // 使用後端新的 API 路徑
+            const response = await fetch('http://localhost:8000/api/projects/progress-by-type'); 
+            if (!response.ok) {
+                throw new Error('無法獲取專案類型進度資料');
+            }
+            const data = await response.json(); 
+            
+            // 將 API 數據 (certType, averageProgress) 轉換為圖表和卡片所需的結構
+            const formattedData = data.map(item => ({
+                name: item.certType,
+                progress: Math.round(item.averageProgress), // 四捨五入到整數
+                status: getStatusByProgress(Math.round(item.averageProgress)) // 動態判斷狀態
+            }));
+
+            setProjectProgressSummary(formattedData);
+        } catch (error) {
+            console.error('獲取類型進度失敗:', error);
+            setProjectProgressSummary([]);
+        } finally {
+            setIsTypeProgressLoading(false);
+        }
+    };
+
+    fetchProgressByType();
+  // 將 getStatusByProgress 加入依賴列表
+  }, [getStatusByProgress]);
+
+  //缺失項目
+  useEffect(() => {
+    const fetchDeficiencyCount = async () => {
+        setIsCountLoading(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/reports/deficiency-items/count'); 
+            if (!response.ok) {
+                throw new Error('無法獲取缺失總數');
+            }
+            // API 回傳的是一個數字
+            const data = await response.json(); 
+            setDeficiencyCount(data);
+        } catch (error) {
+            console.error('獲取缺失總數失敗:', error);
+            setDeficiencyCount('N/A'); // 載入失敗時顯示 N/A
+        } finally {
+            setIsCountLoading(false);
+        }
+    };
+
+    fetchDeficiencyCount();
+  }, []);
+
+  const [averageProjectProgress, setAverageProjectProgress] = useState(null);
+  const [isProgressLoading, setIsProgressLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAverageProgress = async () => {
+        setIsProgressLoading(true);
+        try {
+            // 這裡我們使用您在 Service 層定義的 API 路徑
+            const response = await fetch('http://localhost:8000/api/projects/average-progress'); 
+            if (!response.ok) {
+                throw new Error('無法獲取平均進度');
+            }
+            const data = await response.json(); 
+            // API 回傳的是 double，四捨五入到整數再儲存，方便顯示
+            setAverageProjectProgress(Math.round(data)); 
+        } catch (error) {
+            console.error('獲取平均進度失敗:', error);
+            setAverageProjectProgress('N/A'); // 載入失敗時顯示 N/A
+        } finally {
+            setIsProgressLoading(false);
+        }
+    };
+
+    fetchAverageProgress();
+  }, []);
   /**
    * 初始化圖表
    * 在組件掛載後創建各種統計圖表
@@ -176,27 +301,35 @@ const ReportsAnalysis = () => {
       // 先清理現有圖表
       cleanupCharts();
 
-      if (projectProgressChartRef.current) {
-        // 認證進度圖表
-        const progressCtx = projectProgressChartRef.current.getContext('2d');
-        progressChartInstance.current = new Chart(progressCtx, {
-          type: 'bar',
-          data: {
-            labels: projectProgressData.map(project => project.name.replace(/認證|系統/g, '').trim()),
-            datasets: [{
-              label: '當前進度',
-              data: projectProgressData.map(project => project.progress),
-              backgroundColor: projectProgressData.map(project => {
-                if (project.progress === 100) return '#22c55e';  // 綠色 - 已完成
-                if (project.progress >= 70) return '#3b82f6';    // 藍色 - 進度良好
-                if (project.progress >= 30) return '#f59e0b';    // 橙色 - 中等進度
-                return '#64748b';                                // 灰色 - 尚未開始
-              }),
-              borderWidth: 0,
-              borderRadius: 4,
-              borderSkipped: false,
-            }]
-          },
+      // 💡 僅當 projectProgressSummary 不為空且 Canvas 元素存在時才繪製
+      if (projectProgressChartRef.current && projectProgressSummary.length > 0) { 
+          // 認證進度圖表
+          const progressCtx = projectProgressChartRef.current.getContext('2d');
+          
+          // 取得圖表數據
+          const progressLabels = projectProgressSummary.map(project => project.name);
+          const progressData = projectProgressSummary.map(project => project.progress);
+          
+          progressChartInstance.current = new Chart(progressCtx, {
+              type: 'bar',
+              data: {
+                  // 💡 使用 projectProgressSummary 的 name 和 progress
+                  labels: progressLabels,
+                  datasets: [{
+                      label: '平均進度', // 標籤應反映是平均進度
+                      data: progressData,
+                      backgroundColor: projectProgressSummary.map(project => {
+                          // 💡 根據動態進度設置顏色
+                          if (project.progress === 100) return '#22c55e';  // 綠色 - 已完成
+                          if (project.progress >= 70) return '#3b82f6';    // 藍色 - 進度良好
+                          if (project.progress >= 30) return '#f59e0b';    // 橙色 - 中等進度
+                          return '#64748b';                                // 灰色 - 尚未開始
+                      }),
+                      borderWidth: 0,
+                      borderRadius: 4,
+                      borderSkipped: false,
+                  }]
+              },
           options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -234,73 +367,40 @@ const ReportsAnalysis = () => {
       }
       
       if (certTypeChartRef.current) {
-        // 認證類型分布圖表
+         // 認證類型分布圖表
         const typeCtx = certTypeChartRef.current.getContext('2d');
-        typeChartInstance.current = new Chart(typeCtx, {
-          type: 'doughnut',
-          data: {
-            labels: ['SMETA', 'ISO 14001', 'ISO 9001', 'SA8000'],
-            datasets: [{
-              data: [5, 3, 3, 1],
-              backgroundColor: [
-                '#3b82f6',
-                '#10b981',
-                '#f59e0b',
-                '#ef4444'
-              ],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-              legend: {
-                display: false
-              }
-            }
-          }
-        });
-      }
-      
-      if (issueTypeChartRef.current) {
-        // 缺失項目分類圖表
-        const issueCtx = issueTypeChartRef.current.getContext('2d');
-        issueChartInstance.current = new Chart(issueCtx, {
-          type: 'pie',
-          data: {
-            labels: ['勞工權益', '環境管理', '職業安全', '品質管理', '商業道德'],
-            datasets: [{
-              data: [10, 6, 4, 3, 1],
-              backgroundColor: [
-                '#3b82f6',
-                '#10b981',
-                '#f59e0b',
-                '#8b5cf6',
-                '#ec4899'
-              ],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: {
-                  boxWidth: 10,
-                  padding: 10,
-                  font: {
-                    size: 11
-                  }
+
+        // 使用狀態 certTypeChartData
+        typeChartInstance.current = new Chart(typeCtx, {
+          type: 'doughnut',
+          data: certTypeChartData, // <--- 直接使用 API 數據狀態
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+              legend: {
+                display: true // 甜甜圈圖通常會顯示圖例
+              },
+              tooltip: { 
+                enabled: true,
+                callbacks: {
+                   // 顯示百分比和數值
+                   label: (context) => {
+                       const label = context.label || '';
+                       const total = context.dataset.data.reduce((sum, v) => sum + v, 0);
+                       const value = context.parsed;
+                       const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                       return `${label}: ${value} (${percentage}%)`;
+                   }
                 }
               }
             }
           }
         });
       }
+      
+
     };
 
     // 延遲執行以確保DOM元素已經加載
@@ -312,10 +412,10 @@ const ReportsAnalysis = () => {
       clearTimeout(timer);
       cleanupCharts();
     };
-  }, []);
+  }, [projectProgressSummary]);
 
   /**
-   * 缺失項目數據結構
+   * 缺失項目數據結構 (現在會從後端獲取，這裡的註解留作參考)
    * @type {Array<{
    *   name: string,         // 問題名稱
    *   certType: string,     // 認證類型
@@ -325,80 +425,20 @@ const ReportsAnalysis = () => {
    *   progress: number      // 完成進度
    * }>}
    */
-  const issues = [
-    {
-      name: '工時記錄不完整',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-08-15',
-      status: 'in-progress',
-      progress: 75
-    },
-    {
-      name: '環境管理記錄缺漏',
-      certType: 'ISO 14001',
-      severity: 'medium',
-      discoveryDate: '2023-07-20',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '職業安全培訓未定期執行',
-      certType: 'SMETA',
-      severity: 'high',
-      discoveryDate: '2023-09-05',
-      status: 'in-progress',
-      progress: 40
-    },
-    {
-      name: '品質控制程序未文件化',
-      certType: 'ISO 9001',
-      severity: 'medium',
-      discoveryDate: '2023-08-02',
-      status: 'completed',
-      progress: 100
-    },
-    {
-      name: '廢棄物處理不符合規範',
-      certType: 'ISO 14001',
-      severity: 'high',
-      discoveryDate: '2023-09-10',
-      status: 'in-progress',
-      progress: 20
-    }
-  ];
 
   /**
-   * 已完成項目數據結構
-   * @type {Array<{
-   *   name: string,         // 項目名稱
-   *   responsible?: string, // 負責人（可選）
-   *   certType?: string,   // 認證類型（可選）
-   *   date: string         // 完成日期
-   * }>}
+   * 格式化日期為 YYYY/MM/DD
+   * @param {string} dateString - 日期字串 (YYYY-MM-DD)
+   * @returns {string} 格式化後的日期
    */
-  const completedItems = [
-    {
-      name: 'ISO 9001 品質管理系統認證',
-      responsible: '張經理',
-      date: '2023-08-15'
-    },
-    {
-      name: '環境管理記錄更新',
-      certType: 'ISO 14001',
-      date: '2023-09-20'
-    },
-    {
-      name: '品質控制程序文件化',
-      certType: 'ISO 9001',
-      date: '2023-09-15'
-    },
-    {
-      name: '工會組織架構更新',
-      certType: 'SMETA',
-      date: '2023-09-01'
-    }
-  ];
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
 
   /**
    * 渲染嚴重程度標籤
@@ -443,11 +483,13 @@ const ReportsAnalysis = () => {
     
     switch (status) {
       case 'in-progress':
+      case '進行中':
         badgeClass = 'status-badge in-progress';
         icon = faPlayCircle;
         text = '進行中';
         break;
       case 'completed':
+      case '已解決':
         badgeClass = 'status-badge completed';
         icon = faCheckCircle;
         text = '已解決';
@@ -512,22 +554,22 @@ const ReportsAnalysis = () => {
       const matchSeverity = !selectedSeverity || issue.severity === selectedSeverity;
       const matchStatus = !selectedStatus || issue.status === selectedStatus;
       
-      // 搜索
+      // 搜索 (更新 issue 的 name 為 issueName)
       const matchSearch = !searchQuery || 
-        issue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.issueName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.certType.toLowerCase().includes(searchQuery.toLowerCase());
       
       return matchType && matchFrom && matchTo && matchSeverity && matchStatus && matchSearch;
     });
 
-    // 排序
+    // 排序 (更新 issue 的 name 為 issueName)
     filtered.sort((a, b) => {
       let aValue, bValue;
       
       switch (sortBy) {
         case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          aValue = a.issueName.toLowerCase();
+          bValue = b.issueName.toLowerCase();
           break;
         case 'certType':
           aValue = a.certType.toLowerCase();
@@ -538,9 +580,9 @@ const ReportsAnalysis = () => {
           aValue = severityOrder[a.severity] || 0;
           bValue = severityOrder[b.severity] || 0;
           break;
-        case 'progress':
-          aValue = a.progress;
-          bValue = b.progress;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
           break;
         case 'date':
         default:
@@ -562,12 +604,11 @@ const ReportsAnalysis = () => {
   // 數據導出功能
   const exportData = useCallback((format = 'excel') => {
     const data = filteredAndSortedIssues.map(issue => ({
-      '問題名稱': issue.name,
+      '問題名稱': issue.issueName, // 更新 issue 的 name 為 issueName
       '認證類型': issue.certType,
-      '嚴重程度': issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低',
-      '發現日期': issue.discoveryDate,
-      '狀態': issue.status === 'completed' ? '已解決' : issue.status === 'in-progress' ? '進行中' : '計畫中',
-      '完成進度': `${issue.progress}%`
+      '嚴重程度': issue.severity, // 後端已處理好，直接使用
+      '發現日期': formatDate(issue.discoveryDate),
+      '狀態': issue.status // 後端已處理好，直接使用
     }));
 
     if (format === 'excel') {
@@ -637,194 +678,32 @@ const ReportsAnalysis = () => {
     setSortOrder('desc');
   }, []);
 
-  // 1. 新增年度趨勢資料（假資料，可根據 filterCertType、filterDateFrom、filterDateTo 篩選）
-  const trendData = [
-    { 
-      month: '2023-01', 
-      SMETA: { count: 1, resolved: 0, progress: 20 }, 
-      'ISO 14001': { count: 0, resolved: 0, progress: 0 }, 
-      'ISO 9001': { count: 1, resolved: 1, progress: 100 }, 
-      SA8000: { count: 0, resolved: 0, progress: 0 } 
-    },
-    { 
-      month: '2023-02', 
-      SMETA: { count: 2, resolved: 1, progress: 40 }, 
-      'ISO 14001': { count: 1, resolved: 0, progress: 30 }, 
-      'ISO 9001': { count: 1, resolved: 1, progress: 100 }, 
-      SA8000: { count: 0, resolved: 0, progress: 0 } 
-    },
-    { 
-      month: '2023-03', 
-      SMETA: { count: 2, resolved: 1, progress: 60 }, 
-      'ISO 14001': { count: 1, resolved: 1, progress: 80 }, 
-      'ISO 9001': { count: 1, resolved: 1, progress: 100 }, 
-      SA8000: { count: 0, resolved: 0, progress: 0 } 
-    },
-    { 
-      month: '2023-04', 
-      SMETA: { count: 3, resolved: 2, progress: 65 }, 
-      'ISO 14001': { count: 1, resolved: 1, progress: 85 }, 
-      'ISO 9001': { count: 2, resolved: 2, progress: 100 }, 
-      SA8000: { count: 0, resolved: 0, progress: 0 } 
-    },
-    { 
-      month: '2023-05', 
-      SMETA: { count: 4, resolved: 2, progress: 70 }, 
-      'ISO 14001': { count: 2, resolved: 1, progress: 75 }, 
-      'ISO 9001': { count: 2, resolved: 2, progress: 100 }, 
-      SA8000: { count: 1, resolved: 0, progress: 15 } 
-    },
-    { 
-      month: '2023-06', 
-      SMETA: { count: 5, resolved: 3, progress: 75 }, 
-      'ISO 14001': { count: 2, resolved: 2, progress: 90 }, 
-      'ISO 9001': { count: 3, resolved: 3, progress: 100 }, 
-      SA8000: { count: 1, resolved: 0, progress: 25 } 
-    },
-    { 
-      month: '2023-07', 
-      SMETA: { count: 6, resolved: 4, progress: 78 }, 
-      'ISO 14001': { count: 3, resolved: 2, progress: 85 }, 
-      'ISO 9001': { count: 3, resolved: 3, progress: 100 }, 
-      SA8000: { count: 1, resolved: 0, progress: 40 } 
-    },
-    { 
-      month: '2023-08', 
-      SMETA: { count: 7, resolved: 5, progress: 80 }, 
-      'ISO 14001': { count: 3, resolved: 3, progress: 95 }, 
-      'ISO 9001': { count: 4, resolved: 4, progress: 100 }, 
-      SA8000: { count: 2, resolved: 1, progress: 60 } 
-    },
-    { 
-      month: '2023-09', 
-      SMETA: { count: 8, resolved: 6, progress: 82 }, 
-      'ISO 14001': { count: 4, resolved: 3, progress: 90 }, 
-      'ISO 9001': { count: 4, resolved: 4, progress: 100 }, 
-      SA8000: { count: 2, resolved: 1, progress: 70 } 
-    },
-    { 
-      month: '2023-10', 
-      SMETA: { count: 9, resolved: 7, progress: 85 }, 
-      'ISO 14001': { count: 4, resolved: 4, progress: 95 }, 
-      'ISO 9001': { count: 5, resolved: 5, progress: 100 }, 
-      SA8000: { count: 3, resolved: 2, progress: 75 } 
-    },
-    { 
-      month: '2023-11', 
-      SMETA: { count: 10, resolved: 8, progress: 88 }, 
-      'ISO 14001': { count: 5, resolved: 4, progress: 92 }, 
-      'ISO 9001': { count: 5, resolved: 5, progress: 100 }, 
-      SA8000: { count: 3, resolved: 2, progress: 80 } 
-    },
-    { 
-      month: '2023-12', 
-      SMETA: { count: 11, resolved: 9, progress: 90 }, 
-      'ISO 14001': { count: 5, resolved: 5, progress: 98 }, 
-      'ISO 9001': { count: 6, resolved: 6, progress: 100 }, 
-      SA8000: { count: 4, resolved: 3, progress: 85 } 
-    }
-  ];
-
-  // 2. 動態圖表資料（根據篩選條件）
-  const filteredTrendData = useMemo(() => {
-    // 根據時間範圍篩選
-    let months = 12;
-    if (trendTimeRange === '6months') months = 6;
-    if (trendTimeRange === '24months') months = 24;
-    
-    const filteredData = trendData.slice(-months).filter(row => {
-      const inRange = (!filterDateFrom || row.month >= filterDateFrom.slice(0,7)) && 
-                     (!filterDateTo || row.month <= filterDateTo.slice(0,7));
-      return inRange;
-    });
-    
-    return filteredData;
-  }, [trendData, trendTimeRange, filterDateFrom, filterDateTo]);
-
-  const trendLabels = filteredTrendData.map(row => {
-    const date = new Date(row.month + '-01');
-    return date.toLocaleDateString('zh-TW', { year: 'numeric', month: 'short' });
-  });
-
-  // 根據選擇的指標生成數據集
-  const trendDatasets = useMemo(() => {
-    const certTypes = showTrendComparison ? selectedTrendCerts : CERT_TYPE_OPTIONS.filter(opt => opt.value);
-    
-    return certTypes.map((certType, index) => {
-      const type = typeof certType === 'string' ? certType : certType.value;
-      if (!type) return null;
-      
-      let data;
-      let label;
-      
-      switch (trendMetric) {
-        case 'progress':
-          data = filteredTrendData.map(row => row[type]?.progress || 0);
-          label = `${type} - 平均進度`;
-          break;
-        case 'resolution_rate':
-          data = filteredTrendData.map(row => {
-            const item = row[type];
-            return item?.count > 0 ? Math.round((item.resolved / item.count) * 100) : 0;
-          });
-          label = `${type} - 解決率`;
-          break;
-        case 'count':
-        default:
-          data = filteredTrendData.map(row => row[type]?.count || 0);
-          label = `${type} - 缺失數量`;
-          break;
+  // 使用 useEffect 從後端 API 獲取缺失項目資料
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/reports/deficiency-items');
+        if (!response.ok) {
+          throw new Error('無法獲取缺失項目資料');
+        }
+        const data = await response.json();
+        setIssues(data);
+      } catch (error) {
+        console.error('獲取缺失項目失敗:', error);
+        // 可以在此處設定錯誤狀態，並在 UI 上顯示錯誤訊息
       }
-      
-      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-      const color = colors[index % colors.length];
-      
-      return {
-        label,
-        data,
-        borderColor: color,
-        backgroundColor: `${color}20`,
-        tension: trendChartType === 'line' ? 0.4 : 0,
-        fill: trendChartType === 'area',
-        hidden: filterCertType && type !== filterCertType
-      };
-    }).filter(Boolean);
-  }, [filteredTrendData, trendMetric, showTrendComparison, selectedTrendCerts, filterCertType, trendChartType]);
+    };
 
-  // 趨勢分析統計數據
-  const trendStats = useMemo(() => {
-    const current = filteredTrendData[filteredTrendData.length - 1];
-    const previous = filteredTrendData[filteredTrendData.length - 2];
-    
-    if (!current || !previous) return null;
-    
-    const stats = {};
-    CERT_TYPE_OPTIONS.filter(opt => opt.value).forEach(opt => {
-      const type = opt.value;
-      const currentData = current[type] || { count: 0, resolved: 0, progress: 0 };
-      const previousData = previous[type] || { count: 0, resolved: 0, progress: 0 };
-      
-      stats[type] = {
-        currentCount: currentData.count,
-        countChange: currentData.count - previousData.count,
-        currentProgress: currentData.progress,
-        progressChange: currentData.progress - previousData.progress,
-        currentResolutionRate: currentData.count > 0 ? Math.round((currentData.resolved / currentData.count) * 100) : 0,
-        resolutionRateChange: (currentData.count > 0 ? Math.round((currentData.resolved / currentData.count) * 100) : 0) - 
-                             (previousData.count > 0 ? Math.round((previousData.resolved / previousData.count) * 100) : 0)
-      };
-    });
-    
-    return stats;
-  }, [filteredTrendData]);
+    fetchIssues();
+  }, []); // 空依賴陣列，確保只在元件首次渲染時執行一次
 
-  // 3. 優化 useEffect，圖表資料根據篩選條件動態更新
+  // 優化 useEffect，圖表資料根據篩選條件動態更新
   useEffect(() => {
     // 更新圖表數據的函數
     const updateCharts = () => {
       // 認證進度圖表更新
       if (progressChartInstance.current) {
-        const newData = projectProgressData.map(project => project.progress);
+        const newData = projectProgressSummary.map(project => project.progress);
         
         progressChartInstance.current.data.datasets[0].data = newData;
         progressChartInstance.current.update('none'); // 不使用動畫以提高性能
@@ -834,11 +713,11 @@ const ReportsAnalysis = () => {
         progressChartInstance.current = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: projectProgressData.map(project => project.name.replace(/認證|系統/g, '').trim()),
+            labels: projectProgressSummary.map(project => project.name.replace(/認證|系統/g, '').trim()),
             datasets: [{
               label: '當前進度',
-              data: projectProgressData.map(project => project.progress),
-              backgroundColor: projectProgressData.map(project => {
+              data: projectProgressSummary.map(project => project.progress),
+              backgroundColor: projectProgressSummary.map(project => {
                 if (project.progress === 100) return '#22c55e';  // 綠色 - 已完成
                 if (project.progress >= 70) return '#3b82f6';    // 藍色 - 進度良好
                 if (project.progress >= 30) return '#f59e0b';    // 橙色 - 中等進度
@@ -859,7 +738,7 @@ const ReportsAnalysis = () => {
             onClick: (e, elements) => {
               if (elements.length) {
                 const idx = elements[0].index;
-                alert('點擊了進度柱狀圖：' + projectProgressData[idx].name);
+                alert('點擊了進度柱狀圖：' + projectProgressSummary[idx].name);
               }
             },
             scales: {
@@ -880,135 +759,13 @@ const ReportsAnalysis = () => {
       }
 
       // 認證類型分布圖表更新
-      if (typeChartInstance.current) {
-        const newData = ['SMETA', 'ISO 14001', 'ISO 9001', 'SA8000'].map(type => 
-          issues.filter(i => i.certType === type).length
-        );
-        
-        typeChartInstance.current.data.datasets[0].data = newData;
-        typeChartInstance.current.update('none');
-      } else if (certTypeChartRef.current) {
-        // 如果圖表實例不存在，重新創建
-        const ctx = certTypeChartRef.current.getContext('2d');
-        typeChartInstance.current = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: ['SMETA', 'ISO 14001', 'ISO 9001', 'SA8000'],
-            datasets: [{
-              data: ['SMETA', 'ISO 14001', 'ISO 9001', 'SA8000'].map(type => 
-                issues.filter(i => i.certType === type).length
-              ),
-              backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              tooltip: { enabled: true },
-              legend: {
-                display: true,
-                position: 'bottom',
-                onClick: (e, legendItem, legend) => {
-                  const ci = legend.chart;
-                  ci.toggleDataVisibility(legendItem.index);
-                  ci.update();
-                }
-              }
-            },
-            onClick: (e, elements) => {
-              if (elements.length) {
-                const idx = elements[0].index;
-                alert('點擊了圓餅圖：' + ['SMETA', 'ISO 14001', 'ISO 9001', 'SA8000'][idx]);
-              }
-            }
-          }
-        });
-      }
-
-      // 趨勢折線圖更新
-      const trendCanvas = document.getElementById('trendLineChart');
-      if (trendChartInstance.current) {
-        trendChartInstance.current.destroy();
-        trendChartInstance.current = null;
-      }
-      
-      if (trendCanvas) {
-        const ctx = trendCanvas.getContext('2d');
-        trendChartInstance.current = new Chart(ctx, {
-          type: trendChartType === 'area' ? 'line' : trendChartType,
-          data: {
-            labels: trendLabels,
-            datasets: trendDatasets
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-              mode: 'index',
-              intersect: false,
-            },
-            plugins: {
-              tooltip: { 
-                enabled: true,
-                callbacks: {
-                  afterLabel: function(context) {
-                    if (trendMetric === 'progress' || trendMetric === 'resolution_rate') {
-                      return `${context.parsed.y}%`;
-                    }
-                    return `${context.parsed.y} 項`;
-                  }
-                }
-              },
-              legend: {
-                display: true,
-                position: 'bottom',
-                onClick: (e, legendItem, legend) => {
-                  const ci = legend.chart;
-                  ci.toggleDataVisibility(legendItem.datasetIndex);
-                  ci.update();
-                }
-              }
-            },
-            scales: {
-              x: {
-                display: true,
-                title: {
-                  display: true,
-                  text: '時間'
-                }
-              },
-              y: {
-                display: true,
-                title: {
-                  display: true,
-                  text: trendMetric === 'count' ? '缺失項目數量' : 
-                        trendMetric === 'progress' ? '平均進度 (%)' : '解決率 (%)'
-                },
-                beginAtZero: true,
-                max: (trendMetric === 'progress' || trendMetric === 'resolution_rate') ? 100 : undefined,
-                ticks: {
-                  callback: function(value) {
-                    if (trendMetric === 'progress' || trendMetric === 'resolution_rate') {
-                      return value + '%';
-                    }
-                    return value;
-                  }
-                }
-              }
-            },
-            onClick: (e, elements) => {
-              if (elements.length) {
-                const idx = elements[0].index;
-                const datasetIdx = elements[0].datasetIndex;
-                const dataset = trendDatasets[datasetIdx];
-                alert(`點擊了趨勢圖：${dataset.label} - ${trendLabels[idx]}: ${dataset.data[idx]}`);
-              }
-            }
-          }
-        });
-      }
+      if (typeChartInstance.current && certTypeChartData) {
+          // 直接更新 data 屬性
+          typeChartInstance.current.data = certTypeChartData; 
+          typeChartInstance.current.update('none');
+      } 
+      // 這裡不需要重新創建，因為數據是在 Step 2 的 useEffect 中獲取的
+      // 如果要處理篩選，請將 certTypeChartData 依賴項添加到此 useEffect
     };
 
     // 延遲更新以確保DOM已準備好
@@ -1018,25 +775,62 @@ const ReportsAnalysis = () => {
       clearTimeout(timer);
     };
   // eslint-disable-next-line
-  }, [filterCertType, filterDateFrom, filterDateTo, trendChartType, trendTimeRange, trendMetric, showTrendComparison, selectedTrendCerts]);
+  }, [filterCertType, filterDateFrom, filterDateTo, certTypeChartData]);
 
+  // 使用 useEffect 從後端 API 獲取**圖表分布資料**
+  useEffect(() => {
+    const fetchCertDistribution = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/dashboard/certification-distribution');
+        if (!response.ok) {
+          throw new Error('無法獲取認證類型分布資料');
+        }
+        const apiData = await response.json();
+        
+        // 處理 API 數據並格式化
+        const labels = apiData.labels.map(label => {
+          // 處理 API 回傳的 null 標籤，用 '其他/未知' 代替
+          return label ? label.toUpperCase() : '未知類型'; 
+        });
+        
+        const data = apiData.data;
+
+        // 預設顏色列表（可以擴展）
+        const backgroundColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        
+        setCertTypeChartData({
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderWidth: 0
+          }]
+        });
+
+      } catch (error) {
+        console.error('獲取認證類型分布失敗:', error);
+      }
+    };
+
+    fetchCertDistribution();
+  }, []); // 首次渲染時執行一次
   /**
    * 動態計算統計數據
    */
   const calculateStats = () => {
-    const totalProjects = projectProgressData.length;
-    const inProgressProjects = projectProgressData.filter(p => p.status === 'in-progress').length;
-    const completedProjects = projectProgressData.filter(p => p.status === 'completed').length;
+    const totalProjects = projectProgressSummary.length;
+    const inProgressProjects = projectProgressSummary.filter(p => p.status === 'in-progress').length;
+    const completedProjects = projectProgressSummary.filter(p => p.status === 'completed').length;
     const totalIssues = issues.length;
     const criticalIssues = issues.filter(issue => issue.severity === 'high').length;
     
     // 計算平均進度
     const averageProgress = Math.round(
-      projectProgressData.reduce((sum, project) => sum + project.progress, 0) / totalProjects
+      projectProgressSummary.reduce((sum, project) => sum + project.progress, 0) / totalProjects
     );
     
     return {
-      totalProjects,
+      totalTypes: totalProjects,
       inProgressProjects,
       completedProjects,
       totalIssues,
@@ -1051,7 +845,7 @@ const ReportsAnalysis = () => {
     <div className="reports-analysis-container">
       <div className="header-actions">
         <h4>報告分析</h4>
-        <div className="header-controls">
+        {/* <div className="header-controls">
           <button className="btn btn-outline-primary">
             <FontAwesomeIcon icon={faFilter} className="me-2" />
             篩選
@@ -1064,80 +858,7 @@ const ReportsAnalysis = () => {
             <FontAwesomeIcon icon={faDownload} className="me-2" />
             匯出報告
           </button>
-        </div>
-      </div>
-      
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="stats-card-new">
-            <div className="stats-top-row">
-              <div className="stats-icon-new blue">
-                <FontAwesomeIcon icon={faPlayCircle} />
-              </div>
-              <div className="stats-value">{stats.inProgressProjects}</div>
-            </div>
-            <div className="stats-bottom-row">
-              <div className="stats-title">進行中專案</div>
-              <div className="stats-desc">
-                <span>平均進度 {stats.averageProgress}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
-          <div className="stats-card-new">
-            <div className="stats-top-row">
-              <div className="stats-icon-new green">
-                <FontAwesomeIcon icon={faCheckCircle} />
-              </div>
-              <div className="stats-value">{stats.completedProjects}</div>
-            </div>
-            <div className="stats-bottom-row">
-              <div className="stats-title">已完成認證</div>
-              <div className="stats-desc positive">
-                <FontAwesomeIcon icon={faArrowTrendUp} className="me-1" />
-                完成率 {Math.round((stats.completedProjects / stats.totalProjects) * 100)}%
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
-          <div className="stats-card-new">
-            <div className="stats-top-row">
-              <div className="stats-icon-new amber">
-                <FontAwesomeIcon icon={faHourglassHalf} />
-              </div>
-              <div className="stats-value">{stats.totalIssues}</div>
-            </div>
-            <div className="stats-bottom-row">
-              <div className="stats-title">待處理問題項</div>
-              <div className="stats-desc negative">
-                <FontAwesomeIcon icon={faArrowTrendDown} className="me-1" />
-                較上次減少 15%
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-md-3">
-          <div className="stats-card-new">
-            <div className="stats-top-row">
-              <div className="stats-icon-new red">
-                <FontAwesomeIcon icon={faExclamationTriangle} />
-              </div>
-              <div className="stats-value">{stats.criticalIssues}</div>
-            </div>
-            <div className="stats-bottom-row">
-              <div className="stats-title">重大缺失</div>
-              <div className="stats-desc negative">
-                <FontAwesomeIcon icon={faArrowTrendDown} className="me-1" />
-                較上次減少 40%
-              </div>
-            </div>
-          </div>
-        </div>
+        </div> */}
       </div>
 
       {/* 高級篩選面板 */}
@@ -1220,7 +941,7 @@ const ReportsAnalysis = () => {
 
       {/* Tabs */}
       <div className="tabs">
-        {['綜合報表', '缺失追蹤', '趨勢分析'].map(tab => (
+        {['綜合報表', '缺失追蹤'].map(tab => (
           <div
             key={tab}
             className={`tab${activeTab === tab ? ' active' : ''}`}
@@ -1237,11 +958,18 @@ const ReportsAnalysis = () => {
             <div className="card stats-card-new">
               <div className="stats-top-row">
                 <div className="stats-icon-new blue"><FontAwesomeIcon icon={faCheckCircle} /></div>
-                <div className="stats-title">認證進度</div>
+                <div className="stats-title">所有專案平均進度</div>
               </div>
               <div className="stats-bottom-row">
-                <div className="stats-value">90%</div>
-                <div className="stats-desc positive"><FontAwesomeIcon icon={faArrowTrendUp} className="me-1" />本月提升 5%</div>
+                  <div className="stats-value">
+                      {isProgressLoading ? (
+                          <small>載入中...</small>
+                      ) : (
+                          averageProjectProgress !== null ? `${averageProjectProgress}%` : 'N/A'
+                      )}
+                  </div>
+                {/* <div className="stats-desc positive"><FontAwesomeIcon icon={faArrowTrendUp} className="me-1" />本月提升 5%</div> */}
+                <div className="stats-desc">平均</div>
               </div>
             </div>
           </div>
@@ -1252,7 +980,7 @@ const ReportsAnalysis = () => {
                 <div className="stats-title">認證類型分布</div>
               </div>
               <div className="stats-bottom-row">
-                <div className="stats-value">4</div>
+                <div className="stats-value">{uniqueCertTypeCount}</div>
                 <div className="stats-desc">類型</div>
               </div>
             </div>
@@ -1264,8 +992,15 @@ const ReportsAnalysis = () => {
                 <div className="stats-title">缺失項目</div>
               </div>
               <div className="stats-bottom-row">
-                <div className="stats-value">{filteredAndSortedIssues.length}</div>
-                <div className="stats-desc negative"><FontAwesomeIcon icon={faArrowTrendDown} className="me-1" />本月減少 2 項</div>
+                <div className="stats-value">
+                    {isCountLoading ? (
+                        <small>載入中...</small>
+                    ) : (
+                        deficiencyCount !== null ? deficiencyCount : 'N/A'
+                    )}
+                </div>
+                {/* <div className="stats-desc negative"><FontAwesomeIcon icon={faArrowTrendDown} className="me-1" />本月減少 2 項</div> */}
+                <div className="stats-desc">總計</div>
               </div>
             </div>
           </div>
@@ -1274,18 +1009,32 @@ const ReportsAnalysis = () => {
       {/* 圖表區塊 */}
       {activeTab === '綜合報表' && (
         <div className="row g-4 mt-2">
+          {/* 認證進度統計 (左側圖表) */}
           <div className="col-lg-6">
-            <div className="card p-3">
-              <div className="card-header bg-white border-0 pb-1 d-flex align-items-center">
-                <FontAwesomeIcon icon={faChartBar} className="me-2 text-primary" />
-                <h5 className="mb-0">認證進度統計</h5>
+              <div className="card p-3">
+                  <div className="card-header bg-white border-0 pb-1 d-flex align-items-center">
+                      <FontAwesomeIcon icon={faChartBar} className="me-2 text-primary" />
+                      <h5 className="mb-0">認證類型平均進度統計</h5> 
+                  </div>
+                  <div className="card-body">
+                      <div className="chart-container" style={{ minHeight: 260 }}>
+                          {isTypeProgressLoading ? (
+                              <div className="text-center p-5">
+                                  <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-primary mb-2" />
+                                  <p className="text-muted mt-2">進度數據載入中...</p>
+                              </div>
+                          ) : projectProgressSummary.length === 0 ? (
+                              <div className="text-center p-5">
+                                  <FontAwesomeIcon icon={faClipboardList} size="2x" className="mb-2 text-muted" />
+                                  <p className="text-muted">無認證類型進度數據</p>
+                              </div>
+                          ) : (
+                              // 載入完成且有數據時，顯示圖表
+                              <canvas ref={projectProgressChartRef} height={220} />
+                          )}
+                      </div>
+                  </div>
               </div>
-              <div className="card-body">
-                <div className="chart-container" style={{ minHeight: 260 }}>
-                  <canvas ref={projectProgressChartRef} height={220} />
-                </div>
-              </div>
-            </div>
           </div>
           <div className="col-lg-6">
             <div className="card p-3">
@@ -1296,19 +1045,6 @@ const ReportsAnalysis = () => {
               <div className="card-body">
                 <div className="chart-container" style={{ minHeight: 260 }}>
                   <canvas ref={certTypeChartRef} height={220} />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-lg-6">
-            <div className="card p-3">
-              <div className="card-header bg-white border-0 pb-1 d-flex align-items-center">
-                <FontAwesomeIcon icon={faChartPie} className="me-2 text-warning" />
-                <h5 className="mb-0">缺失類型分布</h5>
-              </div>
-              <div className="card-body">
-                <div className="chart-container" style={{ minHeight: 260 }}>
-                  <canvas ref={issueTypeChartRef} height={220} />
                 </div>
               </div>
             </div>
@@ -1339,7 +1075,7 @@ const ReportsAnalysis = () => {
                   <option value="name">問題名稱</option>
                   <option value="certType">認證類型</option>
                   <option value="severity">嚴重程度</option>
-                  <option value="progress">完成進度</option>
+                  <option value="status">狀態</option>
                 </select>
                 <button 
                   className="btn btn-outline-secondary btn-sm ms-1"
@@ -1361,14 +1097,13 @@ const ReportsAnalysis = () => {
                     {visibleColumns.severity && <th>嚴重程度</th>}
                     {visibleColumns.discoveryDate && <th>發現日期</th>}
                     {visibleColumns.status && <th>狀態</th>}
-                    {visibleColumns.progress && <th>進度</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAndSortedIssues.map((issue, idx) => (
                     <tr key={idx} className="table-row-hover">
                       {visibleColumns.name && (
-                        <td className="fw-medium">{issue.name}</td>
+                        <td className="fw-medium">{issue.issueName}</td>
                       )}
                       {visibleColumns.certType && (
                         <td>
@@ -1379,13 +1114,10 @@ const ReportsAnalysis = () => {
                         <td>{renderSeverityBadge(issue.severity)}</td>
                       )}
                       {visibleColumns.discoveryDate && (
-                        <td className="text-muted">{issue.discoveryDate}</td>
+                        <td className="text-muted">{formatDate(issue.discoveryDate)}</td>
                       )}
                       {visibleColumns.status && (
                         <td>{renderStatusBadge(issue.status)}</td>
-                      )}
-                      {visibleColumns.progress && (
-                        <td>{renderProgressBar(issue.progress)}</td>
                       )}
                     </tr>
                   ))}
@@ -1399,214 +1131,6 @@ const ReportsAnalysis = () => {
                   <small>請調整篩選條件或重置篩選器</small>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-      {/* 趨勢分析卡片區塊 */}
-      {activeTab === '趨勢分析' && (
-        <div className="trend-analysis-section">
-          {/* 趨勢分析控制面板 */}
-          <div className="card mb-4">
-            <div className="card-header bg-white border-0 pb-3">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <div className="d-flex align-items-center">
-                  <FontAwesomeIcon icon={faChartLine} className="me-2 text-info" />
-                  <h5 className="mb-0">趨勢分析控制面板</h5>
-                </div>
-              </div>
-              
-              {/* 控制項分組布局 */}
-              <div className="trend-controls-grid">
-                {/* 第一行：圖表設置 */}
-                <div className="control-group">
-                  <label className="control-label">圖表類型</label>
-                  <div className="btn-group chart-type-selector" role="group">
-                    <button 
-                      className={`btn btn-sm ${trendChartType === 'line' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setTrendChartType('line')}
-                      title="折線圖"
-                    >
-                      <FontAwesomeIcon icon={faChartLine} className="me-1" />
-                      折線圖
-                    </button>
-                    <button 
-                      className={`btn btn-sm ${trendChartType === 'bar' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setTrendChartType('bar')}
-                      title="柱狀圖"
-                    >
-                      <FontAwesomeIcon icon={faChartBar} className="me-1" />
-                      柱狀圖
-                    </button>
-                    <button 
-                      className={`btn btn-sm ${trendChartType === 'area' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setTrendChartType('area')}
-                      title="面積圖"
-                    >
-                      <FontAwesomeIcon icon={faChartPie} className="me-1" />
-                      面積圖
-                    </button>
-                  </div>
-                </div>
-                
-                {/* 第二行：時間和指標設置 */}
-                <div className="control-group">
-                  <label className="control-label">時間範圍</label>
-                  <select 
-                    className="form-select form-select-sm"
-                    value={trendTimeRange}
-                    onChange={(e) => setTrendTimeRange(e.target.value)}
-                  >
-                    <option value="6months">近6個月</option>
-                    <option value="12months">近12個月</option>
-                    <option value="24months">近24個月</option>
-                  </select>
-                </div>
-                
-                <div className="control-group">
-                  <label className="control-label">分析指標</label>
-                  <select 
-                    className="form-select form-select-sm"
-                    value={trendMetric}
-                    onChange={(e) => setTrendMetric(e.target.value)}
-                  >
-                    <option value="count">缺失項目數量</option>
-                    <option value="progress">平均進度</option>
-                    <option value="resolution_rate">解決率</option>
-                  </select>
-                </div>
-                
-                {/* 第三行：對比設置 */}
-                <div className="control-group comparison-toggle">
-                  <div className="form-check form-switch">
-                    <input 
-                      className="form-check-input" 
-                      type="checkbox" 
-                      id="trendComparison"
-                      checked={showTrendComparison}
-                      onChange={(e) => setShowTrendComparison(e.target.checked)}
-                    />
-                    <label className="form-check-label fw-medium" htmlFor="trendComparison">
-                      <FontAwesomeIcon icon={faFilter} className="me-2" />
-                      啟用對比模式
-                    </label>
-                  </div>
-                  {showTrendComparison && (
-                    <small className="text-muted d-block mt-1">
-                      可選擇特定認證類型進行對比分析
-                    </small>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 趨勢統計卡片 */}
-          {trendStats && (
-            <div className="row g-3 mb-4">
-              {Object.entries(trendStats).map(([certType, stats]) => (
-                <div key={certType} className="col-lg-3 col-md-6">
-                  <div className="card trend-stats-card">
-                    <div className="card-body">
-                      <div className="d-flex align-items-center justify-content-between">
-                        <div>
-                          <h6 className="card-title text-muted mb-1">{certType}</h6>
-                          <div className="trend-metric">
-                            {trendMetric === 'count' && (
-                              <>
-                                <div className="metric-value">{stats.currentCount}</div>
-                                <div className={`metric-change ${stats.countChange >= 0 ? 'positive' : 'negative'}`}>
-                                  <FontAwesomeIcon icon={stats.countChange >= 0 ? faArrowTrendUp : faArrowTrendDown} className="me-1" />
-                                  {stats.countChange >= 0 ? '+' : ''}{stats.countChange} 項
-                                </div>
-                              </>
-                            )}
-                            {trendMetric === 'progress' && (
-                              <>
-                                <div className="metric-value">{stats.currentProgress}%</div>
-                                <div className={`metric-change ${stats.progressChange >= 0 ? 'positive' : 'negative'}`}>
-                                  <FontAwesomeIcon icon={stats.progressChange >= 0 ? faArrowTrendUp : faArrowTrendDown} className="me-1" />
-                                  {stats.progressChange >= 0 ? '+' : ''}{stats.progressChange}%
-                                </div>
-                              </>
-                            )}
-                            {trendMetric === 'resolution_rate' && (
-                              <>
-                                <div className="metric-value">{stats.currentResolutionRate}%</div>
-                                <div className={`metric-change ${stats.resolutionRateChange >= 0 ? 'positive' : 'negative'}`}>
-                                  <FontAwesomeIcon icon={stats.resolutionRateChange >= 0 ? faArrowTrendUp : faArrowTrendDown} className="me-1" />
-                                  {stats.resolutionRateChange >= 0 ? '+' : ''}{stats.resolutionRateChange}%
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="trend-icon">
-                          <FontAwesomeIcon icon={faTasks} className="text-primary" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 對比選擇面板 */}
-          {showTrendComparison && (
-            <div className="card mb-4">
-              <div className="card-body">
-                <h6 className="card-title">
-                  <FontAwesomeIcon icon={faFilter} className="me-2" />
-                  選擇對比的認證類型
-                </h6>
-                <div className="comparison-checkboxes">
-                  {CERT_TYPE_OPTIONS.filter(opt => opt.value).map(opt => (
-                    <div key={opt.value} className="form-check form-check-inline">
-                      <input 
-                        className="form-check-input" 
-                        type="checkbox" 
-                        id={`trend-${opt.value}`}
-                        checked={selectedTrendCerts.includes(opt.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedTrendCerts([...selectedTrendCerts, opt.value]);
-                          } else {
-                            setSelectedTrendCerts(selectedTrendCerts.filter(c => c !== opt.value));
-                          }
-                        }}
-                      />
-                      <label className="form-check-label" htmlFor={`trend-${opt.value}`}>
-                        {opt.label}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 主要趨勢圖表 */}
-          <div className="card">
-            <div className="card-header bg-white border-0 pb-1 d-flex align-items-center justify-content-between">
-              <div className="d-flex align-items-center">
-                <FontAwesomeIcon icon={faChartLine} className="me-2 text-info" />
-                <h5 className="mb-0">
-                  {trendMetric === 'count' ? '缺失項目數量趨勢' : 
-                   trendMetric === 'progress' ? '平均進度趨勢' : '解決率趨勢'}
-                </h5>
-              </div>
-              <div className="chart-info">
-                <small className="text-muted">
-                  時間範圍：{trendTimeRange === '6months' ? '近6個月' : 
-                           trendTimeRange === '12months' ? '近12個月' : '近24個月'}
-                </small>
-              </div>
-            </div>
-            <div className="card-body">
-              <div className="chart-container" style={{ minHeight: 400 }}>
-                <canvas id="trendLineChart" height={300} />
-              </div>
             </div>
           </div>
         </div>

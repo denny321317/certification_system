@@ -3,15 +3,18 @@ package com.project.backend.service;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
+import org.springframework.transaction.annotation.Transactional;
 import com.project.backend.model.Supplier;
 import com.project.backend.model.Project;
 import com.project.backend.repository.ProjectRepository;
 import com.project.backend.repository.SupplierRepository;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.SupplierDTO;
+
 
 
 @Service
@@ -46,25 +49,28 @@ public class SupplierService {
                 .map(project -> new ProjectDetailDTO(
                     project.getId(),
                     project.getName(),
-                    project.getStatus()
-                    // 其他你需要的欄位
+                    project.getStatus(),
+                    null, null, null, null, null, null, null, 0, null, null, null, null, null, null
                 ))
                 .collect(Collectors.toList());
             dto.setProjects(projectDTOs);
         }
+        // 將 DB 的認證清單帶回前端
+        dto.setCommonCerts(
+        supplier.getCommonCerts() == null ? null : new ArrayList<>(supplier.getCommonCerts()));
 
         // 其他需要的欄位可在此補充
         return dto;
 
     }
 
-
+    @Transactional
     public List<SupplierDTO> getAllSuppliers() {
         return supplierRepository.findAll().stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
-
+    @Transactional
     public Supplier createSupplier(SupplierDTO dto) {
         Supplier supplier = new Supplier();
         supplier.setName(dto.getName());
@@ -77,6 +83,9 @@ public class SupplierService {
         supplier.setCollabStart(dto.getCollabStart());
         supplier.setCertificateStatus(dto.getCertificateStatus());
         supplier.setRiskProfile(dto.getRiskProfile());
+        supplier.setCommonCerts(
+        dto.getCommonCerts() == null ? new HashSet<>() : new HashSet<>(dto.getCommonCerts()));
+
 
         // 如果有 projects 欄位，且 ProjectRepository 可查詢
         if (dto.getProjects() != null) {
@@ -109,6 +118,37 @@ public class SupplierService {
         SupplierDTO supplierDTO = convertToDTO(supplier);
 
         return Optional.of(supplierDTO);
+    }
+    
+    public Supplier updateSupplier(Long id, SupplierDTO dto) {
+        Supplier supplier = supplierRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Supplier with ID: " + id + " not found"));
+
+        // 覆寫基本欄位（需要局部更新就改成判空再設值）
+        supplier.setName(dto.getName());
+        supplier.setType(dto.getType());
+        supplier.setProduct(dto.getProduct());
+        supplier.setCountry(dto.getCountry());
+        supplier.setAddress(dto.getAddress());
+        supplier.setTelephone(dto.getTelephone());
+        supplier.setEmail(dto.getEmail());
+        supplier.setCollabStart(dto.getCollabStart());
+        supplier.setCertificateStatus(dto.getCertificateStatus());
+        supplier.setRiskProfile(dto.getRiskProfile());
+        // 更新時：若前端有帶 commonCerts，就整體覆寫；若沒帶則不動
+        if (dto.getCommonCerts() != null) {
+            supplier.setCommonCerts(new HashSet<>(dto.getCommonCerts()));
+        }
+        // 若前端有帶 projects，就整體替換關聯
+        if (dto.getProjects() != null) {
+            List<Project> projects = dto.getProjects().stream()
+                .map(p -> projectRepository.findById(p.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found: " + p.getId())))
+                .collect(Collectors.toList());
+            supplier.setProjects(projects);
+        }
+
+        return supplierRepository.save(supplier);
     }
 
     

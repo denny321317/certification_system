@@ -45,12 +45,14 @@ import UserInfoModal from '../../components/modals/UserInfoModal';
 import EditUserInfoModal from '../../components/modals/EditUserInfoModal';
 import ChangeRoleNameModal from '../../components/modals/ChangeRoleNameModal';
 import SuspendUserModal from '../../components/modals/SuspendUserModal';
+import { useSettings } from '../../contexts/SettingsContext';
 
 /**
  * 用戶管理組件
  * @returns {JSX.Element} 用戶管理界面
  */
 const UserManagement = ({ canWrite }) => {
+  const { settings } = useSettings();
   /**
    * 當前選中的標籤狀態
    * @type {[string, Function]} [當前標籤, 設置當前標籤的函數]
@@ -74,6 +76,7 @@ const UserManagement = ({ canWrite }) => {
    * @type {[number, Function]} [當前頁碼, 設置頁碼的函數]
    */
   const [currentPage, setCurrentPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
   
   /**
    * 用戶數據列表
@@ -94,7 +97,7 @@ const UserManagement = ({ canWrite }) => {
   const permissionLabels = [
     {key: 'SystemSettings', lable: '系統設定'},
     {key: 'UserManagement', label: '用戶管理'},
-    {key: 'DocumentManagement', label: '文件管理'},
+    // {key: 'DocumentManagement', label: '文件管理'},
     {key: 'TemplateCenter', label: '模板中心'},
     {key: 'CertificationProjects', label: '認證專案'},
     {key: 'ReportManagement', label: '報表分析'},
@@ -282,6 +285,69 @@ const UserManagement = ({ canWrite }) => {
     Functions
    */
 
+  /**
+   * 用於實作日期格式
+   */
+  const formatDate = (dateInput) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return 'N/A';
+    }
+
+    let date;
+    if (Array.isArray(dateInput)) {
+      // Handle array format: [year, month, day, hour, minute, second, nanoseconds]
+      // JavaScript Date months are 0-based, so subtract 1 from month
+      date = new Date(dateInput[0], dateInput[1] - 1, dateInput[2], dateInput[3], dateInput[4], dateInput[5]);
+    } else {
+      // Handle string or other formats (e.g., ISO string)
+      date = new Date(dateInput);
+    }
+
+    try {
+      // Options to get all parts of the date in the target timezone
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: settings.timezone,
+      };
+
+      // Use Intl.DateTimeFormat to correctly handle the timezone
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+      const hour = getPart('hour');
+      const minute = getPart('minute');
+
+      // Fallback if for some reason parts are not found
+      if (!year || !month || !day || !hour || !minute) {
+        return date.toLocaleString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      // Assemble the date string based on the dateFormat setting
+      let formattedDate = settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+      
+      // Append the time
+      return `${formattedDate} ${hour}:${minute}`;
+
+    } catch (error) {
+      console.error("Error formatting date with timezone:", error);
+      // Fallback if Intl fails (e.g., invalid timezone string)
+      return new Date(dateInput).toLocaleString();
+    }
+  };
+
   /** 
    * 原本沒有的新 Function
    * 用來從後段 API 獲取資料
@@ -425,6 +491,18 @@ const UserManagement = ({ canWrite }) => {
       
   }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
 
+  // This useEffect hook will run whenever 'selectedRole' changes.
+  useEffect(() => {
+    if (selectedRole) {
+      fetchRoleAuth(selectedRole);
+    }
+  }, [selectedRole, API_BASE_URL]); // Re-fetch if selectedRole or API_BASE_URL changes
+
+  // Add this new useEffect to reset pagination when tab or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchTerm]);
+
   /*
     Handlers 
    */
@@ -483,8 +561,17 @@ const UserManagement = ({ canWrite }) => {
 
   const handleSaveUserChanges = async (updatedUserData) => {
     console.log("Attemping to save user data (projects not editable here): ", updatedUserData);
+    
+    const payload = {
+      name: updatedUserData.name,
+      email: updatedUserData.email,
+      roleName: updatedUserData.roleName, // Extract the role name from the role object
+      department: updatedUserData.department
+    };
+    
+
     try {
-      await axios.put(`${API_BASE_URL}/user-management/user/update/${updatedUserData.id}`, updatedUserData);
+      await axios.put(`${API_BASE_URL}/user-management/user/update/${updatedUserData.id}`, payload);
       alert('使用者資訊已成功更新！');
       fetchUsers();
       handleCloseEditModal();
@@ -657,10 +744,6 @@ const UserManagement = ({ canWrite }) => {
 
 
 
-  
-
-
-
   /**
    * 根據當前標籤和搜索關鍵字過濾用戶
    * @returns {Array} 過濾後的用戶列表
@@ -670,11 +753,11 @@ const UserManagement = ({ canWrite }) => {
     const userRoleName = user.role && typeof user.role === 'object' ? user.role.name : user.role;
 
     // 標籤篩選
-    if (activeTab === '管理員' && userRoleName !== 'Admin') return false;
-    if (activeTab === '審核員' && userRoleName !== 'Auditor') return false;
-    if (activeTab === '一般使用者' && userRoleName !== 'User') return false;
-    if (activeTab === '經理' && userRoleName !== 'Manager') return false;
-    if (activeTab === '訪客' && userRoleName !== 'Guest') return false;
+    if (activeTab === '管理員' && userRoleName !== '系統管理員') return false;
+    if (activeTab === '審核員' && userRoleName !== '認證審核員') return false;
+    if (activeTab === '一般使用者' && userRoleName !== '一般使用者') return false;
+    if (activeTab === '經理' && userRoleName !== '部門經理') return false;
+    if (activeTab === '訪客' && userRoleName !== '訪客') return false;
     
     // 搜索篩選
     if (searchTerm && 
@@ -685,6 +768,11 @@ const UserManagement = ({ canWrite }) => {
     
     return true;
   });
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   
   /**
    * 渲染角色標籤
@@ -758,6 +846,12 @@ const UserManagement = ({ canWrite }) => {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
   };
+
+  const handleUsersPerPageChange = (e) => {
+    setUsersPerPage(Number(e.target.value));
+    setCurrentPage(1); // 更改每頁人數後返回至第一頁
+    
+  }
 
 
   /**
@@ -833,7 +927,7 @@ const UserManagement = ({ canWrite }) => {
                         </td>
                       </tr>
                     ) : (
-                      filteredUsers.map(user => (
+                      currentUsers.map(user => (
                         <tr key={user.id} className={user.suspended ? 'user-suspended-row' : ''}>
                           <td>
                             <div className="d-flex align-items-center">
@@ -854,7 +948,7 @@ const UserManagement = ({ canWrite }) => {
                               : renderStatusBadge(user.online)
                             }
                           </td>
-                          <td>{user.lastTimeLogin ? new Date(user.lastTimeLogin).toLocaleString() : 'N/A'}</td>
+                          <td>{user.lastTimeLogin && settings ? formatDate(user.lastTimeLogin) : 'N/A'}</td>
                           <td>
                             <div className="d-flex gap-1">
                               <div 
@@ -885,25 +979,36 @@ const UserManagement = ({ canWrite }) => {
             </div>
           </div>
           
-          <nav aria-label="使用者分頁">
-            <ul className="pagination justify-content-center mt-4">
-              <li className="page-item disabled">
-                <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled>上一頁</button>
-              </li>
-              <li className="page-item active">
-                <button className="page-link" onClick={() => handlePageChange(1)}>1</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(2)}>2</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(3)}>3</button>
-              </li>
-              <li className="page-item">
-                <button className="page-link" onClick={() => handlePageChange(currentPage + 1)}>下一頁</button>
-              </li>
-            </ul>
-          </nav>
+          <div className="d-flex justify-content-center align-items-center mt-4">
+            <nav aria-label="使用者分頁">
+              <ul className="pagination mb-0">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>上一頁</button>
+                </li>
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(index + 1)}>{index + 1}</button>
+                  </li>
+                ))}
+                <li className={`page-item ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}`}>
+                  <button className="page-link" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0}>下一頁</button>
+                </li>
+              </ul>
+            </nav>
+            <div className="d-flex align-items-center ms-3">
+              <span className="me-2 small text-muted">每頁顯示:</span>
+              <select
+                className="form-select form-select-sm"
+                style={{ width: 'auto' }}
+                value={usersPerPage}
+                onChange={handleUsersPerPageChange}
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+          </div>
         </div>
         
         <div className="col-md-4">

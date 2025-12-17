@@ -29,6 +29,15 @@ public class ReviewIssue {
 
     private LocalDateTime deadline;
 
+    private String indicatorId;
+    private String documentId;
+
+    @Column(columnDefinition = "TEXT")
+    private String indicatorText;
+
+    @Column(columnDefinition = "TEXT")
+    private String documentText;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

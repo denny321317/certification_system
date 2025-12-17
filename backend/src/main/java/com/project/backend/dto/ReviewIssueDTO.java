@@ -15,4 +15,8 @@ public class ReviewIssueDTO {
     private String severity;
     private String status;
     private LocalDateTime deadline;
+    private String indicatorId;
+    private String documentId;
+    private String indicatorText;
+    private String documentText;
 } 

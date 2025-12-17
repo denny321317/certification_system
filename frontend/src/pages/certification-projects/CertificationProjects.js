@@ -29,30 +29,25 @@ import {
   faUpload, faClipboardCheck, faExclamationTriangle, 
   faTimes, faEdit, faFileExport, faTrashAlt
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import './CertificationProjects.css';
+
 
 // 狀態標籤輔助函數
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'preparing':
-      return (
-        <div className="status-badge preparing">
-          <FontAwesomeIcon icon={faUpload} className="me-1" />
-          準備中
-        </div>
-      );
-    case 'internal-review':
+    case 'in-progress':
       return (
         <div className="status-badge internal-review">
-          <FontAwesomeIcon icon={faClipboardCheck} className="me-1" />
-          內部審核中
+          <FontAwesomeIcon icon={faHourglassHalf} className="me-1" />
+          進行中
         </div>
       );
-    case 'external-review':
+    case 'planned':
       return (
-        <div className="status-badge external-review">
-          <FontAwesomeIcon icon={faExclamationTriangle} className="me-1" />
-          外部審核中
+        <div className="status-badge preparing">
+          <FontAwesomeIcon icon={faClock} className="me-1" />
+          計畫中
         </div>
       );
     case 'completed':
@@ -63,7 +58,11 @@ const getStatusBadge = (status) => {
         </div>
       );
     default:
-      return null;
+      return (
+        <div className="status-badge">
+          {status}
+        </div>
+      );
   }
 };
 
@@ -86,6 +85,7 @@ const getTimelineIcon = (status) => {
  * @returns {JSX.Element} 認證項目管理介面
  */
 const CertificationProjects = ({ canWrite }) => {
+  const { settings } = useSettings();
   /**
    * 搜索關鍵字狀態
    * @type {[string, Function]} [搜索關鍵字, 設置搜索關鍵字的函數]
@@ -151,7 +151,11 @@ const CertificationProjects = ({ canWrite }) => {
 
   // 1. 從後端拉資料
   useEffect(() => {
-    fetch('http://localhost:8000/api/projects/GetAllProject') // 你可以加上完整URL: http://localhost:8080/GetAllProject
+    let url = 'http://localhost:8000/api/projects/GetAllProject';
+    if (activeTab !== 'all') {
+      url += `?status=${activeTab}`;
+    }
+    fetch(url)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -165,18 +169,16 @@ const CertificationProjects = ({ canWrite }) => {
       .catch(error => {
         console.error('Error fetching project data:', error);
       });
-  }, []);
+  }, [activeTab]);
 
-  // 2. 根據 activeTab 和 searchQuery 過濾
+  // 2. 根據 searchQuery 過濾
   useEffect(() => {
     const filtered = projects.filter(project => {
-      const matchTab = activeTab === 'all' || project.status === activeTab;
-      const matchSearch = !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchTab && matchSearch;
+      return !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
     setFilteredProjects(filtered);
-  }, [projects, activeTab, searchQuery]);
+  }, [projects, searchQuery]);
   
   // 彈窗開啟時同步查詢團隊成員
   useEffect(() => {
@@ -245,15 +247,13 @@ const CertificationProjects = ({ canWrite }) => {
    */
   const handleEditProject = async () => {
     try {
+      const { managerName, ...projectToUpdate } = currentProject;
       const response = await fetch(
         `http://localhost:8000/api/projects/UpdateProject/${currentProject.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...currentProject,
-            // 不要傳 users/team/teamMembers 等欄位
-          })
+          body: JSON.stringify(projectToUpdate)
         }
       );
       if (!response.ok) {
@@ -307,6 +307,53 @@ const CertificationProjects = ({ canWrite }) => {
     // 模擬匯出成功
     alert('報告匯出成功');
   };
+
+  /**
+   * 處理日期格式顯示
+   * @param {*} dateInput 
+   * @returns 
+   */
+  const formatDate = (dateInput) => {
+    if (!dateInput || !settings || !settings.dateFormat || !settings.timezone) {
+      return dateInput || 'N/A';
+    }
+
+    const date = new Date(dateInput);
+    if (isNaN(date)) {
+      return dateInput || 'N/A';
+    }
+
+    try {
+      const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: settings.timezone,
+      };
+
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      const getPart = (partName) => parts.find(p => p.type === partName)?.value;
+
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+
+      if (!year || !month || !day) {
+        return date.toLocaleDateString('zh-TW', { timeZone: settings.timezone });
+      }
+
+      return settings.dateFormat
+        .replace('YYYY', year)
+        .replace('MM', month)
+        .replace('DD', day);
+
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return new Date(dateInput).toLocaleDateString();
+    }
+  };
   
   /**
    * 渲染設定彈窗
@@ -333,21 +380,6 @@ const CertificationProjects = ({ canWrite }) => {
             >
               <FontAwesomeIcon icon={faEdit} className="me-2" />
               編輯專案
-            </div>
-            <div 
-              className={`settings-tab ${settingsTab === 'export' ? 'active' : ''}`}
-              onClick={() => setSettingsTab('export')}
-            >
-              <FontAwesomeIcon icon={faFileExport} className="me-2" />
-              匯出報告
-            </div>
-            <div 
-              className={`settings-tab delete-tab ${settingsTab === 'delete' ? 'active' : ''}`}
-              onClick={() => setSettingsTab('delete')}
-              disabled={ !canWrite }
-            >
-              <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
-              刪除專案
             </div>
           </div>
           
@@ -378,9 +410,8 @@ const CertificationProjects = ({ canWrite }) => {
                       onChange={handleProjectInputChange}
                       className="form-control"
                     >
-                      <option value="preparing">準備中</option>
-                      <option value="internal-review">內部審核中</option>
-                      <option value="external-review">外部審核中</option>
+                      <option value="planned">計畫中</option>
+                      <option value="in-progress">進行中</option>
                       <option value="completed">已完成</option>
                     </select>
                   </div>
@@ -530,56 +561,7 @@ const CertificationProjects = ({ canWrite }) => {
               </div>
             )}
             
-            {settingsTab === 'export' && (
-              <div className="export-report">
-                <div className="export-info">
-                  <h5>匯出專案報告</h5>
-                  <p>匯出 {currentProject.name} 的完整報告，包含所有專案資訊、審核狀態、團隊成員以及時間軸等資料。</p>
-                  
-                  <div className="export-options">
-                    <div className="export-option">
-                      <input type="radio" id="pdf" name="exportFormat" value="pdf" defaultChecked />
-                      <label htmlFor="pdf">PDF 格式</label>
-                    </div>
-                    <div className="export-option">
-                      <input type="radio" id="excel" name="exportFormat" value="excel" />
-                      <label htmlFor="excel">Excel 格式</label>
-                    </div>
-                    <div className="export-option">
-                      <input type="radio" id="word" name="exportFormat" value="word" />
-                      <label htmlFor="word">Word 格式</label>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="form-actions">
-                  <button className="btn btn-primary" onClick={handleExportReport}>
-                    <FontAwesomeIcon icon={faFileExport} className="me-2" />
-                    匯出報告
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {settingsTab === 'delete' && (
-              <div className="delete-project">
-                <div className="delete-warning">
-                  <h5>刪除專案</h5>
-                  <p className="warning-text">
-                    <FontAwesomeIcon icon={faExclamationTriangle} className="me-2" />
-                    警告：此操作將永久刪除專案「{currentProject.name}」及其所有相關數據，且無法復原。
-                  </p>
-                  <p>請確認您已備份所需的資料，並確定要執行此操作。</p>
-                </div>
-                
-                <div className="form-actions">
-                  <button className="btn btn-danger" onClick={handleDeleteProject}>
-                    <FontAwesomeIcon icon={faTrashAlt} className="me-2" />
-                    確認刪除
-                  </button>
-                </div>
-              </div>
-            )}
+
           </div>
         </div>
       </div>
@@ -652,13 +634,13 @@ const CertificationProjects = ({ canWrite }) => {
                   <div className="project-meta-label">
                     {project.status === 'planned' ? '預計開始日期' : '專案開始日期'}
                   </div>
-                  <div className="project-meta-value">{project.startDate}</div>
+                  <div className="project-meta-value">{formatDate(project.startDate)}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">
                     {project.status === 'completed' ? '完成日期' : '預計完成日期'}
                   </div>
-                  <div className="project-meta-value">{project.endDate}</div>
+                  <div className="project-meta-value">{formatDate(project.endDate)}</div>
                 </div>
                 <div className="project-meta-item">
                   <div className="project-meta-label">負責人</div>
@@ -699,10 +681,10 @@ const CertificationProjects = ({ canWrite }) => {
                             {item.status === 'current' ? (
                               <span className="text-primary">
                                 <FontAwesomeIcon icon={faClock} className="me-1" />
-                                {item.date}
+                                {formatDate(item.date)}
                               </span>
                             ) : (
-                              <span className="text-muted">{item.date}</span>
+                              <span className="text-muted">{formatDate(item.date)}</span>
                             )}
                           </span>
                         </div>

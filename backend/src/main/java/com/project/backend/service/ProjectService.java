@@ -3,21 +3,32 @@ package com.project.backend.service;
 import com.project.backend.dto.ShowProjectDTO;
 import com.project.backend.dto.ProjectDetailDTO;
 import com.project.backend.dto.TeamMemberDTO;
+import com.project.backend.dto.CertTypeDTO;
 import com.project.backend.dto.DocumentDTO;
 import com.project.backend.dto.UserDTO;
+import com.project.backend.dto.CertTypeAverageProgressDTO;
+import com.project.backend.dto.CertTypeCountDTO;
 import com.project.backend.model.Project;
 import com.project.backend.model.FileEntity;
 import com.project.backend.model.User;
 import com.project.backend.model.ProjectTeam;
 import com.project.backend.repository.ProjectRepository;
+import com.project.backend.repository.ProjectRepository.CertTypeCount;
 import com.project.backend.repository.UserRepository;
 import com.project.backend.repository.ProjectTeamRepository;
 import com.project.backend.service.OperationHistoryService;
 import org.hibernate.Hibernate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.backend.model.Project;
+import com.project.backend.repository.ProjectRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,18 +38,40 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final OperationHistoryService operationHistoryService;
     private final ProjectTeamRepository projectTeamRepository;
+    private final ObjectMapper objectMapper;
 
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository) {
+
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, OperationHistoryService operationHistoryService, ProjectTeamRepository projectTeamRepository, ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.operationHistoryService = operationHistoryService;
         this.projectTeamRepository = projectTeamRepository;
+        this.objectMapper = objectMapper;
+        
+    }
+
+    @Transactional
+    public Project createProject(Project project) {
+        if (project.getStatus() == null || project.getStatus().isEmpty()) {
+            project.setStatus("planned"); // 設置默認狀態為 "計畫中"
+        }
+        updateProgressByStatus(project);
+        Project savedProject = projectRepository.save(project);
+        // TODO: Replace "admin" with actual logged-in user
+        String operator = "admin";
+        String details = String.format("建立了新專案 '%s'", savedProject.getName());
+        operationHistoryService.recordHistory(savedProject.getId(), operator, "CREATE_PROJECT", details);
+        return savedProject;
     }
 
     @Transactional(readOnly = true)
-    public List<ShowProjectDTO> getAllProjects() {
-        List<Project> projects = projectRepository.findAll();
-
+    public List<ShowProjectDTO> getAllProjects(String status) {
+        List<Project> projects;
+        if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")) {
+            projects = projectRepository.findByStatus(status);
+        } else {
+            projects = projectRepository.findAll();
+        }
         return projects.stream().map(this::toShowProjectDTO).collect(Collectors.toList());
     }
 
@@ -48,7 +81,7 @@ public class ProjectService {
             throw new IllegalArgumentException("Project with id " + id + " does not exist.");
         }
         projectRepository.deleteById(id);
-        
+
         // Record history
         // TODO: Replace "admin" with actual logged-in user and get project name before deletion
         String operator = "admin";
@@ -66,8 +99,14 @@ public class ProjectService {
         if (updatedProject.getName() != null && !project.getName().equals(updatedProject.getName())) {
             changes.append(String.format("名稱從 '%s' 變更為 '%s'. ", project.getName(), updatedProject.getName()));
         }
-        if (updatedProject.getStatus() != null && !project.getStatus().equals(updatedProject.getStatus())) {
-            changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", project.getStatus(), updatedProject.getStatus()));
+        // Safely check for status change, handling nulls
+        if (updatedProject.getStatus() != null) {
+            if (project.getStatus() == null || !project.getStatus().equals(updatedProject.getStatus())) {
+                changes.append(String.format("狀態從 '%s' 變更為 '%s'. ", 
+                    project.getStatus() == null ? "未設定" : project.getStatus(), 
+                    updatedProject.getStatus()
+                ));
+            }
         }
         // Add more fields to track as needed...
 
@@ -193,7 +232,7 @@ public class ProjectService {
         projectTeamRepository.deleteByProjectIdAndUserId(projectId, userId);
         return getTeamMembers(projectId);
     }
-    
+
 
     @Transactional
     public List<TeamMemberDTO> updateMemberDuties(Long projectId, Long userId, List<String> duties) {
@@ -248,7 +287,85 @@ public class ProjectService {
                 project.getProgressColor(),
                 project.getDescription(),
                 team,
-                documents
+                documents,
+                project.getSelectedTemplateId(),
+                project.getChecklistState()
         );
+    }
+
+    public CertTypeDTO getCertificationDistribution() {
+        List<CertTypeCount> counts = projectRepository.countProjectsByCertType();
+
+        List<String> labels = counts.stream()
+            .map(CertTypeCount::getCertType)
+            .collect(Collectors.toList());
+
+        List<Long> data = counts.stream()
+            .map(CertTypeCount::getCount)
+            .collect(Collectors.toList());
+
+        return new CertTypeDTO(labels, data);
+    }
+    public void saveChecklistState(Long projectId, String selectedTemplateId, String checklistState, int progress) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+        
+        project.setSelectedTemplateId(selectedTemplateId);
+        project.setProgress(progress);
+        project.setChecklistState(checklistState);
+        
+        projectRepository.save(project);
+    }
+
+    @Transactional(readOnly = true)
+    public double getAverageProjectProgress() {
+        List<Project> projects = projectRepository.findAll();
+        if (projects.isEmpty()) {
+            return 0.0;
+        }
+        double totalProgress = projects.stream()
+            .mapToDouble(Project::getProgress) 
+            .sum();
+        double averageProgress = totalProgress / projects.size();
+        return Math.round(averageProgress * 100.0) / 100.0; 
+    }
+
+    /**
+     * 計算並回傳每個認證類型的平均進度。
+     * @return List<CertTypeAverageProgress> 每個類型的平均進度列表。
+     */
+    public List<CertTypeAverageProgressDTO> getAverageProgressByCertType() {
+        List<Project> allProjects = projectRepository.findAll();
+
+        if (allProjects.isEmpty()) {
+            return List.of();
+        }
+        
+        // 按 CertType 分組並計算每個組的平均進度
+        Map<String, Double> progressByType = allProjects.stream()
+            .collect(Collectors.groupingBy(
+                project -> Optional.ofNullable(project.getCertType()).orElse("未分類"),                // 計算每個分組的平均值
+                Collectors.averagingInt(Project::getProgress) 
+            ));
+
+        // 將 Map 轉換為 List<CertTypeAverageProgress>
+        List<CertTypeAverageProgressDTO> typeProgresses = progressByType.entrySet().stream()
+            .map(entry -> new CertTypeAverageProgressDTO(
+                entry.getKey(), // CertType
+                // 將 Double 精度控制在小數點後兩位
+                Math.round(entry.getValue() * 100.0) / 100.0 
+            ))
+            .collect(Collectors.toList());
+
+        return typeProgresses;
+    }
+
+    /**
+     * 計算資料庫中不重複的專案認證類型 (certType) 的數量。
+     * @return 不重複的 certType 種類總數。
+     */
+    public int countUniqueCertTypes() {
+        List<CertTypeCountDTO> counts = projectRepository.countCertType();
+        return counts.size();
     }
 }
