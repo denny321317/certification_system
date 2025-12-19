@@ -19,7 +19,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 
 // 功能模組頁面
 import Dashboard from './pages/dashboard/Dashboard';
-import DocumentManagement from './pages/document-management/DocumentManagement';
+// import DocumentManagement from './pages/document-management/DocumentManagement';
 import TemplateCenter from './pages/template-center/TemplateCenter';
 import CertificationProjects from './pages/certification-projects/CertificationProjects';
 import CertificationProjectDetail from './pages/certification-projects/CertificationProjectDetail';
@@ -86,7 +86,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            {/* 文件管理模組 */}
+            {/* 文件管理模組
             <Route 
               path="/document-management" 
               element={
@@ -96,7 +96,7 @@ function App() {
                   </MainLayout>
                 </ProtectedRoute>
               } 
-            />
+            /> */}
             {/* 模板中心模組 */}
             <Route 
               path="/template-center" 

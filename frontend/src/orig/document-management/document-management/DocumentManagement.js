@@ -30,7 +30,7 @@ import {
   faUser, faFile, faDownload, faPencilAlt, 
   faShare, faTrash, faEllipsisV
 } from '@fortawesome/free-solid-svg-icons';
-import { useSettings } from '../../contexts/SettingsContext';
+import { useSettings } from '../../../contexts/SettingsContext';
 import './DocumentManagement.css';
 
 /**

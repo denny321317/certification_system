@@ -236,7 +236,7 @@ const Dashboard = ({ canWrite }) => {
       value: documentCount, 
       icon: faFile, 
       color: '#3b82f6',
-      link: '/document-management',
+      link: '/certification-projects',
       // trend: { direction: 'up', value: 12, label: '較上月(無後端)' }
     },
     { 
@@ -248,12 +248,12 @@ const Dashboard = ({ canWrite }) => {
       // trend: { direction: 'up', value: 1, label: '本月新增(無後端)' }
     },
     { 
-      title: '待處理任務', 
+      title: '待辦事項', 
       value: isLoadingTodoCount ? '載入中...' : todoCount, 
       urgentCount: urgentCount,
       icon: faExclamationCircle, 
       color: '#f59e0b',
-      link: '/tasks',
+      link: '/dashboard',
       // trend: { direction: 'down', value: 5, label: '較上週(無後端)' }
     },
     { 
@@ -262,7 +262,8 @@ const Dashboard = ({ canWrite }) => {
       description: '未來30天內',
       icon: faExclamationCircle, 
       color: '#ef4444',
-      link: '/upcoming-items',
+      link: '/certification-projects',
+      // link: '/upcoming-items',
       // trend: { direction: 'up', value: 2, label: '需要關注' }
     }
   ];
@@ -720,7 +721,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="card-header">
               <h2>
                 <FontAwesomeIcon icon={faTasks} className="card-header-icon" />
-                待辦事項(串接使用者未完成)
+                待辦事項
                 <span className="badge urgent-badge">
                   {todos.filter(item => item.completed).length}
                 </span>
@@ -861,10 +862,10 @@ const Dashboard = ({ canWrite }) => {
                 最近活動
               </h2>
               <div className="activity-controls">
-                <button className="notification-btn">
+                {/* <button className="notification-btn">
                   <FontAwesomeIcon icon={faBell} />
                   <span className="notification-count">3</span>
-                </button>
+                </button> */}
               </div>
             </div>
             <div className="activity-list">
@@ -947,7 +948,7 @@ const Dashboard = ({ canWrite }) => {
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">新增 Todo</h5>
+                  <h5 className="modal-title">新增待辦事項</h5>
                   <button type="button" className="btn-close" onClick={handleCloseAddTodoModal}></button>
                 </div>
                 <form onSubmit={handleAddTodo}>
