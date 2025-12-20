@@ -213,8 +213,11 @@ const CertificationProjects = ({ canWrite }) => {
    */
   const handleSettingsClick = (project, e) => {
     e.stopPropagation(); // 防止事件冒泡觸發查看詳情
+    const foundUser = teamMembers.find(m => m.name === project.managerName);
     setCurrentProject({
       ...project,
+      description: project.description || '',
+      managerId: foundUser ? foundUser.id : ''
     });
     setSettingsTab('edit');
     setShowSettingsModal(true);
@@ -525,7 +528,9 @@ const CertificationProjects = ({ canWrite }) => {
                       <select
                         id="managerId"
                         name="managerId"
+                        key={currentProject.id + (currentProject.managerId || 'none')}
                         value={currentProject.managerId || ''}
+                        // value={currentProject.managerId ? String(currentProject.managerId) : ''}
                         onChange={handleProjectInputChange}
                         className="form-control"
                         required

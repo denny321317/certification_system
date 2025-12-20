@@ -163,11 +163,11 @@ const CreateCertificationProject = () => {
         new Date(formData.externalReviewDate) < new Date(formData.startDate)) {
       errors.externalReviewDate = '外部審核日期不能早於開始日期';
     }
-    /*
-    if (!formData.manager) {
-      errors.manager = '請選擇專案負責人';
-    }
-    */
+    
+    // if (!formData.managerId) {
+    //   errors.managerId = '請選擇專案負責人';
+    // }
+    
     
     if (!formData.agency) {
       errors.agency = '請選擇認證機構';
@@ -461,7 +461,7 @@ const CreateCertificationProject = () => {
                 </select>
               </div>
               {formErrors.managerId && (
-                <div className="invalid-feedback">
+                <div className="invalid-feedback" style={{ display: 'block' }}>
                   <FontAwesomeIcon icon={faExclamationCircle} className="me-1" />
                   {formErrors.managerId}
                 </div>

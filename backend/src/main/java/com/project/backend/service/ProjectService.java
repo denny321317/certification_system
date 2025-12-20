@@ -173,6 +173,7 @@ public class ProjectService {
             project.getId(),
             project.getName(),
             project.getStatus(),
+            project.getDescription(),
             project.getStartDate() != null ? project.getStartDate().toString() : null,
             project.getEndDate() != null ? project.getEndDate().toString() : null,
             project.getInternalReviewDate() != null ? project.getInternalReviewDate().toString() : null,
