@@ -216,6 +216,7 @@ const CertificationProjects = ({ canWrite }) => {
     const foundUser = teamMembers.find(m => m.name === project.managerName);
     setCurrentProject({
       ...project,
+      description: project.description || '',
       managerId: foundUser ? foundUser.id : ''
     });
     setSettingsTab('edit');

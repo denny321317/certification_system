@@ -11,6 +11,7 @@ public class ShowProjectDTO {
   private Long id;
   private String name;
   private String status;
+  private String description;
   private String startDate;
   private String endDate;
   private String internalReviewDate;
