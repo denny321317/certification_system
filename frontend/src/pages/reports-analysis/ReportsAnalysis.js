@@ -898,9 +898,8 @@ const ReportsAnalysis = () => {
               onChange={e => setSelectedStatus(e.target.value)}
             >
               <option value="">全部</option>
-              <option value="in-progress">進行中</option>
-              <option value="completed">已解決</option>
-              <option value="planned">計畫中</option>
+              <option value="進行中">進行中</option>
+              <option value="已解決">已解決</option>
             </select>
           </div>
           

@@ -68,7 +68,8 @@ public class ProjectService {
     public List<ShowProjectDTO> getAllProjects(String status) {
         List<Project> projects;
         if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")) {
-            projects = projectRepository.findByStatus(status);
+            // 使用忽略大小寫的搜尋方法
+            projects = projectRepository.findByStatusIgnoreCase(status);
         } else {
             projects = projectRepository.findAll();
         }

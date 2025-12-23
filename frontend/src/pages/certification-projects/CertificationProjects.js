@@ -35,17 +35,18 @@ import './CertificationProjects.css';
 
 // 狀態標籤輔助函數
 const getStatusBadge = (status) => {
-  switch (status) {
+  const normalizedStatus = status ? status.toLowerCase() : '';
+  switch (normalizedStatus) {
     case 'in-progress':
       return (
-        <div className="status-badge internal-review">
+        <div className="status-badge in-progress">
           <FontAwesomeIcon icon={faHourglassHalf} className="me-1" />
           進行中
         </div>
       );
     case 'planned':
       return (
-        <div className="status-badge preparing">
+        <div className="status-badge planned">
           <FontAwesomeIcon icon={faClock} className="me-1" />
           計畫中
         </div>
